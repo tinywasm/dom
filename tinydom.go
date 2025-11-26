@@ -1,14 +1,6 @@
 package tinydom
 
-type DOM struct {
-	log func(v ...any)
-}
-
-func New(log func(v ...any)) *DOM {
-
-	t := &DOM{
-		log: log,
-	}
-
-	return t
+// New returns the platform-specific implementation of the DOM interface.
+func New(log func(v ...any)) DOM {
+	return newDom(log)
 }
