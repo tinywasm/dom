@@ -8,45 +8,59 @@ import (
 
 // domWasm is the WASM implementation of the DOM interface.
 type domWasm struct {
-	log                func(v ...any)
-	elementCache       map[string]js.Value
-	eventFuncs         map[string]js.Func
-	componentListeners map[string][]string // Maps component ID to a list of its event keys
-	currentComponentID string            // Tracks the component being mounted
+	log          func(v ...any)
+	elementCache []struct {
+		id  string
+		val js.Value
+	}
+	eventFuncs []struct {
+		key string
+		fn  js.Func
+	}
+	componentListeners []struct {
+		id   string
+		keys []string
+	}
+	currentComponentID string // Tracks the component being mounted
 }
 
 // newDom returns a new instance of the domWasm.
 func newDom(log func(v ...any)) DOM {
 	return &domWasm{
-		log:                log,
-		elementCache:       make(map[string]js.Value),
-		eventFuncs:         make(map[string]js.Func),
-		componentListeners: make(map[string][]string),
+		log: log,
 	}
 }
 
 // Get retrieves an element by ID from the cache or the DOM.
 func (d *domWasm) Get(id string) (Element, bool) {
-	if val, ok := d.elementCache[id]; ok {
-		return &elementWasm{
-			Value: val,
-			dom:   d,
-			id:    id,
-		}, true
+	// Linear search in cache
+	for _, item := range d.elementCache {
+		if item.id == id {
+			return &elementWasm{
+				val: item.val,
+				dom: d,
+				id:  id,
+			}, true
+		}
 	}
 
 	doc := js.Global().Get("document")
 	val := doc.Call("getElementById", id)
 	if val.IsNull() || val.IsUndefined() {
-		d.log("tinydom: element with id", id, "not found")
+		// d.log("tinydom: element with id", id, "not found") // Optional logging
 		return nil, false
 	}
 
-	d.elementCache[id] = val
+	// Append to cache
+	d.elementCache = append(d.elementCache, struct {
+		id  string
+		val js.Value
+	}{id, val})
+
 	return &elementWasm{
-		Value: val,
-		dom:   d,
-		id:    id,
+		val: val,
+		dom: d,
+		id:  id,
 	}, true
 }
 
@@ -54,27 +68,31 @@ func (d *domWasm) Get(id string) (Element, bool) {
 func (d *domWasm) Mount(parentID string, component Component) error {
 	parent, ok := d.Get(parentID)
 	if !ok {
-		d.log("tinydom: parent element with id", parentID, "not found for mounting")
-		return &js.Error{Value: js.ValueOf("parent element not found")}
+		if d.log != nil {
+			d.log("Parent element not found:", parentID)
+		}
+		// Return a simple error using js.Error
+		return &js.Error{Value: js.ValueOf("parent element not found: " + parentID)}
 	}
+
+	d.currentComponentID = component.ID()
 	parent.SetHTML(component.RenderHTML())
 
-	// Save the previous component ID and restore it after this mount is complete.
-	// This correctly handles nested component mounting.
-	previousComponentID := d.currentComponentID
-	d.currentComponentID = component.ID()
-	defer func() {
-		d.currentComponentID = previousComponentID
-	}()
+	// Only call OnMount if component implements Mountable
+	if mountable, ok := component.(Mountable); ok {
+		mountable.OnMount(d)
+	}
 
-	component.OnMount()
-
+	d.currentComponentID = ""
 	return nil
 }
 
-// Unmount removes an element and its associated event listeners.
+// Unmount removes a component from the DOM and cleans up event listeners.
 func (d *domWasm) Unmount(component Component) {
-	component.OnUnmount()
+	// Only call OnUnmount if component implements Mountable
+	if mountable, ok := component.(Mountable); ok {
+		mountable.OnUnmount()
+	}
 
 	id := component.ID()
 	// Remove the element from the DOM
@@ -84,16 +102,47 @@ func (d *domWasm) Unmount(component Component) {
 	}
 
 	// Efficiently clean up listeners for this component
-	if listenerKeys, ok := d.componentListeners[id]; ok {
-		for _, key := range listenerKeys {
-			if fn, ok := d.eventFuncs[key]; ok {
-				fn.Release()
-				delete(d.eventFuncs, key)
+	// Find listeners for this component
+	var listeners []string
+	compIndex := -1
+	for i, item := range d.componentListeners {
+		if item.id == id {
+			listeners = item.keys
+			compIndex = i
+			break
+		}
+	}
+
+	if compIndex != -1 {
+		// Release each function
+		for _, key := range listeners {
+			// Find and release the function in eventFuncs
+			for i, ef := range d.eventFuncs {
+				if ef.key == key {
+					ef.fn.Release()
+					// Remove from eventFuncs (swap and pop or just copy)
+					// Since order doesn't matter much for internal storage, swap remove is faster
+					lastIdx := len(d.eventFuncs) - 1
+					d.eventFuncs[i] = d.eventFuncs[lastIdx]
+					d.eventFuncs = d.eventFuncs[:lastIdx]
+					break
+				}
 			}
 		}
-		delete(d.componentListeners, id)
+
+		// Remove from componentListeners
+		lastIdx := len(d.componentListeners) - 1
+		d.componentListeners[compIndex] = d.componentListeners[lastIdx]
+		d.componentListeners = d.componentListeners[:lastIdx]
 	}
 
 	// Remove from cache
-	delete(d.elementCache, id)
+	for i, item := range d.elementCache {
+		if item.id == id {
+			lastIdx := len(d.elementCache) - 1
+			d.elementCache[i] = d.elementCache[lastIdx]
+			d.elementCache = d.elementCache[:lastIdx]
+			break
+		}
+	}
 }

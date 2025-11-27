@@ -19,7 +19,8 @@ type DOM interface {
 	Unmount(component Component)
 }
 
-// Component is the contract for your UI parts.
+// Component is the minimal interface for components.
+// All components must implement this for both SSR (backend) and WASM (frontend).
 type Component interface {
 	// ID returns the unique identifier of the component's root element.
 	ID() string
@@ -27,15 +28,4 @@ type Component interface {
 	// RenderHTML returns the full HTML string of the component.
 	// The root element of this HTML MUST have the id returned by ID().
 	RenderHTML() string
-
-	// OnMount is called after the HTML has been injected into the DOM.
-	// Use this to:
-	// 1. Get references to elements via dom.Get()
-	// 2. Bind event listeners
-	// 3. Initialize child components
-	OnMount()
-
-	// OnUnmount is called before the component is removed from the DOM.
-	// Use this to perform cleanup, such as clearing timers or releasing resources.
-	OnUnmount()
 }

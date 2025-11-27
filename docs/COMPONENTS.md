@@ -4,17 +4,16 @@ TinyDOM components are simple Go structs. They don't require a complex build ste
 
 ## Basic Component
 
-A basic component needs an ID, a reference to the DOM, and any state it needs to display.
+A basic component needs an ID and any state it needs to display. The `dom` instance is passed to `OnMount()` instead of being stored as a field.
 
 ```go
 type Counter struct {
-    dom   tinydom.DOM
     id    string
     count int
 }
 
-func NewCounter(dom tinydom.DOM, id string) *Counter {
-    return &Counter{dom: dom, id: id}
+func NewCounter(id string) *Counter {
+    return &Counter{id: id}
 }
 
 func (c *Counter) ID() string { return c.id }
@@ -23,24 +22,26 @@ func (c *Counter) RenderHTML() string {
     // Note: We manually inject the ID into the root element.
     return `
         <div id="` + c.id + `" class="counter">
-            <span id="` + c.id + `-val">` + tinystring.Convert(c.count).String() + `</span>
+            <span id="` + c.id + `-val">` + Convert(c.count).String() + `</span>
             <button id="` + c.id + `-btn">Increment</button>
         </div>
     `
 }
 
-func (c *Counter) OnMount() {
+func (c *Counter) OnMount(dom tinydom.DOM) {
     // 1. Get references to elements we need to interact with
-    valEl := c.dom.Get(c.id + "-val")
-    btnEl := c.dom.Get(c.id + "-btn")
+    valEl, _ := dom.Get(c.id + "-val")
+    btnEl, _ := dom.Get(c.id + "-btn")
 
     // 2. Bind events
-    btnEl.Click(func() {
+    btnEl.Click(func(e tinydom.Event) {
         c.count++
         // 3. Direct Update: Update only the text node, preserving the rest of the DOM
-        valEl.SetText(tinystring.Convert(c.count).String())
+        valEl.SetText(Convert(c.count).String())
     })
 }
+
+func (c *Counter) OnUnmount() {}
 ```
 
 ## Nested Components (Manual Cascade)
@@ -49,16 +50,14 @@ TinyDOM does not automatically mount child components. You must explicitly inclu
 
 ```go
 type Page struct {
-    dom     tinydom.DOM
     id      string
     counter *Counter // Child component
 }
 
-func NewPage(dom tinydom.DOM, id string) *Page {
+func NewPage(id string) *Page {
     return &Page{
-        dom:     dom,
         id:      id,
-        counter: NewCounter(dom, id+"-counter"), // Create child with sub-ID
+        counter: NewCounter(id + "-counter"), // Create child with sub-ID
     }
 }
 
@@ -74,11 +73,15 @@ func (p *Page) RenderHTML() string {
     `
 }
 
-func (p *Page) OnMount() {
-    // Initialize Child
-    p.counter.OnMount()
+func (p *Page) OnMount(dom tinydom.DOM) {
+    // Initialize Child - pass the dom instance
+    p.counter.OnMount(dom)
     
     // Page-specific logic...
+}
+
+func (p *Page) OnUnmount() {
+    p.counter.OnUnmount()
 }
 ```
 
