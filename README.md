@@ -71,12 +71,12 @@ func (c *Counter) ID() string { return c.id }
 
 // RenderHTML returns the initial HTML structure
 func (c *Counter) RenderHTML() string {
-	return `
-		<div id="` + c.id + `">
-			<span id="` + c.id + `-val">` + Convert(c.count).String() + `</span>
-			<button id="` + c.id + `-btn">Increment</button>
-		</div>
-	`
+	return Html(
+		"<div id='", c.id, "'>",
+			"<span id='", c.id, "-val'>", c.count, "</span>",
+			"<button id='", c.id, "-btn'>Increment</button>",
+		"</div>",
+	).String()
 }
 
 // OnMount binds event listeners
