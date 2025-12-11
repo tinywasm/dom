@@ -1,8 +1,8 @@
 //go:build !wasm
 
-package tinydom
+package dom
 
-import "github.com/cdvelop/tinystring"
+import "github.com/tinywasm/fmt"
 
 // domBackend is a stub implementation for non-WASM environments (e.g., SSR).
 type domBackend struct {
@@ -23,7 +23,7 @@ func (d *domBackend) Get(id string) (Element, bool) {
 
 // Mount is not implemented for backend.
 func (d *domBackend) Mount(parentID string, component Component) error {
-	return tinystring.Err("Mount is not implemented for backend")
+	return fmt.Err("Mount is not implemented for backend")
 }
 
 // Unmount is not implemented for backend.

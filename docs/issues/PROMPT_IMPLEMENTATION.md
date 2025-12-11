@@ -8,7 +8,7 @@ You are implementing CRUDP integration features for TinyDOM, a DOM manipulation 
 
 - **TinyGo compatibility:** No maps in hot paths, minimal allocations
 - **Build tags:** `//go:build wasm` for frontend, `//go:build !wasm` for backend
-- **Error handling:** Use `github.com/cdvelop/tinystring` (Err, Errf) - already imported
+- **Error handling:** Use `github.com/tinywasm/fmt` (Err, Errf) - already imported
 - **Existing patterns:** Follow existing code style and patterns in element.go, dom.go
 
 ## Project Structure (Current + New Files)
@@ -163,7 +163,7 @@ type EventSource interface {
 package tinydom
 
 import (
-    "github.com/cdvelop/fetchgo"
+    "github.com/tinywasm/fetch"
 )
 
 // domSender implements Sender interface using fetchgo
@@ -217,7 +217,7 @@ func (s *domSender) SendAsync(req SendRequest, callback func(SendResponse)) {
 
 package tinydom
 
-import "github.com/cdvelop/tinystring"
+import "github.com/tinywasm/fmt"
 
 // domSender stub for server-side (HTTP requests not needed on backend)
 type domSender struct{}
@@ -310,7 +310,7 @@ func TestSendRequest(t *testing.T) {
 ```go
 package tinydom
 
-import "github.com/cdvelop/tinystring"
+import "github.com/tinywasm/fmt"
 
 // FieldError represents a single field validation error
 type FieldError struct {
@@ -507,7 +507,7 @@ package tinydom
 import (
     "testing"
     
-    "github.com/cdvelop/tinystring"
+    "github.com/tinywasm/fmt"
 )
 
 type testValidator struct{}
@@ -1090,7 +1090,7 @@ func TestMessageConstants(t *testing.T) {
 
 1. **Import tinystring correctly (tinydom style):**
    ```go
-   import "github.com/cdvelop/tinystring"
+   import "github.com/tinywasm/fmt"
    // Then use: tinystring.Err(), tinystring.Errf()
    ```
    

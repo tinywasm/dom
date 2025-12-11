@@ -1,4 +1,4 @@
-package tinydom
+package dom
 
 // Event represents a DOM event.
 type Event interface {
@@ -21,7 +21,7 @@ type Event interface {
 //   - Localized strings: Using D.* dictionary for multilingual support
 //
 // For more information about translation and multilingual support, see:
-// https://github.com/cdvelop/tinystring/blob/main/docs/TRANSLATE.md
+// https://github.com/tinywasm/fmt/blob/main/docs/TRANSLATE.md
 //
 // Examples:
 //

@@ -1,4 +1,4 @@
-package tinydom
+package dom
 
 // tinyDOM contains shared functionality between backend and WASM implementations.
 type tinyDOM struct {

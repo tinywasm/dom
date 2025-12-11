@@ -1,6 +1,6 @@
 //go:build wasm
 
-package tinydom
+package dom
 
 // Mountable extends Component with lifecycle hooks for WASM.
 // Components that need interactivity should implement this interface.

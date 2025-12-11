@@ -1,12 +1,12 @@
 //go:build wasm
 
-package tinydom_test
+package dom
 
 import (
 	"syscall/js"
 	"testing"
 
-	"github.com/cdvelop/tinydom"
+	"github.com/tinywasm/dom"
 )
 
 // EventComponent registers listeners in OnMount
@@ -16,17 +16,17 @@ type EventComponent struct {
 	customCount int
 }
 
-func (c *EventComponent) OnMount(dom tinydom.DOM) {
+func (c *EventComponent) OnMount(dom dom.DOM) {
 	c.MockComponent.OnMount(dom)
 	// Register events using the passed dom instance
 	el, ok := dom.Get(c.id)
 	if ok {
-		el.On("click", func(e tinydom.Event) {
+		el.On("click", func(e dom.Event) {
 			c.clickCount++
 			e.PreventDefault()
 			e.StopPropagation()
 		})
-		el.On("custom-test", func(e tinydom.Event) {
+		el.On("custom-test", func(e dom.Event) {
 			c.customCount++
 		})
 	}
@@ -41,7 +41,7 @@ func TestEvents(t *testing.T) {
 		el, _ := dom.Get("comp-basic-event")
 
 		clicked := false
-		el.Click(func(e tinydom.Event) {
+		el.Click(func(e dom.Event) {
 			clicked = true
 		})
 
@@ -100,7 +100,7 @@ func TestEvents(t *testing.T) {
 		el, _ := dom.Get("test-input")
 
 		var targetVal string
-		el.On("input", func(e tinydom.Event) {
+		el.On("input", func(e dom.Event) {
 			targetVal = e.TargetValue()
 		})
 

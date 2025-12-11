@@ -1,4 +1,4 @@
-package tinydom
+package dom
 
 // DOM is the main entry point for interacting with the browser.
 // It is designed to be injected into your components.

@@ -1,6 +1,6 @@
 //go:build wasm
 
-package tinydom_test
+package dom
 
 import (
 	"testing"

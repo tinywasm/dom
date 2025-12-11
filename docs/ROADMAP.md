@@ -58,8 +58,8 @@ const (
 
 ## Dependencies
 
-- `github.com/cdvelop/tinystring` - Errors, string utilities
+- `github.com/tinywasm/fmt` - Errors, string utilities
 
 ## Related
 
-- [CRUDP Architecture](https://github.com/cdvelop/crudp/blob/main/docs/ARQUITECTURE.md)
+- [CRUDP Architecture](https://github.com/tinywasm/crudp/blob/main/docs/ARQUITECTURE.md)

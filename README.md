@@ -14,7 +14,7 @@ TinyDOM provides a minimalist, WASM-optimized way to interact with the browser D
 ## 📦 Installation
 
 ```bash
-go get github.com/cdvelop/tinydom
+go get github.com/tinywasm/dom
 ```
 
 ## ⚡ Quick Start
@@ -51,8 +51,8 @@ Here is a simple "Counter" component example.
 package main
 
 import (
-	"github.com/cdvelop/tinydom"
-	."github.com/cdvelop/tinystring"
+	"github.com/tinywasm/dom"
+	."github.com/tinywasm/fmt"
 )
 
 // Counter is a simple component

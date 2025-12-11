@@ -1,6 +1,6 @@
 //go:build !wasm
 
-package tinydom
+package dom
 
 // CSSRenderer is an optional interface for components that need to inject CSS.
 // Only used in backend SSR.

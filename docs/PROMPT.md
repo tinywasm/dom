@@ -5,7 +5,7 @@
 **Objetivo:** Implementar la fase 1 y 2 de la librería `tinydom` siguiendo estrictamente la documentación en [docs/](README.md).
 
 **Restricciones Técnicas (CRÍTICAS):**
-1.  **Cero StdLib innecesaria:** NO importes `fmt`, `strings`, `strconv`, `errors` ni `net/http`. Usa exclusivamente `github.com/cdvelop/tinystring` para manipulación de strings y conversiones.
+1.  **Cero StdLib innecesaria:** NO importes `fmt`, `strings`, `strconv`, `errors` ni `net/http`. Usa exclusivamente `github.com/tinywasm/fmt` para manipulación de strings y conversiones.
 2.  **Optimización TinyGo:**
     *   Evita el uso de `map` si es posible, o úsalos con extrema precaución sabiendo que son lentos y desordenados en TinyGo. Para el caché de IDs, considera si un slice struct simple o un array estático es viable, o usa un map solo si es estrictamente necesario para búsquedas O(1).
     *   Minimiza las alocaciones de memoria en el heap.

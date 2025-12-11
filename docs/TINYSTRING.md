@@ -1,10 +1,10 @@
 # TinyString Helper Guide
 
-TinyDOM uses [TinyString](https://github.com/cdvelop/tinystring) for all string manipulations and conversions to avoid the overhead of the standard library (`fmt`, `strconv`, `strings`, `errors`).
+TinyDOM uses [TinyString](https://github.com/tinywasm/fmt) for all string manipulations and conversions to avoid the overhead of the standard library (`fmt`, `strconv`, `strings`, `errors`).
 
 ## Usage
 ```go
-import . "github.com/cdvelop/tinystring"
+import . "github.com/tinywasm/fmt"
 ```
 
 ### Type Conversion

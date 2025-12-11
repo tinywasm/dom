@@ -1,6 +1,6 @@
 //go:build wasm
 
-package tinydom
+package dom
 
 import (
 	"syscall/js"
