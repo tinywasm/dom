@@ -1,30 +1,24 @@
 # TinyDOM API Reference
 
-## Core Interface
+## Global API
 
-The `DOM` interface is the main entry point for interacting with the browser. It is designed to be injected into your components.
+TinyDOM provides a global API for direct access to the DOM in WASM environments.
 
 ```go
-package tinydom
+// Get retrieves an element by its ID.
+Get(id string) (Element, bool)
 
-type DOM interface {
-	// Get retrieves an element by its ID.
-	// It uses an internal cache to avoid repeated DOM lookups.
-	Get(id string) (Element, bool)
+// Mount injects a component into a parent element.
+Mount(parentID string, component Component) error
 
-	// Mount injects a component into a parent element.
-	// 1. It calls component.RenderHTML()
-	// 2. It sets the InnerHTML of the parent element (found by parentID)
-	// 3. It calls component.OnMount() to bind events
-	//
-	// Note: The parentID element MUST exist in the DOM before calling Mount.
-	// If it is not found, Mount returns an error.
-	Mount(parentID string, component Component) error
+// Unmount removes a component from the DOM.
+Unmount(component Component)
 
-	// Unmount removes a component from the DOM (by clearing the parent's HTML or removing the node)
-	// and cleans up any event listeners registered via the Element interface.
-	Unmount(component Component)
-}
+// Log provides logging functionality.
+Log(v ...any)
+
+// SetLog sets the logging function.
+SetLog(log func(v ...any))
 ```
 
 ## Element Interface
@@ -112,15 +106,15 @@ type Mountable interface {
 	Component
 
 	// OnMount is called after the HTML has been injected into the DOM.
-	// The DOM instance is passed so the component can bind events and interact with elements.
-	OnMount(dom DOM)
+	// The component can now use the global API to bind events and interact with elements.
+	OnMount()
 
 	// OnUnmount is called before the component is removed from the DOM.
 	OnUnmount()
 }
 ```
 
-**Key Change**: Components now receive the `DOM` instance as a parameter in `OnMount()` instead of storing it as a field.
+**Key Change**: Components no longer receive a `DOM` instance as a parameter in `OnMount()`. Instead, they use the global `dom.Get()`, `dom.Mount()`, etc.
 
 ### Backend-Only: CSS and JS Rendering
 

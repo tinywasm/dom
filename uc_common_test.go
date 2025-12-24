@@ -5,8 +5,6 @@ package dom
 import (
 	"syscall/js"
 	"testing"
-
-	"github.com/tinywasm/dom"
 )
 
 // MockComponent is a simple component for testing.
@@ -23,7 +21,7 @@ func (c *MockComponent) RenderHTML() string {
 	return `<div id="` + c.id + `">Content</div>`
 }
 
-func (c *MockComponent) OnMount(dom dom.DOM) {
+func (c *MockComponent) OnMount() {
 	c.mounted = true
 }
 
@@ -31,7 +29,7 @@ func (c *MockComponent) OnUnmount() {
 	c.mounted = false
 }
 
-func setupDOM(t *testing.T) (dom.DOM, js.Value) {
+func setupDOM(t *testing.T) js.Value {
 	doc := js.Global().Get("document")
 	body := doc.Get("body")
 
@@ -47,9 +45,9 @@ func setupDOM(t *testing.T) (dom.DOM, js.Value) {
 		root.Set("innerHTML", "")
 	}
 
-	dom := dom.New(func(v ...any) {
+	SetLog(func(v ...any) {
 		t.Log(v...)
 	})
 
-	return dom, doc
+	return doc
 }

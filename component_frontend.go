@@ -8,8 +8,8 @@ type Mountable interface {
 	Component
 
 	// OnMount is called after the HTML has been injected into the DOM.
-	// The DOM instance is passed so the component can bind events and interact with elements.
-	OnMount(dom DOM)
+	// The component can now bind events and interact with elements using the global API.
+	OnMount()
 
 	// OnUnmount is called before the component is removed from the DOM.
 	OnUnmount()

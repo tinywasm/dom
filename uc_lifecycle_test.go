@@ -7,10 +7,10 @@ import (
 )
 
 func TestLifecycle(t *testing.T) {
-	dom, _ := setupDOM(t)
+	_ = setupDOM(t)
 
 	t.Run("Get Existing Element", func(t *testing.T) {
-		el, ok := dom.Get("root")
+		el, ok := Get("root")
 		if !ok {
 			t.Fatal("Expected to find root element")
 		}
@@ -20,7 +20,7 @@ func TestLifecycle(t *testing.T) {
 	})
 
 	t.Run("Get Non-Existing Element", func(t *testing.T) {
-		_, ok := dom.Get("non-existent")
+		_, ok := Get("non-existent")
 		if ok {
 			t.Error("Expected not to find non-existent element")
 		}
@@ -28,7 +28,7 @@ func TestLifecycle(t *testing.T) {
 
 	t.Run("Mount Component", func(t *testing.T) {
 		comp := &MockComponent{id: "comp1"}
-		err := dom.Mount("root", comp)
+		err := Mount("root", comp)
 		if err != nil {
 			t.Fatalf("Mount failed: %v", err)
 		}
@@ -37,7 +37,7 @@ func TestLifecycle(t *testing.T) {
 			t.Error("OnMount was not called")
 		}
 
-		el, ok := dom.Get("comp1")
+		el, ok := Get("comp1")
 		if !ok {
 			t.Fatal("Component element not found in DOM")
 		}
@@ -52,13 +52,13 @@ func TestLifecycle(t *testing.T) {
 		// but setupDOM clears body. Wait, setupDOM is called once per TestLifecycle.
 		// So state persists between sub-tests.
 
-		dom.Unmount(comp)
+		Unmount(comp)
 
 		if comp.mounted {
 			// See previous note about new struct instance
 		}
 
-		_, ok := dom.Get("comp1")
+		_, ok := Get("comp1")
 		if ok {
 			t.Error("Element should be removed from cache")
 		}
@@ -66,7 +66,7 @@ func TestLifecycle(t *testing.T) {
 
 	t.Run("Mount Invalid Parent", func(t *testing.T) {
 		comp := &MockComponent{id: "comp-invalid"}
-		err := dom.Mount("invalid-parent-id", comp)
+		err := Mount("invalid-parent-id", comp)
 		if err == nil {
 			t.Error("Expected error when mounting to invalid parent")
 		}
@@ -75,19 +75,19 @@ func TestLifecycle(t *testing.T) {
 	t.Run("Unmount No Listeners", func(t *testing.T) {
 		comp := &MockComponent{id: "comp-no-listeners"}
 		// Need to add parent first
-		root, _ := dom.Get("root")
+		root, _ := Get("root")
 		root.AppendHTML(`<div id="root-no-listeners"></div>`)
-		dom.Mount("root-no-listeners", comp)
-		dom.Unmount(comp)
+		Mount("root-no-listeners", comp)
+		Unmount(comp)
 	})
 
 	t.Run("Get Cache Hit", func(t *testing.T) {
-		_, ok := dom.Get("root")
+		_, ok := Get("root")
 		if !ok {
 			t.Fatal("Root not found")
 		}
 
-		el, ok := dom.Get("root")
+		el, ok := Get("root")
 		if !ok {
 			t.Fatal("Root not found in cache")
 		}

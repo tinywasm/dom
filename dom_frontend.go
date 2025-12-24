@@ -78,7 +78,7 @@ func (d *domWasm) Mount(parentID string, component Component) error {
 
 	// Only call OnMount if component implements Mountable
 	if mountable, ok := component.(Mountable); ok {
-		mountable.OnMount(d)
+		mountable.OnMount()
 	}
 
 	d.currentComponentID = ""

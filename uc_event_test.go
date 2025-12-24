@@ -5,8 +5,6 @@ package dom
 import (
 	"syscall/js"
 	"testing"
-
-	"github.com/tinywasm/dom"
 )
 
 // EventComponent registers listeners in OnMount
@@ -16,32 +14,32 @@ type EventComponent struct {
 	customCount int
 }
 
-func (c *EventComponent) OnMount(dom dom.DOM) {
-	c.MockComponent.OnMount(dom)
-	// Register events using the passed dom instance
-	el, ok := dom.Get(c.id)
+func (c *EventComponent) OnMount() {
+	c.MockComponent.OnMount()
+	// Register events using the global API
+	el, ok := Get(c.id)
 	if ok {
-		el.On("click", func(e dom.Event) {
+		el.On("click", func(e Event) {
 			c.clickCount++
 			e.PreventDefault()
 			e.StopPropagation()
 		})
-		el.On("custom-test", func(e dom.Event) {
+		el.On("custom-test", func(e Event) {
 			c.customCount++
 		})
 	}
 }
 
 func TestEvents(t *testing.T) {
-	dom, doc := setupDOM(t)
+	doc := setupDOM(t)
 
 	t.Run("Basic Event Handling", func(t *testing.T) {
 		comp := &MockComponent{id: "comp-basic-event"}
-		dom.Mount("root", comp)
-		el, _ := dom.Get("comp-basic-event")
+		Mount("root", comp)
+		el, _ := Get("comp-basic-event")
 
 		clicked := false
-		el.Click(func(e dom.Event) {
+		el.Click(func(e Event) {
 			clicked = true
 		})
 
@@ -59,7 +57,7 @@ func TestEvents(t *testing.T) {
 			MockComponent: MockComponent{id: "comp-events"},
 		}
 
-		dom.Mount("root", comp)
+		Mount("root", comp)
 
 		// Trigger events
 		rawEl := doc.Call("getElementById", "comp-events")
@@ -74,7 +72,7 @@ func TestEvents(t *testing.T) {
 		}
 
 		// Unmount and verify cleanup
-		dom.Unmount(comp)
+		Unmount(comp)
 
 		// Trigger again
 		// Note: Since element is removed from DOM, dispatching event on 'rawEl' (which is detached)
@@ -95,12 +93,12 @@ func TestEvents(t *testing.T) {
 	})
 
 	t.Run("Event Target Value", func(t *testing.T) {
-		root, _ := dom.Get("root")
+		root, _ := Get("root")
 		root.AppendHTML(`<input id="test-input" value="initial">`)
-		el, _ := dom.Get("test-input")
+		el, _ := Get("test-input")
 
 		var targetVal string
-		el.On("input", func(e dom.Event) {
+		el.On("input", func(e Event) {
 			targetVal = e.TargetValue()
 		})
 

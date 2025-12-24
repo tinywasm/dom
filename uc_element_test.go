@@ -8,13 +8,13 @@ import (
 )
 
 func TestElementMethods(t *testing.T) {
-	dom, doc := setupDOM(t)
+	doc := setupDOM(t)
 
 	// Mount a component to test on
 	comp := &MockComponent{id: "comp-elem"}
-	dom.Mount("root", comp)
+	Mount("root", comp)
 
-	el, ok := dom.Get("comp-elem")
+	el, ok := Get("comp-elem")
 	if !ok {
 		t.Fatal("Component element not found")
 	}
@@ -85,18 +85,18 @@ func TestElementMethods(t *testing.T) {
 	})
 
 	t.Run("Remove Edge Cases", func(t *testing.T) {
-		root, _ := dom.Get("root")
+		root, _ := Get("root")
 		root.AppendHTML(`<div id="temp-remove"></div>`)
-		tempEl, _ := dom.Get("temp-remove")
+		tempEl, _ := Get("temp-remove")
 		tempEl.Remove()
 		// Calling remove again should be fine
 		tempEl.Remove()
 	})
 
 	t.Run("Focus and SetValue", func(t *testing.T) {
-		root, _ := dom.Get("root")
+		root, _ := Get("root")
 		root.AppendHTML(`<input id="test-focus">`)
-		inputEl, _ := dom.Get("test-focus")
+		inputEl, _ := Get("test-focus")
 
 		inputEl.SetValue("new-value")
 		if inputEl.Value() != "new-value" {

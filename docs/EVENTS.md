@@ -23,7 +23,7 @@ type Event interface {
 ### 1. Handling Button Clicks
 
 ```go
-btn.Click(func(e tinydom.Event) {
+btn.Click(func(e dom.Event) {
     // Stop the click from bubbling to parents
     e.StopPropagation()
     
@@ -37,7 +37,7 @@ btn.Click(func(e tinydom.Event) {
 Use `TargetValue()` to easily get the new value from an input field.
 
 ```go
-inputEl.On("input", func(e tinydom.Event) {
+inputEl.On("input", func(e dom.Event) {
     newValue := e.TargetValue()
     println("User typed:", newValue)
 })
@@ -46,7 +46,7 @@ inputEl.On("input", func(e tinydom.Event) {
 ### 3. Preventing Form Submission
 
 ```go
-formEl.On("submit", func(e tinydom.Event) {
+formEl.On("submit", func(e dom.Event) {
     // Prevent the browser from reloading the page
     e.PreventDefault()
     

@@ -4,7 +4,7 @@ TinyDOM components are simple Go structs. They don't require a complex build ste
 
 ## Basic Component
 
-A basic component needs an ID and any state it needs to display. The `dom` instance is passed to `OnMount()` instead of being stored as a field.
+A basic component needs an ID and any state it needs to display. You can use the global `dom` functions in `OnMount()` to interact with elements.
 
 ```go
 type Counter struct {
@@ -28,13 +28,13 @@ func (c *Counter) RenderHTML() string {
     `
 }
 
-func (c *Counter) OnMount(dom tinydom.DOM) {
-    // 1. Get references to elements we need to interact with
+func (c *Counter) OnMount() {
+    // 1. Get references to elements we need to interact with using global API
     valEl, _ := dom.Get(c.id + "-val")
     btnEl, _ := dom.Get(c.id + "-btn")
 
     // 2. Bind events
-    btnEl.Click(func(e tinydom.Event) {
+    btnEl.Click(func(e dom.Event) {
         c.count++
         // 3. Direct Update: Update only the text node, preserving the rest of the DOM
         valEl.SetText(c.count)
@@ -73,9 +73,9 @@ func (p *Page) RenderHTML() string {
     `
 }
 
-func (p *Page) OnMount(dom tinydom.DOM) {
-    // Initialize Child - pass the dom instance
-    p.counter.OnMount(dom)
+func (p *Page) OnMount() {
+    // Initialize Child
+    p.counter.OnMount()
     
     // Page-specific logic...
 }
