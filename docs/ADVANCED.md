@@ -6,7 +6,7 @@ When working with lists, you often want to add or remove items without re-render
 
 ```go
 type TodoList struct {
-    dom   tinydom.DOM
+    dom   tinywasm/dom.DOM
     id    string
     items []*TodoItem
 }
@@ -43,12 +43,12 @@ func (l *TodoList) RemoveItem(itemID string) {
 
 ## Decoupled Components (Interface Segregation)
 
-You don't always need to import `tinydom` or depend on the full `DOM` interface. You can define narrow interfaces for what your component actually needs.
+You don't always need to import `tinywasm/dom` or depend on the full `DOM` interface. You can define narrow interfaces for what your component actually needs.
 
 ```go
 // This component only needs to update text. It doesn't care about Mounting or Unmounting.
 type TextSetter interface {
-    Get(id string) tinydom.Element
+    Get(id string) tinywasm/dom.Element
 }
 
 type StatusLabel struct {

@@ -87,5 +87,5 @@ The contract for UI parts:
 *   The target container (e.g., `<div id="app">`) usually exists in the static HTML or is part of a parent's template. It is rarely a Component itself.
 
 ### Decoupled Components
-Components can define their own narrow interfaces to avoid depending on the full `tinydom.DOM` package.
+Components can define their own narrow interfaces to avoid depending on the full `tinywasm/dom.DOM` package.
 *   *Example*: If a component only needs to update text, it can define `type TextUpdater interface { Get(id string) Element }` and accept that, making it easier to test and reuse.

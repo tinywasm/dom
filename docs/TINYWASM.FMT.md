@@ -1,6 +1,6 @@
-# TinyString Helper Guide
+# tinywasm/fmt Helper Guide
 
-TinyDOM uses [TinyString](https://github.com/tinywasm/fmt) for all string manipulations and conversions to avoid the overhead of the standard library (`fmt`, `strconv`, `strings`, `errors`).
+tinywasm/dom uses [tinywasm/fmt](https://github.com/tinywasm/fmt) for all string manipulations and conversions to avoid the overhead of the standard library (`fmt`, `strconv`, `strings`, `errors`).
 
 ## Usage
 ```go
@@ -29,7 +29,7 @@ Chain methods to transform text:
 name := "TinyDOM"
 
 // Lowercase
-lower := Convert(name).ToLower().String() // "tinydom"
+lower := Convert(name).ToLower().String() // "tinywasm/dom"
 
 // Uppercase
 upper := Convert(name).ToUpper().String() // "TINYDOM"
@@ -70,7 +70,7 @@ if err != nil {
 
 ### Creating Errors
 
-TinyString also provides lightweight replacements for the `errors` package:
+tinywasm/fmt also provides lightweight replacements for the `errors` package:
 
 ```go
 // Replace errors.New("message")

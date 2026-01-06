@@ -2,7 +2,7 @@
 
 **Rol:** Eres un experto en Go y WebAssembly, especializado en optimización para TinyGo.
 
-**Objetivo:** Implementar la fase 1 y 2 de la librería `tinydom` siguiendo estrictamente la documentación en [docs/](README.md).
+**Objetivo:** Implementar la fase 1 y 2 de la librería `tinywasm/dom` siguiendo estrictamente la documentación en [docs/](README.md).
 
 **Restricciones Técnicas (CRÍTICAS):**
 1.  **Cero StdLib innecesaria:** NO importes `fmt`, `strings`, `strconv`, `errors` ni `net/http`. Usa exclusivamente `github.com/tinywasm/fmt` para manipulación de strings y conversiones.
@@ -21,7 +21,7 @@
 2.  **Implementación Stub (`dom_stub.go`, `element_stub.go`):**
     *   Crea implementaciones vacías (No-Op) para cuando se compila con `!wasm`.
     *   Esto es vital para que el servidor backend pueda importar componentes sin fallar al compilar.
-    *   El constructor `New()` en tinydom.go debe retornar la implementación correcta según el build tag.
+    *   El constructor `New()` en tinywasm/dom.go debe retornar la implementación correcta según el build tag.
 
 3.  **Implementación WASM (`dom_wasm.go`, `element_wasm.go`):**
     *   Implementa la lógica real usando `syscall/js`.
@@ -33,13 +33,13 @@
 **Contexto:**
 *   Usa `tinystring` para concatenaciones y conversiones.
 *   La estructura de archivos esperada es:
-    *   tinydom.go (Constructor público)
+    *   tinywasm/dom.go (Constructor público)
     *   `dom.go` (Interfaces)
     *   element.go (Interfaces)
     *   `dom_wasm.go` / `dom_stub.go`
     *   `element_wasm.go` / `element_stub.go`
 
 **Ejecución:**
-Por favor, genera primero los archivos de interfaces (`dom.go`, element.go) y el constructor (tinydom.go), y luego procede con las implementaciones stub y wasm paso a paso.
+Por favor, genera primero los archivos de interfaces (`dom.go`, element.go) y el constructor (tinywasm/dom.go), y luego procede con las implementaciones stub y wasm paso a paso.
 
 ***

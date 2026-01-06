@@ -12,7 +12,7 @@ Global debounce configuration for form validation and other timed operations.
 ```go
 // config.go
 
-// Config holds global tinydom configuration
+// Config holds global tinywasm/dom configuration
 type Config struct {
     DebounceMs int // Default: 200ms
 }
@@ -90,7 +90,7 @@ func DebounceDefault(fn func()) func() {
 
 ```go
 // In form validation (internal)
-debouncedValidate := tinydom.Debounce(config.DebounceMs, func() {
+debouncedValidate := tinywasm/dom.Debounce(config.DebounceMs, func() {
     err := validator.ValidateField(fieldName, input.Value())
     // Update UI...
 })
@@ -102,15 +102,15 @@ input.OnInput(func(e Event) {
 
 ```go
 // User can also use directly
-func (h *Handler) OnMount(dom tinydom.DOM) {
+func (h *Handler) OnMount(dom tinywasm/dom.DOM) {
     input, _ := dom.Get("search")
     
-    search := tinydom.DebounceDefault(func() {
+    search := tinywasm/dom.DebounceDefault(func() {
         query := input.Value()
-        dom.Send(tinydom.GET, h, Query{Text: query}, h.onSearchResults)
+        dom.Send(tinywasm/dom.GET, h, Query{Text: query}, h.onSearchResults)
     })
     
-    input.OnInput(func(e tinydom.Event) {
+    input.OnInput(func(e tinywasm/dom.Event) {
         search()
     })
 }

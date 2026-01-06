@@ -23,7 +23,7 @@ flowchart TD
     subgraph APPLICATION["APPLICATION"]
         direction TB
         Component["Component\n(UI)"] --> Handler["Handler\n(logic)"]
-        Handler --> DOM["DOM\n(tinydom)"]
+        Handler --> DOM["DOM\n(tinywasm/dom)"]
     end
 
     subgraph INJECTION["INJECTION"]

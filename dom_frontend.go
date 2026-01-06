@@ -48,7 +48,7 @@ func (d *domWasm) Get(id string) (Element, bool) {
 
 	val := d.document.Call("getElementById", id)
 	if val.IsNull() || val.IsUndefined() {
-		d.log("tinydom: element with id", id, "not found") // Optional logging
+		d.Log("tinywasm/dom: element with id", id, "not found") // Optional logging
 		return nil, false
 	}
 
