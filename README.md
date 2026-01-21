@@ -22,32 +22,12 @@ go get github.com/tinywasm/dom
 
 ## ⚡ Quick Start
 
-### 1. HTML Setup
-
-You need a basic HTML file with a container element (e.g., `<div id="app">`) where your Go application will mount.
-
-```html
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <script src="wasm_exec.js"></script>
-    <script>
-        const go = new Go();
-        WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then((result) => {
-            go.run(result.instance);
-        });
-    </script>
-</head>
-<body>
-    <!-- The root container for your application -->
-    <div id="app"></div>
-</body>
-</html>
-```
+### 1. Global API vs Instance
+`tinywasm/dom` provides two ways to interact with the DOM:
+- **Global API**: Quick and easy functions like `dom.Get(id)`, `dom.Mount(parent, comp)`. Most applications should use this.
+- **Instance API**: If you need multiple isolated DOM instances (e.g., for testing or multiple root contexts).
 
 ### 2. Go Component
-
 Here is a simple "Counter" component example.
 
 ```go
@@ -55,24 +35,20 @@ package main
 
 import (
 	"github.com/tinywasm/dom"
-	."github.com/tinywasm/fmt"
+	. "github.com/tinywasm/fmt"
 )
 
-// Counter is a simple component
 type Counter struct {
 	id    string
 	count int
 }
 
-// NewCounter creates a new instance
 func NewCounter(id string) *Counter {
 	return &Counter{id: id}
 }
 
-// ID returns the component's unique ID
 func (c *Counter) ID() string { return c.id }
 
-// RenderHTML returns the initial HTML structure
 func (c *Counter) RenderHTML() string {
 	return Html(
 		"<div id='", c.id, "'>",
@@ -82,27 +58,37 @@ func (c *Counter) RenderHTML() string {
 	).String()
 }
 
-// OnMount binds event listeners
+// OnMount is called after HTML is injected.
 func (c *Counter) OnMount() {
+	// Use the global dom.Get() to find elements
 	valEl, _ := dom.Get(c.id + "-val")
 	btnEl, _ := dom.Get(c.id + "-btn")
 
+	// Bind events using the Element interface
 	btnEl.Click(func(e dom.Event) {
 		c.count++
-		// Update the counter
 		valEl.SetText(c.count)
 	})
 }
 
-// OnUnmount cleans up (optional, listeners are auto-removed)
-func (c *Counter) OnUnmount() {}
-
 func main() {
-	// Mount the component to an existing element with id "app"
 	dom.Mount("app", NewCounter("my-counter"))
-	
-	// Prevent main from exiting
 	select {}
+}
+```
+
+## 🎯 Event Delegation
+For complex components (like Forms), you can use event delegation at the root level using `e.TargetID()` and `e.TargetValue()`:
+
+```go
+func (c *MyList) OnMount() {
+    root, _ := dom.Get(c.ID())
+    
+    // Catch clicks from any child button
+    root.On("click", func(e dom.Event) {
+        id := e.TargetID() // "list-item-1", "list-item-2", etc.
+        // Handle logic...
+    })
 }
 ```
 

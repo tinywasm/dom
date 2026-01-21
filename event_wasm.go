@@ -25,3 +25,8 @@ func (e *eventWasm) StopPropagation() {
 func (e *eventWasm) TargetValue() string {
 	return e.Get("target").Get("value").String()
 }
+
+// TargetID returns the ID of the event's target element.
+func (e *eventWasm) TargetID() string {
+	return e.Get("target").Get("id").String()
+}

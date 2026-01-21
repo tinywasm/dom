@@ -9,6 +9,8 @@ type Event interface {
 	// TargetValue returns the value of the event's target element.
 	// Useful for input, textarea, and select elements.
 	TargetValue() string
+	// TargetID returns the ID of the event's target element.
+	TargetID() string
 }
 
 // Element represents a DOM node. It provides methods for direct manipulation and event binding.
