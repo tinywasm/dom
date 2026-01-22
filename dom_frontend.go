@@ -3,6 +3,7 @@
 package dom
 
 import (
+	"github.com/tinywasm/fmt"
 	"syscall/js"
 )
 
@@ -69,11 +70,11 @@ func (d *domWasm) Get(id string) (Element, bool) {
 func (d *domWasm) Mount(parentID string, component Component) error {
 	parent, ok := d.Get(parentID)
 	if !ok {
-		// Return a simple error using js.Error
-		return &js.Error{Value: js.ValueOf("parent element not found: " + parentID)}
+		// Return a simple error instead of js.Error to avoid panics during formatting
+		return fmt.Errf("parent element not found: %s", parentID)
 	}
 
-	d.currentComponentID = component.ID()
+	d.currentComponentID = component.HandlerName()
 	parent.SetHTML(component.RenderHTML())
 
 	// Only call OnMount if component implements Mountable
@@ -92,7 +93,7 @@ func (d *domWasm) Unmount(component Component) {
 		mountable.OnUnmount()
 	}
 
-	id := component.ID()
+	id := component.HandlerName()
 	// Remove the element from the DOM
 	el, ok := d.Get(id)
 	if ok {

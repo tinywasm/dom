@@ -13,7 +13,7 @@ type MockComponent struct {
 	mounted bool
 }
 
-func (c *MockComponent) ID() string {
+func (c *MockComponent) HandlerName() string {
 	return c.id
 }
 

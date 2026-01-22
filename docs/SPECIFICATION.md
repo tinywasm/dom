@@ -52,7 +52,7 @@ Represents a DOM node. It provides methods for:
 
 ### Component Interface
 The contract for UI parts:
-*   `ID()`: Unique identifier.
+*   `HandlerName()`: Unique identifier.
 *   `RenderHTML()`: Returns the static HTML string.
 *   `OnMount()`: Binds logic after the HTML is in the DOM.
 

@@ -90,10 +90,10 @@ The minimal interface that all components must implement for both SSR (backend) 
 ```go
 type Component interface {
 	// ID returns the unique identifier of the component's root element.
-	ID() string
+	HandlerName() string
 
 	// RenderHTML returns the full HTML string of the component.
-	// The root element of this HTML MUST have the id returned by ID().
+	// The root element of this HTML MUST have the id returned by HandlerName().
 	RenderHTML() string
 }
 ```

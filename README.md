@@ -47,7 +47,7 @@ func NewCounter(id string) *Counter {
 	return &Counter{id: id}
 }
 
-func (c *Counter) ID() string { return c.id }
+func (c *Counter) HandlerName() string { return c.id }
 
 func (c *Counter) RenderHTML() string {
 	return Html(
@@ -82,7 +82,7 @@ For complex components (like Forms), you can use event delegation at the root le
 
 ```go
 func (c *MyList) OnMount() {
-    root, _ := dom.Get(c.ID())
+    root, _ := dom.Get(c.HandlerName())
     
     // Catch clicks from any child button
     root.On("click", func(e dom.Event) {

@@ -16,7 +16,7 @@ func NewCounter(id string) *Counter {
     return &Counter{id: id}
 }
 
-func (c *Counter) ID() string { return c.id }
+func (c *Counter) HandlerName() string { return c.id }
 
 func (c *Counter) RenderHTML() string {
     // Note: We manually inject the ID into the root element.
@@ -61,7 +61,7 @@ func NewPage(id string) *Page {
     }
 }
 
-func (p *Page) ID() string { return p.id }
+func (p *Page) HandlerName() string { return p.id }
 
 func (p *Page) RenderHTML() string {
     return `
