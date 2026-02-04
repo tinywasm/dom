@@ -104,6 +104,14 @@ type Element interface {
 	//   elem.SetValue("Item ", 42)                // -> "Item 42"
 	SetValue(v ...any)
 
+	// --- Checkboxes ---
+
+	// Checked returns the current checked state of a checkbox or radio button.
+	Checked() bool
+
+	// SetChecked sets the checked state of a checkbox or radio button.
+	SetChecked(checked bool)
+
 	// --- Events ---
 
 	// Click registers a click event handler.

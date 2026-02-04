@@ -14,6 +14,18 @@ type DOM interface {
 	// 3. It calls component.OnMount() to bind events
 	Mount(parentID string, component Component) error
 
+	// OnHashChange registers a listener for URL hash changes.
+	OnHashChange(handler func(hash string))
+
+	// GetHash returns the current URL hash (e.g., "#help").
+	GetHash() string
+
+	// SetHash updates the URL hash.
+	SetHash(hash string)
+
+	// QueryAll finds all elements matching a CSS selector.
+	QueryAll(selector string) []Element
+
 	// Unmount removes a component from the DOM (by clearing the parent's HTML or removing the node)
 	// and cleans up any event listeners registered via the Element interface.
 	Unmount(component Component)

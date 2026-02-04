@@ -75,6 +75,16 @@ func (e *elementWasm) SetValue(v ...any) {
 	e.val.Set("value", fmt.Html(v...).String())
 }
 
+// Checked returns current checked state.
+func (e *elementWasm) Checked() bool {
+	return e.val.Get("checked").Bool()
+}
+
+// SetChecked sets checked state.
+func (e *elementWasm) SetChecked(checked bool) {
+	e.val.Set("checked", checked)
+}
+
 // Click registers a click event handler.
 func (e *elementWasm) Click(handler func(event Event)) {
 	e.On("click", handler)

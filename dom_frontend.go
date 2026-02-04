@@ -3,8 +3,9 @@
 package dom
 
 import (
-	"github.com/tinywasm/fmt"
 	"syscall/js"
+
+	"github.com/tinywasm/fmt"
 )
 
 // domWasm is the WASM implementation of the DOM interface.
@@ -84,6 +85,43 @@ func (d *domWasm) Mount(parentID string, component Component) error {
 
 	d.currentComponentID = ""
 	return nil
+}
+
+// OnHashChange registers a listener for window.hashchange.
+func (d *domWasm) OnHashChange(handler func(hash string)) {
+	fn := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		handler(d.GetHash())
+		return nil
+	})
+	js.Global().Get("window").Call("addEventListener", "hashchange", fn)
+	// Track global event if we want cleanup, but here it's likely app-lifetime
+}
+
+// GetHash returns current window.location.hash.
+func (d *domWasm) GetHash() string {
+	return js.Global().Get("location").Get("hash").String()
+}
+
+// SetHash updates window.location.hash.
+func (d *domWasm) SetHash(hash string) {
+	js.Global().Get("location").Set("hash", hash)
+}
+
+// QueryAll performs a document.querySelectorAll and wraps the results.
+func (d *domWasm) QueryAll(selector string) []Element {
+	nodes := d.document.Call("querySelectorAll", selector)
+	count := nodes.Length()
+	elems := make([]Element, count)
+	for i := 0; i < count; i++ {
+		val := nodes.Index(i)
+		id := val.Get("id").String()
+		elems[i] = &elementWasm{
+			val: val,
+			dom: d,
+			id:  id,
+		}
+	}
+	return elems
 }
 
 // Unmount removes a component from the DOM and cleans up event listeners.

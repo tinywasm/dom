@@ -30,6 +30,26 @@ func Log(v ...any) {
 	instance.Log(v...)
 }
 
+// OnHashChange registers a hash change listener.
+func OnHashChange(handler func(hash string)) {
+	instance.OnHashChange(handler)
+}
+
+// GetHash gets the current hash.
+func GetHash() string {
+	return instance.GetHash()
+}
+
+// SetHash sets the current hash.
+func SetHash(hash string) {
+	instance.SetHash(hash)
+}
+
+// QueryAll query elements.
+func QueryAll(selector string) []Element {
+	return instance.QueryAll(selector)
+}
+
 // SetLog sets the logging function.
 func SetLog(log func(v ...any)) {
 	shared.log = log

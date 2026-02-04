@@ -29,3 +29,8 @@ func (d *domBackend) Mount(parentID string, component Component) error {
 // Unmount is not implemented for backend.
 func (d *domBackend) Unmount(component Component) {
 }
+
+func (d *domBackend) OnHashChange(handler func(hash string)) {}
+func (d *domBackend) GetHash() string                        { return "" }
+func (d *domBackend) SetHash(hash string)                    {}
+func (d *domBackend) QueryAll(selector string) []Element     { return nil }
