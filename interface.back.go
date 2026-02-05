@@ -15,3 +15,10 @@ type JSRenderer interface {
 	Component
 	RenderJS() string
 }
+
+// SvgRenderer is an optional interface for components that need to inject SVG.
+// Only used in backend SSR.
+type SvgRenderer interface {
+	Component
+	IconSvg() map[string]string
+}
