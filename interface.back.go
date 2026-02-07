@@ -2,23 +2,17 @@
 
 package dom
 
-// CSSRenderer is an optional interface for components that need to inject CSS.
-// Only used in backend SSR.
-type CSSRenderer interface {
-	Component
+// CSSProvider is an optional interface for components that need to inject CSS.
+type CSSProvider interface {
 	RenderCSS() string
 }
 
-// JSRenderer is an optional interface for components that need to inject JS.
-// Only used in backend SSR.
-type JSRenderer interface {
-	Component
+// JSProvider is an optional interface for components that need to inject JS.
+type JSProvider interface {
 	RenderJS() string
 }
 
-// SvgRenderer is an optional interface for components that need to inject SVG.
-// Only used in backend SSR.
-type SvgRenderer interface {
-	Component
+// IconSvgProvider is an optional interface for components that provide SVG icons.
+type IconSvgProvider interface {
 	IconSvg() map[string]string
 }

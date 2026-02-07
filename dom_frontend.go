@@ -75,7 +75,7 @@ func (d *domWasm) Mount(parentID string, component Component) error {
 		return fmt.Errf("parent element not found: %s", parentID)
 	}
 
-	d.currentComponentID = component.HandlerName()
+	d.currentComponentID = component.ID()
 	parent.SetHTML(component.RenderHTML())
 
 	// Only call OnMount if component implements Mountable
@@ -131,7 +131,7 @@ func (d *domWasm) Unmount(component Component) {
 		mountable.OnUnmount()
 	}
 
-	id := component.HandlerName()
+	id := component.ID()
 	// Remove the element from the DOM
 	el, ok := d.Get(id)
 	if ok {

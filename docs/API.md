@@ -9,6 +9,7 @@ TinyDOM provides a global API for direct access to the DOM in WASM environments.
 Get(id string) (Element, bool)
 
 // Mount injects a component into a parent element.
+// If the component has an empty ID, it auto-generates a unique one (e.g., "tiny-1").
 Mount(parentID string, component Component) error
 
 // Unmount removes a component from the DOM.
@@ -83,20 +84,32 @@ type Event interface {
 ```
 
 
+## Identifiable Interface
+
+Provides unique identification for components.
+
+```go
+type Identifiable interface {
+	// ID returns the unique identifier.
+	ID() string
+	// SetID sets the unique identifier.
+	SetID(id string)
+}
+```
+
 ## Component Interface
 
-The minimal interface that all components must implement for both SSR (backend) and WASM (frontend):
+The minimal interface that all components must implement:
 
 ```go
 type Component interface {
-	// ID returns the unique identifier of the component's root element.
-	HandlerName() string
-
-	// RenderHTML returns the full HTML string of the component.
-	// The root element of this HTML MUST have the id returned by HandlerName().
-	RenderHTML() string
+	Identifiable
+	HTMLRenderer
 }
 ```
+
+> [!TIP]
+> Use `dom.BaseComponent` to automatically implement the `Identifiable` interface in your structs.
 
 ### WASM-Only: Mountable
 
@@ -126,12 +139,12 @@ For SSR with styles and scripts, optionally implement these interfaces:
 ```go
 //go:build !wasm
 
-type CSSRenderer interface {
+type CSSProvider interface {
 	Component
 	RenderCSS() string
 }
 
-type JSRenderer interface {
+type JSProvider interface {
 	Component
 	RenderJS() string
 }

@@ -8,7 +8,7 @@
 *   **Direct & Cached**: Instead of a heavy VDOM tree diffing algorithm, it uses an **ID-based caching mechanism**. It maps Go IDs to browser DOM nodes to minimize JS calls.
 *   **Standard HTML/CSS**: Components define their structure and style via standard string returns (`RenderHTML`, `RenderCSS`).
 *   **Dependency Injection**: The `DOM` is injected into components, not imported globally.
-*   **Manual ID Management**: Developers are responsible for assigning unique IDs to components.
+*   **Auto ID Management**: The library can automatically assign unique IDs to components during `Mount`.
 *   **Direct State Updates**: State changes update the DOM directly (e.g., `SetText`) to preserve focus and performance, rather than re-rendering the entire component.
 
 ## 2. Architecture
@@ -27,10 +27,9 @@ This avoids complex recursive mounting logic in the core library.
 
 ### Component Contract
 A component is a Go struct that:
-1.  Holds a reference to the `DOM` interface (injected).
-2.  Has a unique `ID`.
-3.  Implements methods to return its HTML/CSS.
-4.  Manages its own events via the `DOM` interface.
+1.  Implements the `Identifiable` interface (`ID()` and `SetID()`).
+2.  Implements methods to return its HTML/CSS.
+3.  Manages its own events via the global API.
 
 ## 3. API Overview
 
@@ -52,7 +51,8 @@ Represents a DOM node. It provides methods for:
 
 ### Component Interface
 The contract for UI parts:
-*   `HandlerName()`: Unique identifier.
+*   `ID()`: Unique identifier.
+*   `SetID(id string)`: Inject unique ID.
 *   `RenderHTML()`: Returns the static HTML string.
 *   `OnMount()`: Binds logic after the HTML is in the DOM.
 
@@ -69,7 +69,7 @@ The contract for UI parts:
 
 ## 6. Key Design Decisions
 
-1.  **ID Management**: **Manual**. The developer is responsible for ensuring unique IDs.
+1.  **ID Management**: **Automatic**. `dom.Mount` handles unique ID generation for you.
 2.  **Child Components**: **Manual Cascade**. Parent components explicitly include child HTML.
 3.  **State Updates**: **Direct Manipulation**. Components update specific DOM elements directly.
 4.  **Dynamic Lists**: **Node Manipulation**. To efficiently handle lists (add/remove items) without re-rendering the entire parent list, the API provides methods to append HTML and remove specific nodes.

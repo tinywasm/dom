@@ -11,7 +11,8 @@ func TestElementMethods(t *testing.T) {
 	doc := setupDOM(t)
 
 	// Mount a component to test on
-	comp := &MockComponent{id: "comp-elem"}
+	comp := &MockComponent{}
+	comp.SetID("comp-elem")
 	Mount("root", comp)
 
 	el, ok := Get("comp-elem")

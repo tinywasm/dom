@@ -27,7 +27,8 @@ func TestLifecycle(t *testing.T) {
 	})
 
 	t.Run("Mount Component", func(t *testing.T) {
-		comp := &MockComponent{id: "comp1"}
+		comp := &MockComponent{}
+		comp.SetID("comp1")
 		err := Mount("root", comp)
 		if err != nil {
 			t.Fatalf("Mount failed: %v", err)
@@ -47,7 +48,8 @@ func TestLifecycle(t *testing.T) {
 	})
 
 	t.Run("Unmount Component", func(t *testing.T) {
-		comp := &MockComponent{id: "comp1"}
+		comp := &MockComponent{}
+		comp.SetID("comp1")
 		// Note: comp1 is already mounted from previous test if we share DOM state,
 		// but setupDOM clears body. Wait, setupDOM is called once per TestLifecycle.
 		// So state persists between sub-tests.
@@ -65,7 +67,8 @@ func TestLifecycle(t *testing.T) {
 	})
 
 	t.Run("Mount Invalid Parent", func(t *testing.T) {
-		comp := &MockComponent{id: "comp-invalid"}
+		comp := &MockComponent{}
+		comp.SetID("comp-invalid")
 		err := Mount("invalid-parent-id", comp)
 		if err == nil {
 			t.Error("Expected error when mounting to invalid parent")
@@ -73,7 +76,8 @@ func TestLifecycle(t *testing.T) {
 	})
 
 	t.Run("Unmount No Listeners", func(t *testing.T) {
-		comp := &MockComponent{id: "comp-no-listeners"}
+		comp := &MockComponent{}
+		comp.SetID("comp-no-listeners")
 		// Need to add parent first
 		root, _ := Get("root")
 		root.AppendHTML(`<div id="root-no-listeners"></div>`)

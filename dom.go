@@ -1,8 +1,13 @@
 package dom
 
+import (
+	"github.com/tinywasm/fmt"
+)
+
 var (
-	shared   = &tinyDOM{}
-	instance = newDom(shared)
+	shared    = &tinyDOM{}
+	instance  = newDom(shared)
+	idCounter uint64
 )
 
 // tinyDOM contains shared functionality between backend and WASM implementations.
@@ -15,8 +20,17 @@ func Get(id string) (Element, bool) {
 	return instance.Get(id)
 }
 
+// generateID creates a unique ID for a component.
+func generateID() string {
+	idCounter++
+	return fmt.Sprint(idCounter)
+}
+
 // Mount injects a component into a parent element.
 func Mount(parentID string, component Component) error {
+	if component.ID() == "" {
+		component.SetID(generateID())
+	}
 	return instance.Mount(parentID, component)
 }
 

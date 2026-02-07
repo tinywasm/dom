@@ -39,21 +39,21 @@ import (
 )
 
 type Counter struct {
-	id    string
+	dom.BaseComponent // Optional: Provides ID() and SetID()
 	count int
 }
 
-func NewCounter(id string) *Counter {
-	return &Counter{id: id}
+func NewCounter() *Counter {
+	return &Counter{}
 }
 
-func (c *Counter) HandlerName() string { return c.id }
+// ID() is provided by dom.BaseComponent
 
 func (c *Counter) RenderHTML() string {
 	return Html(
-		"<div id='", c.id, "'>",
-			"<span id='", c.id, "-val'>", c.count, "</span>",
-			"<button id='", c.id, "-btn'>Increment</button>",
+		"<div id='", c.ID(), "'>",
+			"<span id='", c.ID(), "-val'>", c.count, "</span>",
+			"<button id='", c.ID(), "-btn'>Increment</button>",
 		"</div>",
 	).String()
 }
@@ -61,8 +61,8 @@ func (c *Counter) RenderHTML() string {
 // OnMount is called after HTML is injected.
 func (c *Counter) OnMount() {
 	// Use the global dom.Get() to find elements
-	valEl, _ := dom.Get(c.id + "-val")
-	btnEl, _ := dom.Get(c.id + "-btn")
+	valEl, _ := dom.Get(c.ID() + "-val")
+	btnEl, _ := dom.Get(c.ID() + "-btn")
 
 	// Bind events using the Element interface
 	btnEl.Click(func(e dom.Event) {
@@ -72,7 +72,7 @@ func (c *Counter) OnMount() {
 }
 
 func main() {
-	dom.Mount("app", NewCounter("my-counter"))
+	dom.Mount("app", NewCounter()) // Auto-generates ID if empty
 	select {}
 }
 ```
@@ -82,7 +82,7 @@ For complex components (like Forms), you can use event delegation at the root le
 
 ```go
 func (c *MyList) OnMount() {
-    root, _ := dom.Get(c.HandlerName())
+    root, _ := dom.Get(c.ID())
     
     // Catch clicks from any child button
     root.On("click", func(e dom.Event) {

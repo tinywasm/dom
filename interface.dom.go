@@ -34,13 +34,30 @@ type DOM interface {
 	Log(v ...any)
 }
 
+// HTMLRenderer renders the component's HTML structure
+type HTMLRenderer interface {
+	RenderHTML() string
+}
+
+// Identifiable provides a unique identifier for a component.
+type Identifiable interface {
+	ID() string
+	SetID(id string)
+}
+
 // Component is the minimal interface for components.
 // All components must implement this for both SSR (backend) and WASM (frontend).
 type Component interface {
-	// HandlerName returns the unique identifier of the component's root element.
-	HandlerName() string
+	Identifiable
+	HTMLRenderer
+}
 
-	// RenderHTML returns the full HTML string of the component.
-	// The root element of this HTML MUST have the id returned by HandlerName().
-	RenderHTML() string
+// AccessLevel is used to check permission for SSR injection.
+type AccessLevel interface {
+	AllowedRoles(action byte) []byte
+}
+
+// DataValidator validates complete data before action
+type DataValidator interface {
+	ValidateData(action byte, data ...any) error
 }

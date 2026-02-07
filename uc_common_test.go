@@ -9,16 +9,14 @@ import (
 
 // MockComponent is a simple component for testing.
 type MockComponent struct {
-	id      string
+	BaseComponent
 	mounted bool
 }
 
-func (c *MockComponent) HandlerName() string {
-	return c.id
-}
+// HandlerName removed in favor of Identifiable.ID() provided by BaseComponent
 
 func (c *MockComponent) RenderHTML() string {
-	return `<div id="` + c.id + `">Content</div>`
+	return `<div id="` + c.ID() + `">Content</div>`
 }
 
 func (c *MockComponent) OnMount() {
