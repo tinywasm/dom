@@ -19,11 +19,12 @@ The "Virtual DOM" in this context is a lightweight state manager that:
 2.  Tracks active event listeners for cleanup.
 3.  Handles mounting/unmounting of HTML strings into the actual DOM.
 
-### Child Component Strategy (Manual Cascade)
-To keep the framework minimal, parent components are responsible for:
-1.  Concatenating child HTML strings in their own `RenderHTML`.
-2.  Calling child `OnMount` methods within their own `OnMount`.
-This avoids complex recursive mounting logic in the core library.
+### Child Component Strategy (Recursive Lifecycle)
+TinyDOM automatically manages the lifecycle of child components.
+1.  Parent components include child HTML in their `RenderHTML`.
+2.  Parent components implement `Children()` to return a list of child components.
+3.  The library recursively calls `OnMount` and `OnUnmount` for all components in the tree.
+This ensures consistent initialization and automatic cleanup of event listeners.
 
 ### Component Contract
 A component is a Go struct that:
@@ -55,6 +56,7 @@ The contract for UI parts:
 *   `SetID(id string)`: Inject unique ID.
 *   `RenderHTML()`: Returns the static HTML string.
 *   `OnMount()`: Binds logic after the HTML is in the DOM.
+*   `Children()`: Returns child components for recursive lifecycle.
 
 
 ## 4. Usage Example
@@ -70,7 +72,7 @@ The contract for UI parts:
 ## 6. Key Design Decisions
 
 1.  **ID Management**: **Automatic**. `dom.Mount` handles unique ID generation for you.
-2.  **Child Components**: **Manual Cascade**. Parent components explicitly include child HTML.
+2.  **Child Components**: **Recursive Lifecycle**. The library automatically mounts and unmounts child components identified via the `Children()` method.
 3.  **State Updates**: **Direct Manipulation**. Components update specific DOM elements directly.
 4.  **Dynamic Lists**: **Node Manipulation**. To efficiently handle lists (add/remove items) without re-rendering the entire parent list, the API provides methods to append HTML and remove specific nodes.
     *   *Why?* `SetHTML` replaces all content. To remove just one item from a list of 100, we need `Element.Remove()` rather than re-generating the HTML for the remaining 99 items.

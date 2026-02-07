@@ -44,9 +44,9 @@ func (c *Counter) OnMount() {
 func (c *Counter) OnUnmount() {}
 ```
 
-## Nested Components (Manual Cascade)
+## Nested Components (Recursive Lifecycle)
 
-TinyDOM does not automatically mount child components. You must explicitly include their HTML and call their `OnMount` method. This gives you full control over the initialization order.
+TinyDOM automatically manages the lifecycle of child components. To enable this, implement the `Children()` method in your component. This allows `Mount` and `Unmount` to recursively call `OnMount` and `OnUnmount` for all descendants.
 
 ```go
 type Page struct {
@@ -60,6 +60,11 @@ func NewPage() *Page {
     }
 }
 
+// Children returns list of child components for automatic mounting/unmounting
+func (p *Page) Children() []dom.Component {
+    return []dom.Component{p.counter}
+}
+
 func (p *Page) RenderHTML() string {
     return `
         <div id="` + p.ID() + `" class="page">
@@ -71,16 +76,18 @@ func (p *Page) RenderHTML() string {
 }
 
 func (p *Page) OnMount() {
-    // Initialize Child
-    p.counter.OnMount()
-    
     // Page-specific logic...
+    // p.counter.OnMount() will be called automatically!
 }
 
 func (p *Page) OnUnmount() {
-    p.counter.OnUnmount()
+    // Page-specific logic...
+    // p.counter.OnUnmount() will be called automatically!
 }
 ```
+
+> [!TIP]
+> `dom.BaseComponent` provides a default implementation of `Children()` that returns `nil`, so you only need to override it if the component has children.
 
 ## CSS Handling
 

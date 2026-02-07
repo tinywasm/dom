@@ -6,36 +6,38 @@ When working with lists, you often want to add or remove items without re-render
 
 ```go
 type TodoList struct {
-    dom   tinywasm/dom.DOM
-    id    string
+    dom.BaseComponent
     items []*TodoItem
 }
 
 func (l *TodoList) RenderHTML() string {
     // Initial render might be empty or have initial items
-    return `<ul id="` + l.id + `"></ul>`
+    return `<ul id="` + l.ID() + `"></ul>`
 }
 
 func (l *TodoList) AddItem(label string) {
     // 1. Create new component
-    newItem := NewTodoItem(l.dom, l.id + "-item-" + uniqueID(), label)
+    newItem := NewTodoItem(l.ID() + "-item-" + uniqueID(), label)
     l.items = append(l.items, newItem)
 
     // 2. Append HTML to the list container
     // This is more efficient than re-rendering the whole <ul>
-    listEl := l.dom.Get(l.id)
+    listEl, _ := dom.Get(l.ID())
     listEl.AppendHTML(newItem.RenderHTML())
 
     // 3. Mount the new item (bind events)
-    newItem.OnMount()
+    // We use dom.MountOn(element, component) for dynamic additions
+    // or just call OnMount() if we know it's already in the DOM.
+    // In this framework, we prefer dom.Mount to ensure lifecycle.
+    dom.Mount(l.ID(), newItem) 
 }
 
-func (l *TodoList) RemoveItem(itemID string) {
-    // 1. Unmount handles everything:
+func (l *TodoList) RemoveItem(item *TodoItem) {
+    // 1. Unmount handles everything recursively:
     // - Finds the element by ID
     // - Removes it from the browser DOM
-    // - Cleans up all event listeners associated with this ID
-    l.dom.Unmount(itemID)
+    // - Cleans up all event listeners recursively
+    dom.Unmount(item)
 
     // 2. Update internal state (remove from slice)...
 }

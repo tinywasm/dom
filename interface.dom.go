@@ -39,6 +39,12 @@ type HTMLRenderer interface {
 	RenderHTML() string
 }
 
+// ChildProvider returns the child components of a component.
+type ChildProvider interface {
+	// Children returns the child components.
+	Children() []Component
+}
+
 // Identifiable provides a unique identifier for a component.
 type Identifiable interface {
 	ID() string
@@ -50,14 +56,5 @@ type Identifiable interface {
 type Component interface {
 	Identifiable
 	HTMLRenderer
-}
-
-// AccessLevel is used to check permission for SSR injection.
-type AccessLevel interface {
-	AllowedRoles(action byte) []byte
-}
-
-// DataValidator validates complete data before action
-type DataValidator interface {
-	ValidateData(action byte, data ...any) error
+	ChildProvider
 }

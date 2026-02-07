@@ -15,3 +15,8 @@ func (c *BaseComponent) ID() string {
 func (c *BaseComponent) SetID(id string) {
 	c.id = id
 }
+
+// Children returns the component's children (nil by default).
+func (c *BaseComponent) Children() []Component {
+	return nil
+}

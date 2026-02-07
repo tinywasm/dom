@@ -105,6 +105,8 @@ The minimal interface that all components must implement:
 type Component interface {
 	Identifiable
 	HTMLRenderer
+	// Children returns the component's children for recursive lifecycle management.
+	Children() []Component
 }
 ```
 

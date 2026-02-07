@@ -67,24 +67,38 @@ func (d *domWasm) Get(id string) (Element, bool) {
 	}, true
 }
 
-// Mount injects the component's HTML into the parent element and calls OnMount.
+// Mount injects the component's HTML into the parent element and calls OnMount recursively.
 func (d *domWasm) Mount(parentID string, component Component) error {
 	parent, ok := d.Get(parentID)
 	if !ok {
-		// Return a simple error instead of js.Error to avoid panics during formatting
 		return fmt.Errf("parent element not found: %s", parentID)
 	}
 
-	d.currentComponentID = component.ID()
 	parent.SetHTML(component.RenderHTML())
 
+	d.mountRecursive(component)
+	return nil
+}
+
+func (d *domWasm) mountRecursive(c Component) {
+	// Track the component being mounted so that event listeners registered
+	// during OnMount are associated with this component ID for auto-cleanup.
+	prevID := d.currentComponentID
+	d.currentComponentID = c.ID()
+	// Restore the previous ID after this component and its children are mounted
+	defer func() { d.currentComponentID = prevID }()
+
 	// Only call OnMount if component implements Mountable
-	if mountable, ok := component.(Mountable); ok {
+	if mountable, ok := c.(Mountable); ok {
 		mountable.OnMount()
 	}
 
-	d.currentComponentID = ""
-	return nil
+	// Recursively mount children
+	for _, child := range c.Children() {
+		if child != nil {
+			d.mountRecursive(child)
+		}
+	}
 }
 
 // OnHashChange registers a listener for window.hashchange.
@@ -94,7 +108,6 @@ func (d *domWasm) OnHashChange(handler func(hash string)) {
 		return nil
 	})
 	js.Global().Get("window").Call("addEventListener", "hashchange", fn)
-	// Track global event if we want cleanup, but here it's likely app-lifetime
 }
 
 // GetHash returns current window.location.hash.
@@ -124,21 +137,46 @@ func (d *domWasm) QueryAll(selector string) []Element {
 	return elems
 }
 
-// Unmount removes a component from the DOM and cleans up event listeners.
+// Unmount removes a component from the DOM and recursively cleans up children.
 func (d *domWasm) Unmount(component Component) {
-	// Only call OnUnmount if component implements Mountable
-	if mountable, ok := component.(Mountable); ok {
-		mountable.OnUnmount()
-	}
+	d.unmountRecursive(component)
 
-	id := component.ID()
 	// Remove the element from the DOM
+	id := component.ID()
 	el, ok := d.Get(id)
 	if ok {
 		el.Remove()
 	}
 
-	// Efficiently clean up listeners for this component
+	// Remove from cache
+	for i, item := range d.elementCache {
+		if item.id == id {
+			lastIdx := len(d.elementCache) - 1
+			d.elementCache[i] = d.elementCache[lastIdx]
+			d.elementCache = d.elementCache[:lastIdx]
+			break
+		}
+	}
+}
+
+func (d *domWasm) unmountRecursive(c Component) {
+	// Recursively cleanup children first
+	for _, child := range c.Children() {
+		if child != nil {
+			d.unmountRecursive(child)
+		}
+	}
+
+	// Call OnUnmount if component implements Mountable
+	if mountable, ok := c.(Mountable); ok {
+		mountable.OnUnmount()
+	}
+
+	d.cleanupListeners(c.ID())
+}
+
+// cleanupListeners releases all functions associated with the component ID.
+func (d *domWasm) cleanupListeners(id string) {
 	// Find listeners for this component
 	var listeners []string
 	compIndex := -1
@@ -153,12 +191,9 @@ func (d *domWasm) Unmount(component Component) {
 	if compIndex != -1 {
 		// Release each function
 		for _, key := range listeners {
-			// Find and release the function in eventFuncs
 			for i, ef := range d.eventFuncs {
 				if ef.key == key {
 					ef.fn.Release()
-					// Remove from eventFuncs (swap and pop or just copy)
-					// Since order doesn't matter much for internal storage, swap remove is faster
 					lastIdx := len(d.eventFuncs) - 1
 					d.eventFuncs[i] = d.eventFuncs[lastIdx]
 					d.eventFuncs = d.eventFuncs[:lastIdx]
@@ -171,15 +206,5 @@ func (d *domWasm) Unmount(component Component) {
 		lastIdx := len(d.componentListeners) - 1
 		d.componentListeners[compIndex] = d.componentListeners[lastIdx]
 		d.componentListeners = d.componentListeners[:lastIdx]
-	}
-
-	// Remove from cache
-	for i, item := range d.elementCache {
-		if item.id == id {
-			lastIdx := len(d.elementCache) - 1
-			d.elementCache[i] = d.elementCache[lastIdx]
-			d.elementCache = d.elementCache[:lastIdx]
-			break
-		}
 	}
 }

@@ -77,14 +77,41 @@ func main() {
 }
 ```
 
-## 🎯 Event Delegation
-For complex components (like Forms), you can use event delegation at the root level using `e.TargetID()` and `e.TargetValue()`:
+### 3. Nested Components
+`tinywasm/dom` supports recursive mounting and unmounting. To use this, implement the `Children()` method (or embed `BaseComponent` for the default `nil`).
 
+```go
+type MyList struct {
+    dom.BaseComponent
+    items []dom.Component
+}
+
+func (c *MyList) Children() []dom.Component {
+    return c.items
+}
+
+func (c *MyList) RenderHTML() string {
+    var html string
+    for _, item := range c.items {
+        html += item.RenderHTML()
+    }
+    return Html("<div id='", c.ID(), "'>", html, "</div>").String()
+}
+```
+
+When you call `dom.Mount(parent, myList)`, the library will:
+1. Inject the HTML.
+2. Call `OnMount` for `MyList`.
+3. Recursively call `OnMount` for all `items`.
+
+The same recursion applies to `Unmount`, ensuring all event listeners are cleaned up.
+
+## 🎯 Event Delegation
 ```go
 func (c *MyList) OnMount() {
     root, _ := dom.Get(c.ID())
     
-    // Catch clicks from any child button
+    // Catch clicks from any child button using TargetID
     root.On("click", func(e dom.Event) {
         id := e.TargetID() // "list-item-1", "list-item-2", etc.
         // Handle logic...
