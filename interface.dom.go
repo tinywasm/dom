@@ -59,13 +59,28 @@ type ChildProvider interface {
 
 // Identifiable provides a unique identifier for a component.
 type Identifiable interface {
-	ID() string
+	GetID() string
 	SetID(id string)
 }
 
 // ViewRenderer returns a Node tree for declarative UI.
 type ViewRenderer interface {
 	Render() Node
+}
+
+// Mountable is an optional interface for components that need initialization logic.
+type Mountable interface {
+	OnMount()
+}
+
+// Updatable is an optional interface for components that need update logic.
+type Updatable interface {
+	OnUpdate()
+}
+
+// Unmountable is an optional interface for components that need cleanup logic.
+type Unmountable interface {
+	OnUnmount()
 }
 
 // Component is the minimal interface for components.

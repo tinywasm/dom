@@ -13,10 +13,10 @@ type MockComponent struct {
 	Mounted bool
 }
 
-// HandlerName removed in favor of Identifiable.ID() provided by BaseComponent
+// HandlerName removed in favor of Identifiable.GetID() provided by BaseComponent
 
 func (c *MockComponent) RenderHTML() string {
-	return `<div id="` + c.ID() + `">Content</div>`
+	return `<div id="` + c.GetID() + `">Content</div>`
 }
 
 func (c *MockComponent) OnMount() {

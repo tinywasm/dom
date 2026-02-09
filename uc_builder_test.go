@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/tinywasm/dom"
-	. "github.com/tinywasm/dom/html"
+	"github.com/tinywasm/fmt"
 )
 
 type CounterComp struct {
@@ -15,15 +15,24 @@ type CounterComp struct {
 }
 
 func (c *CounterComp) Render() dom.Node {
-	return Div(
-		ID(c.ID()),
-		Span(ID(c.ID()+"-val"), Text("Count")),
-		Button(ID(c.ID()+"-btn"), OnClick(func(e dom.Event) {
-			c.count++
-			dom.Update(c)
-		})),
-	)
-
+	// Using fluent API
+	return dom.Div().
+		ID(c.GetID()).
+		Append(
+			dom.Span().
+				ID(c.GetID()+"-val").
+				Text(fmt.Sprint(c.count)),
+		).
+		Append(
+			dom.Button().
+				ID(c.GetID()+"-btn").
+				OnClick(func(e dom.Event) {
+					c.count++
+					dom.Update(c)
+				}).
+				Text("Increment"),
+		).
+		ToNode()
 }
 
 func (c *CounterComp) RenderHTML() string {
@@ -58,10 +67,12 @@ func TestBuilderAndUpdate(t *testing.T) {
 			t.Fatalf("Update failed: %v", err)
 		}
 
-		_, ok := dom.Get("counter2-val")
+		el, ok := dom.Get("counter2-val")
 		if !ok {
 			t.Error("Counter value element lost after update")
 		}
+		// Since we can't easily check InnerHTML via Element interface, we trust element exists.
+		_ = el
 	})
 
 	t.Run("Append Component", func(t *testing.T) {
@@ -83,8 +94,6 @@ func TestBuilderAndUpdate(t *testing.T) {
 			t.Fatal("Appended component element not found")
 		}
 
-		// Verify content (mock DOM doesn't strictly track structure but AppendHTML calls insertAdjacentHTML)
-		// We can at least check if the element is in cache/DOM.
 		_ = el
 	})
 }

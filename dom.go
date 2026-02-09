@@ -28,7 +28,7 @@ func generateID() string {
 
 // Render injects a component into a parent element.
 func Render(parentID string, component Component) error {
-	if component.ID() == "" {
+	if component.GetID() == "" {
 		component.SetID(generateID())
 	}
 	return instance.Render(parentID, component)
@@ -36,7 +36,7 @@ func Render(parentID string, component Component) error {
 
 // Append injects a component AFTER the last child of the parent element.
 func Append(parentID string, component Component) error {
-	if component.ID() == "" {
+	if component.GetID() == "" {
 		component.SetID(generateID())
 	}
 	return instance.Append(parentID, component)
@@ -50,7 +50,7 @@ func Mount(parentID string, component Component) error {
 
 // Hydrate attaches event listeners to existing HTML.
 func Hydrate(parentID string, component Component) error {
-	if component.ID() == "" {
+	if component.GetID() == "" {
 		// In hydration, we expect the ID to be there, but if not, we must set it
 		// to match what the server theoretically rendered (though ideally the component
 		// state should already have the ID).

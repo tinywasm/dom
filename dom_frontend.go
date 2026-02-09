@@ -88,9 +88,16 @@ func (d *domWasm) Render(parentID string, component Component) error {
 		return fmt.Errf("parent element not found: %s", parentID)
 	}
 
+	// Generate ID if not set
+	if component.GetID() == "" {
+		component.SetID(generateID())
+	}
+
 	html := ""
 	if vr, ok := component.(ViewRenderer); ok {
 		html = d.renderToHTML(vr.Render())
+	} else if el, ok := component.(*Builder); ok {
+		html = d.renderToHTML(el.ToNode())
 	} else {
 		html = component.RenderHTML()
 	}
@@ -119,6 +126,8 @@ func (d *domWasm) Append(parentID string, component Component) error {
 	html := ""
 	if vr, ok := component.(ViewRenderer); ok {
 		html = d.renderToHTML(vr.Render())
+	} else if el, ok := component.(*Builder); ok {
+		html = d.renderToHTML(el.ToNode())
 	} else {
 		html = component.RenderHTML()
 	}
@@ -197,7 +206,7 @@ func (d *domWasm) Hydrate(parentID string, component Component) error {
 
 // Update re-renders the component and replaces it in the DOM.
 func (d *domWasm) Update(component Component) error {
-	id := component.ID()
+	id := component.GetID()
 	el, ok := d.Get(id)
 	if !ok {
 		return fmt.Errf("component element not found: %s", id)
@@ -206,6 +215,8 @@ func (d *domWasm) Update(component Component) error {
 	html := ""
 	if vr, ok := component.(ViewRenderer); ok {
 		html = d.renderToHTML(vr.Render())
+	} else if el, ok := component.(*Builder); ok {
+		html = d.renderToHTML(el.ToNode())
 	} else {
 		html = component.RenderHTML()
 	}
@@ -233,6 +244,11 @@ func (d *domWasm) Update(component Component) error {
 	}
 	d.pendingEvents = nil
 
+	// Call OnUpdate hook if implemented
+	if updatable, ok := component.(Updatable); ok {
+		updatable.OnUpdate()
+	}
+
 	d.mountRecursive(component)
 	return nil
 }
@@ -241,7 +257,7 @@ func (d *domWasm) mountRecursive(c Component) {
 	// Track the component being mounted so that event listeners registered
 	// during OnMount are associated with this component ID for auto-cleanup.
 	prevID := d.currentComponentID
-	d.currentComponentID = c.ID()
+	d.currentComponentID = c.GetID()
 	// Restore the previous ID after this component and its children are mounted
 	defer func() { d.currentComponentID = prevID }()
 
@@ -299,7 +315,7 @@ func (d *domWasm) Unmount(component Component) {
 	d.unmountRecursive(component)
 
 	// Remove the element from the DOM
-	id := component.ID()
+	id := component.GetID()
 	el, ok := d.Get(id)
 	if ok {
 		el.Remove()
@@ -324,12 +340,12 @@ func (d *domWasm) unmountRecursive(c Component) {
 		}
 	}
 
-	// Call OnUnmount if component implements Mountable
-	if mountable, ok := c.(Mountable); ok {
-		mountable.OnUnmount()
+	// Call OnUnmount if component implements Unmountable
+	if unmountable, ok := c.(Unmountable); ok {
+		unmountable.OnUnmount()
 	}
 
-	d.cleanupListeners(c.ID())
+	d.cleanupListeners(c.GetID())
 }
 
 // cleanupListeners releases all functions associated with the component ID.
