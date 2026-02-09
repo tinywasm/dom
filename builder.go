@@ -5,7 +5,6 @@ import (
 )
 
 // Builder represents a DOM element in the fluent builder API.
-// It matches the "Element" struct concept in the prompt but renamed to avoid conflict with Element interface.
 type Builder struct {
 	tag      string
 	id       string
@@ -185,8 +184,7 @@ func Form() *Builder   { return &Builder{tag: "form"} }
 func A() *Builder      { return &Builder{tag: "a"} }
 func Img() *Builder    { return &Builder{tag: "img"} }
 
-// Helper for backward compatibility (moved from html/builder.go)
-// Tag creates a new Node.
+// Helper for backward compatibility
 func Tag(tag string, children ...any) Node {
 	n := Node{
 		Tag: tag,
@@ -210,7 +208,6 @@ func Tag(tag string, children ...any) Node {
 	return n
 }
 
-// Helper types for Tag function
 type attr struct {
 	key string
 	val string
@@ -221,7 +218,6 @@ type event struct {
 	handler func(Event)
 }
 
-// Helpers for Tag function
 func TAttr(k, v string) attr   { return attr{k, v} }
 func ID(id string) attr       { return attr{"id", id} }
 func Class(class string) attr { return attr{"class", class} }

@@ -11,7 +11,7 @@ type DOM interface {
 	Get(id string) (Element, bool)
 
 	// Render injects a component into a parent element.
-	// 1. It calls component.RenderHTML() (or component.Render() if available)
+	// 1. It calls component.Render() (if ViewRenderer) or component.RenderHTML()
 	// 2. It sets the content of the parent element (found by parentID)
 	// 3. It calls component.OnMount() to bind events
 	Render(parentID string, component Component) error

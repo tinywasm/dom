@@ -9,42 +9,79 @@ import (
 )
 
 func TestFluentBuilder(t *testing.T) {
-	// Test chainable API
-	el := dom.Div().
-		ID("test").
-		Class("container").
-		Append(dom.Button().Text("Click"))
+	_ = dom.SetupDOM(t)
 
-	if el.GetID() != "test" {
-		t.Error("ID not set")
-	}
+	t.Run("Chainable Methods", func(t *testing.T) {
+		el := dom.Div().
+			ID("test-id").
+			Class("cls1").
+			Class("cls2").
+			Attr("data-foo", "bar").
+			Text("Hello")
 
-	node := el.ToNode()
-	if node.Tag != "div" {
-		t.Errorf("Expected tag div, got %s", node.Tag)
-	}
+		// Verify builder state by converting to Node
+		node := el.ToNode()
 
-	// Check attrs
-	hasID := false
-	hasClass := false
-	for _, attr := range node.Attrs {
-		if attr.Key == "id" && attr.Value == "test" {
-			hasID = true
+		if node.Tag != "div" {
+			t.Errorf("Expected tag div, got %s", node.Tag)
 		}
-		if attr.Key == "class" && attr.Value == "container" {
-			hasClass = true
+
+		// Check attributes
+		idFound := false
+		classFound := false
+		attrFound := false
+
+		for _, a := range node.Attrs {
+			if a.Key == "id" && a.Value == "test-id" {
+				idFound = true
+			}
+			if a.Key == "class" && a.Value == "cls1 cls2" {
+				classFound = true
+			}
+			if a.Key == "data-foo" && a.Value == "bar" {
+				attrFound = true
+			}
 		}
-	}
 
-	if !hasID {
-		t.Error("ID attribute missing in Node")
-	}
-	if !hasClass {
-		t.Error("Class attribute missing in Node")
-	}
+		if !idFound {
+			t.Error("ID attribute not found or incorrect")
+		}
+		if !classFound {
+			t.Error("Class attribute not found or incorrect")
+		}
+		if !attrFound {
+			t.Error("Custom attribute not found or incorrect")
+		}
 
-	// Check children
-	if len(node.Children) != 1 {
-		t.Errorf("Expected 1 child, got %d", len(node.Children))
-	}
+		// Check children
+		if len(node.Children) != 1 {
+			t.Errorf("Expected 1 child, got %d", len(node.Children))
+		}
+		if txt, ok := node.Children[0].(string); !ok || txt != "Hello" {
+			t.Error("Child text incorrect")
+		}
+	})
+
+	t.Run("Nested Builders", func(t *testing.T) {
+		parent := dom.Div().
+			ID("parent").
+			Append(
+				dom.Span().ID("child").Text("Child"),
+			)
+
+		node := parent.ToNode()
+		if len(node.Children) != 1 {
+			t.Fatal("Expected 1 child")
+		}
+
+		// Children are Nodes now (converted by ToNode)
+		childNode, ok := node.Children[0].(dom.Node)
+		if !ok {
+			t.Fatal("Child is not a Node")
+		}
+
+		if childNode.Tag != "span" {
+			t.Errorf("Expected child tag span, got %s", childNode.Tag)
+		}
+	})
 }

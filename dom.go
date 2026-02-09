@@ -51,10 +51,10 @@ func Mount(parentID string, component Component) error {
 // Hydrate attaches event listeners to existing HTML.
 func Hydrate(parentID string, component Component) error {
 	if component.GetID() == "" {
-		// In hydration, we expect the ID to be there, but if not, we must set it
-		// to match what the server theoretically rendered (though ideally the component
-		// state should already have the ID).
-		// For now, let's allow it to generate if empty, but usually it should be set.
+		// In hydration, we assume the ID matches what was rendered.
+		// If not provided, we generate one, but this might not match server-rendered ID.
+		// Ideally hydration requires consistent IDs.
+		component.SetID(generateID())
 	}
 	return instance.Hydrate(parentID, component)
 }
