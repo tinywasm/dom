@@ -28,10 +28,26 @@ func (c *BaseComponent) generateID() string {
 }
 
 // Chainable lifecycle helpers
+
+// Mount injects the component into a parent element.
+func (c *BaseComponent) Mount(parentID string) *BaseComponent {
+	Render(parentID, c)
+	return c
+}
+
+// Render re-renders the component in place.
+// This is used for chaining, e.g., component.SetState(...).Render()
+func (c *BaseComponent) Render() *BaseComponent {
+	Update(c)
+	return c
+}
+
+// Update triggers a re-render of the component.
 func (c *BaseComponent) Update() error {
 	return Update(c)
 }
 
+// Unmount removes the component from the DOM.
 func (c *BaseComponent) Unmount() {
 	Unmount(c)
 }

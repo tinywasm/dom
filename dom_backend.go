@@ -21,47 +21,24 @@ func (d *domBackend) Get(id string) (Element, bool) {
 	return nil, false
 }
 
-// Render is not implemented for backend, but we provide a helper to render a component to HTML string.
+// Render is not implemented for backend.
 func (d *domBackend) Render(parentID string, component Component) error {
-	// In SSR, Render usually just returns the HTML to be sent to the client.
-	// Since DOM interface expects a side effect on a parent, and there is no real DOM,
-	// we just return an error or log it.
-	// However, for consistency, we should allow it to work if we want to "simulated" render.
-	return fmt.Err("Render to parent is not supported on backend. Use RenderHTML() instead.")
+	return fmt.Errorf("Render to parent is not supported on backend. Use RenderHTML() directly on component.")
 }
 
-func (d *domBackend) renderToHTML(n Node) string {
-	s := "<" + n.Tag
-	for _, attr := range n.Attrs {
-		s += " " + attr.Key + "='" + attr.Value + "'"
-	}
-	s += ">"
-	for _, child := range n.Children {
-		switch v := child.(type) {
-		case Node:
-			s += d.renderToHTML(v)
-		case string:
-			s += v
-		case Component:
-			s += v.RenderHTML()
-		}
-	}
-	s += "</" + n.Tag + ">"
-	return s
-}
-
+// Append is not implemented for backend.
 func (d *domBackend) Append(parentID string, component Component) error {
-	return fmt.Err("Append not supported in backend/stub")
+	return fmt.Errorf("Append not supported in backend/stub")
 }
 
 // Hydrate is not implemented for backend.
 func (d *domBackend) Hydrate(parentID string, component Component) error {
-	return fmt.Err("Hydrate is not implemented for backend")
+	return fmt.Errorf("Hydrate is not implemented for backend")
 }
 
 // Update is not implemented for backend.
 func (d *domBackend) Update(component Component) error {
-	return fmt.Err("Update is not implemented for backend")
+	return fmt.Errorf("Update is not implemented for backend")
 }
 
 // Unmount is not implemented for backend.
