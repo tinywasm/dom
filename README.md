@@ -24,18 +24,21 @@ go get github.com/tinywasm/dom
 
 ### 1. Global API vs Instance
 `tinywasm/dom` provides two ways to interact with the DOM:
-- **Global API**: Quick and easy functions like `dom.Get(id)`, `dom.Mount(parent, comp)`. Most applications should use this.
+When you call `dom.Mount(parent, myList)`, the library will:
 - **Instance API**: If you need multiple isolated DOM instances (e.g., for testing or multiple root contexts).
 
 ### 2. Go Component
 Here is a simple "Counter" component example.
 
 ```go
+//go:build wasm
+
 package main
 
 import (
 	"github.com/tinywasm/dom"
-	. "github.com/tinywasm/fmt"
+	. "github.com/tinywasm/dom/html" // DSL for UI
+	"github.com/tinywasm/fmt"
 )
 
 type Counter struct {
@@ -49,31 +52,42 @@ func NewCounter() *Counter {
 
 // ID() is provided by dom.BaseComponent
 
-func (c *Counter) RenderHTML() string {
-	return Html(
-		"<div id='", c.ID(), "'>",
-			"<span id='", c.ID(), "-val'>", c.count, "</span>",
-			"<button id='", c.ID(), "-btn'>Increment</button>",
-		"</div>",
-	).String()
-}
-
-// OnMount is called after HTML is injected.
-func (c *Counter) OnMount() {
-	// Use the global dom.Get() to find elements
-	valEl, _ := dom.Get(c.ID() + "-val")
-	btnEl, _ := dom.Get(c.ID() + "-btn")
-
-	// Bind events using the Element interface
-	btnEl.Click(func(e dom.Event) {
-		c.count++
-		valEl.SetText(c.count)
-	})
+func (c *Counter) Render() dom.Node {
+	return Div(
+		ID(c.ID()),
+		Span(ID(c.ID()+"-val"), Text(fmt.Sprint(c.count))),
+		Button(Text("Increment"), OnClick(func(e dom.Event) {
+			c.count++
+			dom.Update(c)
+		})),
+	)
 }
 
 func main() {
-	dom.Mount("app", NewCounter()) // Auto-generates ID if empty
+	dom.Render("app", NewCounter()) // Auto-generates ID if empty
 	select {}
+}
+```
+
+> [!TIP]
+> **Why the dot-import (`.`)?**
+> We recommend dot-importing `github.com/tinywasm/dom/html` to create a clean DSL for your UI. This allows you to write `Div(...)` instead of `html.Div(...)`.
+> Because the builder functions are in their own subpackage, this is safe and doesn't collide with the core `dom` runtime functions like `Render` or `Update`.
+
+### 2. Manual Control (Legacy)
+If you prefer strings or need complex manual control:
+
+```go
+func (c *Counter) RenderHTML() string {
+	return Html("<div id='", c.ID(), "'>...</div>").String()
+}
+
+func (c *Counter) OnMount() {
+	btn, _ := dom.Get(c.ID() + "-btn")
+	btn.Click(func(e dom.Event) {
+		c.count++
+		dom.Update(c) // Still works!
+	})
 }
 ```
 
@@ -99,7 +113,7 @@ func (c *MyList) RenderHTML() string {
 }
 ```
 
-When you call `dom.Mount(parent, myList)`, the library will:
+When you call `dom.Render(parent, myList)`, the library will:
 1. Inject the HTML.
 2. Call `OnMount` for `MyList`.
 3. Recursively call `OnMount` for all `items`.

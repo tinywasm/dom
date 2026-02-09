@@ -43,7 +43,7 @@ const (
 type DOM interface {
     // Existing methods
     Get(id string) (Element, bool)
-    Mount(parentID string, component Component) error
+    Render(parentID string, component Component) error
     Unmount(component Component)
     Log(v ...any)
     
@@ -103,8 +103,8 @@ func main() {
     // Pass CRUDP as Sender to tinywasm/dom
     dom := tinywasm/dom.New(log.Println, cp)
     
-    // Mount components
-    dom.Mount("app", myComponent)
+    // Render components
+    dom.Render("app", myComponent)
 }
 ```
 

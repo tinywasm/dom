@@ -31,7 +31,7 @@ func (c *EventComponent) OnMount() {
 }
 
 func TestEvents(t *testing.T) {
-	doc := setupDOM(t)
+	doc := SetupDOM(t)
 
 	t.Run("Basic Event Handling", func(t *testing.T) {
 		comp := &MockComponent{}

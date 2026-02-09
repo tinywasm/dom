@@ -26,12 +26,42 @@ func generateID() string {
 	return fmt.Sprint(idCounter)
 }
 
-// Mount injects a component into a parent element.
-func Mount(parentID string, component Component) error {
+// Render injects a component into a parent element.
+func Render(parentID string, component Component) error {
 	if component.ID() == "" {
 		component.SetID(generateID())
 	}
-	return instance.Mount(parentID, component)
+	return instance.Render(parentID, component)
+}
+
+// Append injects a component AFTER the last child of the parent element.
+func Append(parentID string, component Component) error {
+	if component.ID() == "" {
+		component.SetID(generateID())
+	}
+	return instance.Append(parentID, component)
+}
+
+// Mount is an alias for Render for backward compatibility.
+// Deprecated: use Render instead.
+func Mount(parentID string, component Component) error {
+	return Render(parentID, component)
+}
+
+// Hydrate attaches event listeners to existing HTML.
+func Hydrate(parentID string, component Component) error {
+	if component.ID() == "" {
+		// In hydration, we expect the ID to be there, but if not, we must set it
+		// to match what the server theoretically rendered (though ideally the component
+		// state should already have the ID).
+		// For now, let's allow it to generate if empty, but usually it should be set.
+	}
+	return instance.Hydrate(parentID, component)
+}
+
+// Update re-renders a component.
+func Update(component Component) error {
+	return instance.Update(component)
 }
 
 // Unmount removes a component from the DOM.

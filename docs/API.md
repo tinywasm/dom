@@ -8,9 +8,19 @@ TinyDOM provides a global API for direct access to the DOM in WASM environments.
 // Get retrieves an element by its ID.
 Get(id string) (Element, bool)
 
-// Mount injects a component into a parent element.
+// Render injects a component into a parent element.
 // If the component has an empty ID, it auto-generates a unique one (e.g., "tiny-1").
-Mount(parentID string, component Component) error
+Render(parentID string, component Component) error
+
+// Append injects a component AFTER the last child of the parent element.
+Append(parentID string, component Component) error
+
+// Hydrate attaches event listeners to existing HTML without re-rendering it.
+// Use this for server-rendered components to enable interactivity without flicker.
+Hydrate(parentID string, component Component) error
+
+// Update re-renders a component in-place.
+Update(component Component) error
 
 // Unmount removes a component from the DOM.
 Unmount(component Component)
@@ -97,18 +107,30 @@ type Identifiable interface {
 }
 ```
 
-## Component Interface
-
-The minimal interface that all components must implement:
-
-```go
 type Component interface {
 	Identifiable
 	HTMLRenderer
-	// Children returns the component's children for recursive lifecycle management.
-	Children() []Component
+	ChildProvider
 }
-```
+
+// ViewRenderer provides a declarative way to render the component.
+type ViewRenderer interface {
+	Render() Node
+}
+
+// EventHandler represents a DOM event handler in the declarative builder.
+type EventHandler struct {
+	Name    string
+	Handler func(Event)
+}
+
+// Node represents a DOM element in the declarative Builder API.
+type Node struct {
+	Tag      string
+	Attrs    []fmt.KeyValue
+	Events   []EventHandler
+	Children []any
+}
 
 > [!TIP]
 > Use `dom.BaseComponent` to automatically implement the `Identifiable` interface in your structs.
@@ -132,7 +154,7 @@ type Mountable interface {
 }
 ```
 
-**Key Change**: Components no longer receive a `DOM` instance as a parameter in `OnMount()`. Instead, they use the global `dom.Get()`, `dom.Mount()`, etc.
+**Key Change**: Components no longer receive a `DOM` instance as a parameter in `OnMount()`. Instead, they use the global `dom.Get()`, `dom.Render()`, etc.
 
 ### Backend-Only: CSS and JS Rendering
 
@@ -153,3 +175,15 @@ type JSProvider interface {
 ```
 
 These methods are only called on the backend for server-side rendering.
+
+## Access Control
+
+The `AccessLevel` interface provides access control information for components.
+
+```go
+type AccessLevel interface {
+	// AllowedRoles returns the list of allowed roles for a given action (e.g., 'r' for read).
+	// Returning "*" grants access to everyone.
+	AllowedRoles(action byte) []byte
+}
+```

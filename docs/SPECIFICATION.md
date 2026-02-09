@@ -5,25 +5,25 @@
 *   **Minimalist**: A thin wrapper over the browser DOM, optimized for TinyGo/WASM.
 *   **No `syscall/js` exposure**: Components interact *only* with the TinyDOM Go interface.
 *   **Zero StdLib**: Uses `tinystring` for string manipulation to keep binary size small.
-*   **Direct & Cached**: Instead of a heavy VDOM tree diffing algorithm, it uses an **ID-based caching mechanism**. It maps Go IDs to browser DOM nodes to minimize JS calls.
-*   **Standard HTML/CSS**: Components define their structure and style via standard string returns (`RenderHTML`, `RenderCSS`).
+*   **Declarative Builder**: Uses a type-safe `dom.Node` builder pattern (`html.Div`, etc., from the `dom/html` subpackage) for UI construction.
+*   **Direct & Cached**: Instead of a heavy VDOM tree diffing algorithm, it uses an **ID-based caching mechanism** and direct DOM updates via `dom.Update()`.
+*   **Standard HTML/CSS**: Components can still use raw HTML strings if needed, but the Builder API is preferred.
 *   **Dependency Injection**: The `DOM` is injected into components, not imported globally.
-*   **Auto ID Management**: The library can automatically assign unique IDs to components during `Mount`.
-*   **Direct State Updates**: State changes update the DOM directly (e.g., `SetText`) to preserve focus and performance, rather than re-rendering the entire component.
+*   **Auto ID Management**: The library automatically assigns unique IDs to components and event targets.
+*   **Reactivity**: Components trigger their own re-render via `dom.Update(c)`.
 
 ## 2. Architecture
 
-### The "Virtual" DOM (Cache Layer)
-The "Virtual DOM" in this context is a lightweight state manager that:
-1.  Maintains a map of `ID -> JS Reference`.
-2.  Tracks active event listeners for cleanup.
-3.  Handles mounting/unmounting of HTML strings into the actual DOM.
+### The "Virtual" DOM (Builder Layer)
+The library uses a lightweight `Node` tree structure to:
+1.  Define the UI properties (Tags, Attributes, Events) declaratively.
+2.  Auto-generate IDs for elements with event listeners.
+3.  Hydrate events automatically on the client side.
 
-### Child Component Strategy (Recursive Lifecycle)
+### Child Component Strategy
 TinyDOM automatically manages the lifecycle of child components.
-1.  Parent components include child HTML in their `RenderHTML`.
-2.  Parent components implement `Children()` to return a list of child components.
-3.  The library recursively calls `OnMount` and `OnUnmount` for all components in the tree.
+1.  Parent components include child `Node`s or `Component`s in their `Render` method.
+2.  The library recursively calls `Render` and `OnMount`.
 This ensures consistent initialization and automatic cleanup of event listeners.
 
 ### Component Contract
@@ -41,22 +41,25 @@ The architecture relies on three core interfaces:
 ### DOM Interface
 The entry point injected into components. It handles:
 *   **Caching**: `Get(id)` returns a cached `Element`.
-*   **Lifecycle**: `Mount` injects HTML and binds events; `Unmount` cleans them up.
+*   **Lifecycle**: `Render` injects HTML and binds events; `Unmount` cleans them up; `Update` re-renders in place.
 
 ### Element Interface
 Represents a DOM node. It provides methods for:
 *   **Content**: `SetText`, `SetHTML`, `AppendHTML`.
 *   **Attributes**: `AddClass`, `SetAttr`, `Value`.
 *   **Events**: `Click`, `On` (with automatic cleanup).
-*   **Manipulation**: `Remove` (for dynamic lists).
+*   **Manipulation**: `Remove`.
 
 ### Component Interface
 The contract for UI parts:
 *   `ID()`: Unique identifier.
 *   `SetID(id string)`: Inject unique ID.
-*   `RenderHTML()`: Returns the static HTML string.
-*   `OnMount()`: Binds logic after the HTML is in the DOM.
-*   `Children()`: Returns child components for recursive lifecycle.
+*   `Render()`: Returns the `dom.Node` tree (Preferred).
+*   `RenderHTML()`: Returns static HTML string (Legacy/Fallback).
+*   `Children()`: Returns child components (Optional with BaseComponent).
+
+### HTML Builder (`dom/html`)
+A dedicated subpackage for declarative UI construction. It can be dot-imported (`. "github.com/tinywasm/dom/html"`) for a cleaner DSL.
 
 
 ## 4. Usage Example
@@ -71,13 +74,13 @@ The contract for UI parts:
 
 ## 6. Key Design Decisions
 
-1.  **ID Management**: **Automatic**. `dom.Mount` handles unique ID generation for you.
-2.  **Child Components**: **Recursive Lifecycle**. The library automatically mounts and unmounts child components identified via the `Children()` method.
-3.  **State Updates**: **Direct Manipulation**. Components update specific DOM elements directly.
-4.  **Dynamic Lists**: **Node Manipulation**. To efficiently handle lists (add/remove items) without re-rendering the entire parent list, the API provides methods to append HTML and remove specific nodes.
-    *   *Why?* `SetHTML` replaces all content. To remove just one item from a list of 100, we need `Element.Remove()` rather than re-generating the HTML for the remaining 99 items.
-5.  **CSS Strategy**: **Global**. Standard CSS classes.
-6.  **Routing**: **Single Page Root**. The "Index" is the root component. Page changes are handled by unmounting the current view component and mounting the new one into a main container.
+1.  **ID Management**: **Automatic**. `dom.Render` and `html.Tag` handle unique ID generation for you.
+2.  **Child Components**: **Recursive Lifecycle**. The library automatically renders and unmounts child components found in the `Node` tree.
+3.  **State Updates**: **Component-Level Reactivity**. Calling `dom.Update(component)` re-renders the component and replaces it in the DOM.
+4.  **Builder API**: **Declarative vs Imperative**. We use a Builder pattern (`html.Div`) to ensure type safety, correct HTML structure, and automated event wiring. The builder functions are housed in the `dom/html` subpackage to facilitate dot-imports without polluting the root `dom` namespace.
+5.  **TinyGo Optimization**: **Slices vs Maps**. To minimize WASM binary size and improve performance, elements use `[]fmt.KeyValue` for attributes and `[]EventHandler` for events instead of Go maps. Linear scans are faster for typical attribute counts (< 10) and avoid the heavy map runtime support.
+6.  **CSS Strategy**: **Global**. Standard CSS classes.
+7.  **Routing**: **Single Page Root**. The "Index" is the root component.
 
 ## 7. API Design Philosophy (Q&A)
 
@@ -85,7 +88,7 @@ The contract for UI parts:
 *   **Flexibility**: Often you need to manipulate a plain DOM element (like a container `<div>` or an input) that doesn't have a corresponding Go Component struct.
 *   **Decoupling**: It allows the DOM to be treated as a collection of nodes, regardless of how they were created.
 
-### Why `Mount(parentID string, ...)`?
+### Why `Render(parentID string, ...)`?
 *   The target container (e.g., `<div id="app">`) usually exists in the static HTML or is part of a parent's template. It is rarely a Component itself.
 
 ### Decoupled Components

@@ -10,7 +10,7 @@ import (
 // MockComponent is a simple component for testing.
 type MockComponent struct {
 	BaseComponent
-	mounted bool
+	Mounted bool
 }
 
 // HandlerName removed in favor of Identifiable.ID() provided by BaseComponent
@@ -20,14 +20,14 @@ func (c *MockComponent) RenderHTML() string {
 }
 
 func (c *MockComponent) OnMount() {
-	c.mounted = true
+	c.Mounted = true
 }
 
 func (c *MockComponent) OnUnmount() {
-	c.mounted = false
+	c.Mounted = false
 }
 
-func setupDOM(t *testing.T) js.Value {
+func SetupDOM(t *testing.T) js.Value {
 	doc := js.Global().Get("document")
 	body := doc.Get("body")
 

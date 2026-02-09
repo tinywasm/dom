@@ -8,7 +8,7 @@ import (
 )
 
 func TestElementMethods(t *testing.T) {
-	doc := setupDOM(t)
+	doc := SetupDOM(t)
 
 	// Mount a component to test on
 	comp := &MockComponent{}

@@ -7,41 +7,49 @@ TinyDOM components are simple Go structs. They don't require a complex build ste
 A basic component needs an ID and any state it needs to display. You can use the global `dom` functions in `OnMount()` to interact with elements.
 
 ```go
+import (
+	"fmt"
+
+	"github.com/tinywasm/dom"
+	. "github.com/tinywasm/dom/html"
+)
+
 type Counter struct {
-    dom.BaseComponent
-    count int
+	dom.BaseComponent
+	count int
 }
 
 func NewCounter() *Counter {
-    return &Counter{}
+	return &Counter{}
 }
 
-// ID() and SetID() are inherited from dom.BaseComponent
-
-func (c *Counter) RenderHTML() string {
-    // Note: We manually inject the ID into the root element.
-    return `
-        <div id="` + c.ID() + `" class="counter">
-            <span id="` + c.ID() + `-val">` + fmt.Sprint(c.count) + `</span>
-            <button id="` + c.ID() + `-btn">Increment</button>
-        </div>
-    `
+// Render uses the declarative Builder API
+func (c *Counter) Render() dom.Node {
+	return Div(
+		ID(c.ID()),
+		Class("counter"),
+		Span(
+			ID(c.ID()+"-val"),
+			Text(fmt.Sprint(c.count)),
+		),
+		Button(
+			ID(c.ID()+"-btn"),
+			Text("Increment"),
+			// Event handling is now inline and declarative!
+			OnClick(func(e dom.Event) {
+				c.count++
+				// Update re-renders the component in place
+				dom.Update(c)
+			}),
+		),
+	)
 }
 
+// OnMount is optional if you only use inline events,
+// but still available for complex logic.
 func (c *Counter) OnMount() {
-    // 1. Get references to elements we need to interact with using global API
-    valEl, _ := dom.Get(c.ID() + "-val")
-    btnEl, _ := dom.Get(c.ID() + "-btn")
-
-    // 2. Bind events
-    btnEl.Click(func(e dom.Event) {
-        c.count++
-        // 3. Direct Update: Update only the text node, preserving the rest of the DOM
-        valEl.SetText(c.count)
-    })
+	dom.Log("Counter mounted:", c.ID())
 }
-
-func (c *Counter) OnUnmount() {}
 ```
 
 ## Nested Components (Recursive Lifecycle)
@@ -60,29 +68,25 @@ func NewPage() *Page {
     }
 }
 
-// Children returns list of child components for automatic mounting/unmounting
+```go
+type Page struct {
+	dom.BaseComponent
+	counter *Counter
+}
+
+// Children MUST be implemented to ensure the child's lifecycle (OnMount) is triggered.
 func (p *Page) Children() []dom.Component {
-    return []dom.Component{p.counter}
+	return []dom.Component{p.counter}
 }
 
-func (p *Page) RenderHTML() string {
-    return `
-        <div id="` + p.ID() + `" class="page">
-            <h1>My Page</h1>
-            <!-- Include Child HTML -->
-            ` + p.counter.RenderHTML() + `
-        </div>
-    `
-}
-
-func (p *Page) OnMount() {
-    // Page-specific logic...
-    // p.counter.OnMount() will be called automatically!
-}
-
-func (p *Page) OnUnmount() {
-    // Page-specific logic...
-    // p.counter.OnUnmount() will be called automatically!
+func (p *Page) Render() dom.Node {
+	return Div(
+		ID(p.ID()),
+		Class("page"),
+		H1(Text("My Page")),
+		// Embedding a child component directly
+		p.counter,
+	)
 }
 ```
 
@@ -124,10 +128,13 @@ func (c *MyComponent) IconSvg() map[string]string {
 }
 ```
 
-In your `RenderHTML`, you can then use the icon:
+In your `Render`, you can then use the icon helper (if you create one) or just `html.Raw`:
 ```go
-func (c *MyComponent) RenderHTML() string {
-    return `<svg class="icon"><use href="#my-icon-id"></use></svg>`
+func (c *MyComponent) Render() dom.Node {
+	return Div(
+		Class("icon"),
+		Raw(`<svg><use href="#my-icon-id"></use></svg>`),
+	)
 }
 ```
 
@@ -135,7 +142,23 @@ func (c *MyComponent) RenderHTML() string {
 
 To keep WASM binaries tiny, separate your component logic using build tags:
 
-1.  **Main File** (`comp.go`): Interface, struct, and `RenderHTML`.
+1.  **Main File** (`comp.go`): Interface, struct, and `Render`.
 2.  **SSR File** (`ssr.go`): `//go:build !wasm`. Define `RenderCSS` and `IconSvg` here.
-3.  **WASM File** (`front.go`): `//go:build wasm`. Define `OnMount` and event logic here.
+3.  **WASM File** (`front.go`): `//go:build wasm`. Define complex `OnMount` logic here (if needed).
+
+## SSR & Hydration
+
+To avoid a flicker when your application starts, use `dom.Hydrate` for the initial server-rendered module.
+
+1.  **Server (Backend)**: Renders the full HTML.
+2.  **Client (WASM)**: Calls `dom.Hydrate` on the root element. This attaches all event listeners and triggers `OnMount` without replacing the existing DOM nodes.
+
+```go
+// main.go (WASM)
+func main() {
+    // Correct way to "awaken" server-rendered HTML
+    dom.Hydrate("app", myRootComponent)
+    select {}
+}
+```
 

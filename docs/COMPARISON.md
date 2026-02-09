@@ -47,7 +47,7 @@ Libraries like Vecty or Go-App implement a full Virtual DOM (React-style) with d
 *   **Tiny Binaries**: Designed specifically for TinyGo.
 *   **No Magic**: You know exactly when and how the DOM updates.
 *   **Memory Safety**: Solves the hardest part of Go WASM (event listener leaks).
-*   **Backend Compatible**: Interfaces allow mocking for server-side rendering or testing.
+*   **Backend Compatible**: Interfaces allow mocking for server-side mounting or testing.
 
 ### ❌ Cons of TinyDOM
 *   **Manual Updates**: You must explicitly tell the DOM what to change (`SetText`). No "reactive" magic.

@@ -25,6 +25,11 @@ type domWasm struct {
 		keys []string
 	}
 	currentComponentID string // Tracks the component being mounted
+	pendingEvents      []struct {
+		id      string
+		name    string
+		handler func(Event)
+	}
 }
 
 // newDom returns a new instance of the domWasm.
@@ -48,7 +53,16 @@ func (d *domWasm) Get(id string) (Element, bool) {
 		}
 	}
 
-	val := d.document.Call("getElementById", id)
+	var val js.Value
+	switch id {
+	case "body":
+		val = d.document.Get("body")
+	case "head":
+		val = d.document.Get("head")
+	default:
+		val = d.document.Call("getElementById", id)
+	}
+
 	if val.IsNull() || val.IsUndefined() {
 		d.Log("tinywasm/dom: element with id", id, "not found") // Optional logging
 		return nil, false
@@ -67,14 +81,157 @@ func (d *domWasm) Get(id string) (Element, bool) {
 	}, true
 }
 
-// Mount injects the component's HTML into the parent element and calls OnMount recursively.
-func (d *domWasm) Mount(parentID string, component Component) error {
+// Render injects the component's content into the parent element and calls OnMount recursively.
+func (d *domWasm) Render(parentID string, component Component) error {
 	parent, ok := d.Get(parentID)
 	if !ok {
 		return fmt.Errf("parent element not found: %s", parentID)
 	}
 
-	parent.SetHTML(component.RenderHTML())
+	html := ""
+	if vr, ok := component.(ViewRenderer); ok {
+		html = d.renderToHTML(vr.Render())
+	} else {
+		html = component.RenderHTML()
+	}
+
+	parent.SetHTML(html)
+
+	// Wire events
+	for _, pe := range d.pendingEvents {
+		if el, ok := d.Get(pe.id); ok {
+			el.On(pe.name, pe.handler)
+		}
+	}
+	d.pendingEvents = nil
+
+	d.mountRecursive(component)
+	return nil
+}
+
+// Append injects the component's content after the last child of the parent element.
+func (d *domWasm) Append(parentID string, component Component) error {
+	parent, ok := d.Get(parentID)
+	if !ok {
+		return fmt.Errf("parent element not found: %s", parentID)
+	}
+
+	html := ""
+	if vr, ok := component.(ViewRenderer); ok {
+		html = d.renderToHTML(vr.Render())
+	} else {
+		html = component.RenderHTML()
+	}
+
+	parent.AppendHTML(html)
+
+	// Wire events
+	for _, pe := range d.pendingEvents {
+		if el, ok := d.Get(pe.id); ok {
+			el.On(pe.name, pe.handler)
+		}
+	}
+	d.pendingEvents = nil
+
+	d.mountRecursive(component)
+	return nil
+}
+
+func (d *domWasm) renderToHTML(n Node) string {
+	// If the node has events but no ID, generate one
+	id := ""
+	for i, attr := range n.Attrs {
+		if attr.Key == "id" {
+			id = attr.Value
+			break
+		}
+		_ = i
+	}
+
+	if len(n.Events) > 0 && id == "" {
+		id = "auto-" + generateID()
+		n.Attrs = append(n.Attrs, fmt.KeyValue{Key: "id", Value: id})
+	}
+
+	for _, ev := range n.Events {
+		d.pendingEvents = append(d.pendingEvents, struct {
+			id      string
+			name    string
+			handler func(Event)
+		}{id, ev.Name, ev.Handler})
+	}
+
+	s := "<" + n.Tag
+	for _, attr := range n.Attrs {
+		s += " " + attr.Key + "='" + attr.Value + "'"
+	}
+	s += ">"
+	for _, child := range n.Children {
+		switch v := child.(type) {
+		case Node:
+			s += d.renderToHTML(v)
+		case string:
+			s += v
+		case Component:
+			// For components, we just render their placeholder
+			// the recursive mount will handle their own Render/OnMount
+			s += v.RenderHTML()
+		}
+	}
+	s += "</" + n.Tag + ">"
+	return s
+}
+
+// Hydrate attaches event listeners to existing HTML.
+func (d *domWasm) Hydrate(parentID string, component Component) error {
+	_, ok := d.Get(parentID)
+	if !ok {
+		return fmt.Errf("parent element not found: %s", parentID)
+	}
+
+	// We don't call parent.SetHTML(component.RenderHTML())
+	// We just activate the lifecycle
+	d.mountRecursive(component)
+	return nil
+}
+
+// Update re-renders the component and replaces it in the DOM.
+func (d *domWasm) Update(component Component) error {
+	id := component.ID()
+	el, ok := d.Get(id)
+	if !ok {
+		return fmt.Errf("component element not found: %s", id)
+	}
+
+	html := ""
+	if vr, ok := component.(ViewRenderer); ok {
+		html = d.renderToHTML(vr.Render())
+	} else {
+		html = component.RenderHTML()
+	}
+
+	// Replace the element in the DOM
+	elWasm := el.(*elementWasm)
+	elWasm.val.Set("outerHTML", html)
+
+	// Since outerHTML replaced the element, we need to clear it from cache
+	// so that the next Get(id) retrieves the new one.
+	for i, item := range d.elementCache {
+		if item.id == id {
+			lastIdx := len(d.elementCache) - 1
+			d.elementCache[i] = d.elementCache[lastIdx]
+			d.elementCache = d.elementCache[:lastIdx]
+			break
+		}
+	}
+
+	// Wire events
+	for _, pe := range d.pendingEvents {
+		if el, ok := d.Get(pe.id); ok {
+			el.On(pe.name, pe.handler)
+		}
+	}
+	d.pendingEvents = nil
 
 	d.mountRecursive(component)
 	return nil

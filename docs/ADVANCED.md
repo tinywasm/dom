@@ -5,41 +5,42 @@
 When working with lists, you often want to add or remove items without re-rendering the entire list. This preserves the state (focus, scroll position) of other items.
 
 ```go
+import (
+	"github.com/tinywasm/dom"
+	. "github.com/tinywasm/dom/html"
+)
+
 type TodoList struct {
-    dom.BaseComponent
-    items []*TodoItem
+	dom.BaseComponent
+	items []*TodoItem
 }
 
-func (l *TodoList) RenderHTML() string {
-    // Initial render might be empty or have initial items
-    return `<ul id="` + l.ID() + `"></ul>`
+func (l *TodoList) Render() dom.Node {
+	// Initial render might be empty or have initial items
+	// We use a container that we can append to later.
+	return Ul(ID(l.ID()))
 }
 
 func (l *TodoList) AddItem(label string) {
-    // 1. Create new component
-    newItem := NewTodoItem(l.ID() + "-item-" + uniqueID(), label)
-    l.items = append(l.items, newItem)
+	// 1. Create new component
+	newItem := NewTodoItem(l.ID() + "-item-" + uniqueID(), label)
+	l.items = append(l.items, newItem)
 
-    // 2. Append HTML to the list container
-    // This is more efficient than re-rendering the whole <ul>
-    listEl, _ := dom.Get(l.ID())
-    listEl.AppendHTML(newItem.RenderHTML())
-
-    // 3. Mount the new item (bind events)
-    // We use dom.MountOn(element, component) for dynamic additions
-    // or just call OnMount() if we know it's already in the DOM.
-    // In this framework, we prefer dom.Mount to ensure lifecycle.
-    dom.Mount(l.ID(), newItem) 
+	// 2. Append the new item to the list
+	// dom.Append renders the component and injects it at the end of the parent
+	// while preserving the existing DOM (and focus).
+	// It also automatically handles lifecycle (OnMount / Events).
+	dom.Append(l.ID(), newItem)
 }
 
 func (l *TodoList) RemoveItem(item *TodoItem) {
-    // 1. Unmount handles everything recursively:
-    // - Finds the element by ID
-    // - Removes it from the browser DOM
-    // - Cleans up all event listeners recursively
-    dom.Unmount(item)
+	// 1. Unmount handles everything recursively:
+	// - Finds the element by ID
+	// - Removes it from the browser DOM
+	// - Cleans up all event listeners recursively
+	dom.Unmount(item)
 
-    // 2. Update internal state (remove from slice)...
+	// 2. Update internal state (remove from slice)...
 }
 ```
 

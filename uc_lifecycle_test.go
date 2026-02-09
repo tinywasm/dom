@@ -7,7 +7,7 @@ import (
 )
 
 func TestLifecycle(t *testing.T) {
-	_ = setupDOM(t)
+	_ = SetupDOM(t)
 
 	t.Run("Get Existing Element", func(t *testing.T) {
 		el, ok := Get("root")
@@ -26,6 +26,24 @@ func TestLifecycle(t *testing.T) {
 		}
 	})
 
+	t.Run("Get Body and Head", func(t *testing.T) {
+		body, ok := Get("body")
+		if !ok {
+			t.Error("Expected to find body")
+		}
+		if body == nil {
+			t.Error("Body elem should not be nil")
+		}
+
+		head, ok := Get("head")
+		if !ok {
+			t.Error("Expected to find head")
+		}
+		if head == nil {
+			t.Error("Head elem should not be nil")
+		}
+	})
+
 	t.Run("Mount Component", func(t *testing.T) {
 		comp := &MockComponent{}
 		comp.SetID("comp1")
@@ -34,7 +52,7 @@ func TestLifecycle(t *testing.T) {
 			t.Fatalf("Mount failed: %v", err)
 		}
 
-		if !comp.mounted {
+		if !comp.Mounted {
 			t.Error("OnMount was not called")
 		}
 
@@ -56,7 +74,7 @@ func TestLifecycle(t *testing.T) {
 
 		Unmount(comp)
 
-		if comp.mounted {
+		if comp.Mounted {
 			// See previous note about new struct instance
 		}
 

@@ -1,5 +1,7 @@
 package dom
 
+import "github.com/tinywasm/fmt"
+
 // DOM is the main entry point for interacting with the browser.
 // It is designed to be injected into your components.
 type DOM interface {
@@ -8,11 +10,18 @@ type DOM interface {
 	// Returns the element and a boolean indicating if it was found.
 	Get(id string) (Element, bool)
 
-	// Mount injects a component into a parent element.
-	// 1. It calls component.RenderHTML()
-	// 2. It sets the InnerHTML of the parent element (found by parentID)
+	// Render injects a component into a parent element.
+	// 1. It calls component.RenderHTML() (or component.Render() if available)
+	// 2. It sets the content of the parent element (found by parentID)
 	// 3. It calls component.OnMount() to bind events
-	Mount(parentID string, component Component) error
+	Render(parentID string, component Component) error
+
+	// Append injects a component AFTER the last child of the parent element.
+	// Useful for dynamic lists.
+	Append(parentID string, component Component) error
+
+	// Hydrate attaches event listeners to existing HTML without re-rendering it.
+	Hydrate(parentID string, component Component) error
 
 	// OnHashChange registers a listener for URL hash changes.
 	OnHashChange(handler func(hash string))
@@ -29,6 +38,9 @@ type DOM interface {
 	// Unmount removes a component from the DOM (by clearing the parent's HTML or removing the node)
 	// and cleans up any event listeners registered via the Element interface.
 	Unmount(component Component)
+
+	// Update re-renders the component in its current position in the DOM.
+	Update(component Component) error
 
 	// Log provides logging functionality using the log function passed to New.
 	Log(v ...any)
@@ -51,10 +63,29 @@ type Identifiable interface {
 	SetID(id string)
 }
 
+// ViewRenderer returns a Node tree for declarative UI.
+type ViewRenderer interface {
+	Render() Node
+}
+
 // Component is the minimal interface for components.
 // All components must implement this for both SSR (backend) and WASM (frontend).
 type Component interface {
 	Identifiable
 	HTMLRenderer
 	ChildProvider
+}
+
+// EventHandler represents a DOM event handler in the declarative builder.
+type EventHandler struct {
+	Name    string
+	Handler func(Event)
+}
+
+// Node represents a DOM node in the declarative builder.
+type Node struct {
+	Tag      string
+	Attrs    []fmt.KeyValue
+	Events   []EventHandler
+	Children []any // Can be Node, string, or Component
 }

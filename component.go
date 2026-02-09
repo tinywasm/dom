@@ -20,3 +20,8 @@ func (c *BaseComponent) SetID(id string) {
 func (c *BaseComponent) Children() []Component {
 	return nil
 }
+
+// RenderHTML returns an empty string by default, satisfying the HTMLRenderer interface.
+func (c *BaseComponent) RenderHTML() string {
+	return ""
+}
