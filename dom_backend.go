@@ -23,22 +23,22 @@ func (d *domBackend) Get(id string) (Element, bool) {
 
 // Render is not implemented for backend.
 func (d *domBackend) Render(parentID string, component Component) error {
-	return fmt.Errorf("Render to parent is not supported on backend. Use RenderHTML() directly on component.")
+	return fmt.Errf("Render to parent is not supported on backend. Use RenderHTML() directly on component.")
 }
 
 // Append is not implemented for backend.
 func (d *domBackend) Append(parentID string, component Component) error {
-	return fmt.Errorf("Append not supported in backend/stub")
+	return fmt.Errf("Append not supported in backend/stub")
 }
 
 // Hydrate is not implemented for backend.
 func (d *domBackend) Hydrate(parentID string, component Component) error {
-	return fmt.Errorf("Hydrate is not implemented for backend")
+	return fmt.Errf("Hydrate is not implemented for backend")
 }
 
 // Update is not implemented for backend.
 func (d *domBackend) Update(component Component) error {
-	return fmt.Errorf("Update is not implemented for backend")
+	return fmt.Errf("Update is not implemented for backend")
 }
 
 // Unmount is not implemented for backend.
