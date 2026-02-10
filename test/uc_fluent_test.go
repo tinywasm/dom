@@ -9,7 +9,7 @@ import (
 )
 
 func TestFluentBuilder(t *testing.T) {
-	_ = dom.SetupDOM(t)
+	_ = SetupDOM(t)
 
 	t.Run("Chainable Methods", func(t *testing.T) {
 		el := dom.Div().

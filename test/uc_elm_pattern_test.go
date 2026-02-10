@@ -29,7 +29,7 @@ func (c *CounterElm) Increment() {
 }
 
 func TestElmPattern(t *testing.T) {
-	_ = dom.SetupDOM(t)
+	_ = SetupDOM(t)
 
 	t.Run("State Update and Re-render", func(t *testing.T) {
 		c := &CounterElm{count: 0}

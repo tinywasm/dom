@@ -1,8 +1,9 @@
 //go:build wasm
 
-package dom
+package dom_test
 
 import (
+	"github.com/tinywasm/dom"
 	"syscall/js"
 	"testing"
 )
@@ -13,9 +14,9 @@ func TestElementMethods(t *testing.T) {
 	// Mount a component to test on
 	comp := &MockComponent{}
 	comp.SetID("comp-elem")
-	Mount("root", comp)
+	dom.Mount("root", comp)
 
-	el, ok := Get("comp-elem")
+	el, ok := dom.Get("comp-elem")
 	if !ok {
 		t.Fatal("Component element not found")
 	}
@@ -86,18 +87,18 @@ func TestElementMethods(t *testing.T) {
 	})
 
 	t.Run("Remove Edge Cases", func(t *testing.T) {
-		root, _ := Get("root")
+		root, _ := dom.Get("root")
 		root.AppendHTML(`<div id="temp-remove"></div>`)
-		tempEl, _ := Get("temp-remove")
+		tempEl, _ := dom.Get("temp-remove")
 		tempEl.Remove()
 		// Calling remove again should be fine
 		tempEl.Remove()
 	})
 
 	t.Run("Focus and SetValue", func(t *testing.T) {
-		root, _ := Get("root")
+		root, _ := dom.Get("root")
 		root.AppendHTML(`<input id="test-focus">`)
-		inputEl, _ := Get("test-focus")
+		inputEl, _ := dom.Get("test-focus")
 
 		inputEl.SetValue("new-value")
 		if inputEl.Value() != "new-value" {

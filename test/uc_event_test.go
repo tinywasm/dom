@@ -1,8 +1,9 @@
 //go:build wasm
 
-package dom
+package dom_test
 
 import (
+	"github.com/tinywasm/dom"
 	"syscall/js"
 	"testing"
 )
@@ -17,14 +18,14 @@ type EventComponent struct {
 func (c *EventComponent) OnMount() {
 	c.MockComponent.OnMount()
 	// Register events using the global API
-	el, ok := Get(c.id)
+	el, ok := dom.Get(c.GetID())
 	if ok {
-		el.On("click", func(e Event) {
+		el.On("click", func(e dom.Event) {
 			c.clickCount++
 			e.PreventDefault()
 			e.StopPropagation()
 		})
-		el.On("custom-test", func(e Event) {
+		el.On("custom-test", func(e dom.Event) {
 			c.customCount++
 		})
 	}
@@ -36,11 +37,11 @@ func TestEvents(t *testing.T) {
 	t.Run("Basic Event Handling", func(t *testing.T) {
 		comp := &MockComponent{}
 		comp.SetID("comp-basic-event")
-		Mount("root", comp)
-		el, _ := Get("comp-basic-event")
+		dom.Mount("root", comp)
+		el, _ := dom.Get("comp-basic-event")
 
 		clicked := false
-		el.Click(func(e Event) {
+		el.Click(func(e dom.Event) {
 			clicked = true
 		})
 
@@ -57,7 +58,7 @@ func TestEvents(t *testing.T) {
 		comp := &EventComponent{}
 		comp.SetID("comp-events")
 
-		Mount("root", comp)
+		dom.Mount("root", comp)
 
 		// Trigger events
 		rawEl := doc.Call("getElementById", "comp-events")
@@ -72,7 +73,7 @@ func TestEvents(t *testing.T) {
 		}
 
 		// Unmount and verify cleanup
-		Unmount(comp)
+		dom.Unmount(comp)
 
 		// Trigger again
 		// Note: Since element is removed from DOM, dispatching event on 'rawEl' (which is detached)
@@ -93,12 +94,12 @@ func TestEvents(t *testing.T) {
 	})
 
 	t.Run("Event Target Value", func(t *testing.T) {
-		root, _ := Get("root")
+		root, _ := dom.Get("root")
 		root.AppendHTML(`<input id="test-input" value="initial">`)
-		el, _ := Get("test-input")
+		el, _ := dom.Get("test-input")
 
 		var targetVal string
-		el.On("input", func(e Event) {
+		el.On("input", func(e dom.Event) {
 			targetVal = e.TargetValue()
 		})
 

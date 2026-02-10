@@ -1,8 +1,9 @@
 //go:build wasm
 
-package dom
+package dom_test
 
 import (
+	"github.com/tinywasm/dom"
 	"testing"
 )
 
@@ -10,7 +11,7 @@ func TestLifecycle(t *testing.T) {
 	_ = SetupDOM(t)
 
 	t.Run("Get Existing Element", func(t *testing.T) {
-		el, ok := Get("root")
+		el, ok := dom.Get("root")
 		if !ok {
 			t.Fatal("Expected to find root element")
 		}
@@ -20,14 +21,14 @@ func TestLifecycle(t *testing.T) {
 	})
 
 	t.Run("Get Non-Existing Element", func(t *testing.T) {
-		_, ok := Get("non-existent")
+		_, ok := dom.Get("non-existent")
 		if ok {
 			t.Error("Expected not to find non-existent element")
 		}
 	})
 
 	t.Run("Get Body and Head", func(t *testing.T) {
-		body, ok := Get("body")
+		body, ok := dom.Get("body")
 		if !ok {
 			t.Error("Expected to find body")
 		}
@@ -35,7 +36,7 @@ func TestLifecycle(t *testing.T) {
 			t.Error("Body elem should not be nil")
 		}
 
-		head, ok := Get("head")
+		head, ok := dom.Get("head")
 		if !ok {
 			t.Error("Expected to find head")
 		}
@@ -47,7 +48,7 @@ func TestLifecycle(t *testing.T) {
 	t.Run("Mount Component", func(t *testing.T) {
 		comp := &MockComponent{}
 		comp.SetID("comp1")
-		err := Mount("root", comp)
+		err := dom.Mount("root", comp)
 		if err != nil {
 			t.Fatalf("Mount failed: %v", err)
 		}
@@ -56,7 +57,7 @@ func TestLifecycle(t *testing.T) {
 			t.Error("OnMount was not called")
 		}
 
-		el, ok := Get("comp1")
+		el, ok := dom.Get("comp1")
 		if !ok {
 			t.Fatal("Component element not found in DOM")
 		}
@@ -72,13 +73,13 @@ func TestLifecycle(t *testing.T) {
 		// but setupDOM clears body. Wait, setupDOM is called once per TestLifecycle.
 		// So state persists between sub-tests.
 
-		Unmount(comp)
+		dom.Unmount(comp)
 
 		if comp.Mounted {
 			// See previous note about new struct instance
 		}
 
-		_, ok := Get("comp1")
+		_, ok := dom.Get("comp1")
 		if ok {
 			t.Error("Element should be removed from cache")
 		}
@@ -87,7 +88,7 @@ func TestLifecycle(t *testing.T) {
 	t.Run("Mount Invalid Parent", func(t *testing.T) {
 		comp := &MockComponent{}
 		comp.SetID("comp-invalid")
-		err := Mount("invalid-parent-id", comp)
+		err := dom.Mount("invalid-parent-id", comp)
 		if err == nil {
 			t.Error("Expected error when mounting to invalid parent")
 		}
@@ -97,19 +98,19 @@ func TestLifecycle(t *testing.T) {
 		comp := &MockComponent{}
 		comp.SetID("comp-no-listeners")
 		// Need to add parent first
-		root, _ := Get("root")
+		root, _ := dom.Get("root")
 		root.AppendHTML(`<div id="root-no-listeners"></div>`)
-		Mount("root-no-listeners", comp)
-		Unmount(comp)
+		dom.Mount("root-no-listeners", comp)
+		dom.Unmount(comp)
 	})
 
 	t.Run("Get Cache Hit", func(t *testing.T) {
-		_, ok := Get("root")
+		_, ok := dom.Get("root")
 		if !ok {
 			t.Fatal("Root not found")
 		}
 
-		el, ok := Get("root")
+		el, ok := dom.Get("root")
 		if !ok {
 			t.Fatal("Root not found in cache")
 		}

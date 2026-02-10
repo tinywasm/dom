@@ -27,7 +27,7 @@ func (c *StaticComp) RenderHTML() string {
 }
 
 func TestHybridRendering(t *testing.T) {
-	_ = dom.SetupDOM(t)
+	_ = SetupDOM(t)
 
 	t.Run("Render Dynamic Component (DSL)", func(t *testing.T) {
 		c := &DynamicComp{}

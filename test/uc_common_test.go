@@ -1,15 +1,16 @@
 //go:build wasm
 
-package dom
+package dom_test
 
 import (
+	"github.com/tinywasm/dom"
 	"syscall/js"
 	"testing"
 )
 
 // MockComponent is a simple component for testing.
 type MockComponent struct {
-	BaseComponent
+	dom.BaseComponent
 	Mounted bool
 }
 

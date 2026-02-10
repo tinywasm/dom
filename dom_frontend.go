@@ -136,6 +136,17 @@ func (d *domWasm) Render(parentID string, component Component) error {
 // Update re-renders the component and replaces it in the DOM.
 func (d *domWasm) Update(component Component) error {
 	id := component.GetID()
+
+	// Resolve the full outer component from tracked references.
+	// This fixes Go embedding: BaseComponent.Update() passes *BaseComponent,
+	// but mountedComponents stores the original *Counter/*Header pointer.
+	for _, item := range d.mountedComponents {
+		if item.id == id {
+			component = item.comp
+			break
+		}
+	}
+
 	el, ok := d.Get(id)
 	if !ok {
 		return fmt.Errf("component element not found: %s", id)

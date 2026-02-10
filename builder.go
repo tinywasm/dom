@@ -9,7 +9,7 @@ type Builder struct {
 	tag      string
 	id       string
 	classes  []string
-	attrs    map[string]string
+	attrs    []fmt.KeyValue
 	events   []EventHandler
 	children []any
 }
@@ -28,10 +28,13 @@ func (b *Builder) Class(class string) *Builder {
 
 // Attr sets an attribute on the element.
 func (b *Builder) Attr(key, val string) *Builder {
-	if b.attrs == nil {
-		b.attrs = make(map[string]string)
+	for i, attr := range b.attrs {
+		if attr.Key == key {
+			b.attrs[i].Value = val
+			return b
+		}
 	}
-	b.attrs[key] = val
+	b.attrs = append(b.attrs, fmt.KeyValue{Key: key, Value: val})
 	return b
 }
 
@@ -92,9 +95,7 @@ func (b *Builder) ToNode() Node {
 		}
 		attrs = append(attrs, fmt.KeyValue{Key: "class", Value: classStr})
 	}
-	for k, v := range b.attrs {
-		attrs = append(attrs, fmt.KeyValue{Key: k, Value: v})
-	}
+	attrs = append(attrs, b.attrs...)
 
 	// Convert children
 	var children []any
@@ -183,4 +184,3 @@ func Input() *Builder  { return &Builder{tag: "input"} }
 func Form() *Builder   { return &Builder{tag: "form"} }
 func A() *Builder      { return &Builder{tag: "a"} }
 func Img() *Builder    { return &Builder{tag: "img"} }
-

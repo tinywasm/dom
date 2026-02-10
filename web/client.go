@@ -61,13 +61,13 @@ func (h *Header) RenderHTML() string {
 }
 
 func main() {
-	// Render static header
+	// Render static header into body
 	header := &Header{}
-	dom.Render("app", header)
+	dom.Render("body", header)
 
-	// Render dynamic counter
+	// Append dynamic counter to body
 	counter := &Counter{count: 0}
-	dom.Append("app", counter)
+	dom.Append("body", counter)
 
 	fmt.Println("App mounted successfully")
 	select {}

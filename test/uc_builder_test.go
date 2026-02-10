@@ -20,12 +20,12 @@ func (c *CounterComp) Render() dom.Node {
 		ID(c.GetID()).
 		Append(
 			dom.Span().
-				ID(c.GetID()+"-val").
+				ID(c.GetID() + "-val").
 				Text(fmt.Sprint(c.count)),
 		).
 		Append(
 			dom.Button().
-				ID(c.GetID()+"-btn").
+				ID(c.GetID() + "-btn").
 				OnClick(func(e dom.Event) {
 					c.count++
 					dom.Update(c)
@@ -40,7 +40,7 @@ func (c *CounterComp) RenderHTML() string {
 }
 
 func TestBuilderAndUpdate(t *testing.T) {
-	_ = dom.SetupDOM(t)
+	_ = SetupDOM(t)
 
 	t.Run("Render using Builder", func(t *testing.T) {
 		c := &CounterComp{}
