@@ -3,39 +3,39 @@
 package main
 
 import (
-	"github.com/tinywasm/dom"
+	. "github.com/tinywasm/dom"
 	"github.com/tinywasm/fmt"
 )
 
 // Example 1: Simple counter with Elm architecture
 type Counter struct {
-	dom.BaseComponent
+	*Element
 	count int
 }
 
-func (c *Counter) Render() dom.Node {
-	return dom.Div().
+func (c *Counter) Render() Node {
+	return Div().
 		Class("counter").
 		Add(
-			dom.Button().
+			Button().
 				Text("-").
 				OnClick(c.Decrement),
-			dom.Span().
+			Span().
 				Class("count").
 				Text(fmt.Sprint(c.count)),
-			dom.Button().
+			Button().
 				Text("+").
 				OnClick(c.Increment),
 		).
 		ToNode()
 }
 
-func (c *Counter) Increment(e dom.Event) {
+func (c *Counter) Increment(e Event) {
 	c.count++
 	c.Update()
 }
 
-func (c *Counter) Decrement(e dom.Event) {
+func (c *Counter) Decrement(e Event) {
 	c.count--
 	c.Update()
 }
@@ -46,7 +46,7 @@ func (c *Counter) OnMount() {
 
 // Example 2: Static component with string HTML
 type Header struct {
-	dom.BaseComponent
+	*Element
 }
 
 func (h *Header) RenderHTML() string {
@@ -57,12 +57,12 @@ func (h *Header) RenderHTML() string {
 
 func main() {
 	// Render static header into body
-	header := &Header{}
-	dom.Render("body", header)
+	header := &Header{Element: &Element{}}
+	Render("body", header)
 
 	// Append dynamic counter to body
-	counter := &Counter{count: 0}
-	dom.Append("body", counter)
+	counter := &Counter{Element: &Element{}, count: 0}
+	Append("body", counter)
 
 	fmt.Println("App mounted successfully")
 	select {}

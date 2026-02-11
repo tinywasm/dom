@@ -5,8 +5,8 @@
 TinyDOM provides a global API for direct access to the DOM in WASM environments.
 
 ```go
-// Get retrieves an element by its ID.
-Get(id string) (Element, bool)
+// Get retrieves an element reference by its ID.
+Get(id string) (Reference, bool)
 
 // Render injects a component into a parent element.
 // If the component has an empty ID, it auto-generates a unique one (e.g., "tiny-1").
@@ -32,9 +32,9 @@ Log(v ...any)
 SetLog(log func(v ...any))
 ```
 
-## Element Interface
+## Reference Interface
 
-The `Element` interface represents a DOM node with methods for content manipulation, styling, and event handling.
+The `Reference` interface represents a live DOM node in the browser. It provides methods for reading state and basic interaction.
 
 **📖 Full API Documentation**: See [`element.go`](../element.go) for complete interface definition with detailed examples.
 
@@ -94,23 +94,12 @@ type Event interface {
 ```
 
 
-## Identifiable Interface
-
-Provides unique identification for components.
-
-```go
-type Identifiable interface {
-	// GetID returns the unique identifier.
-	GetID() string
-	// SetID sets the unique identifier.
-	SetID(id string)
-}
-```
-
+// Component is the unified interface for all components.
 type Component interface {
-	Identifiable
-	HTMLRenderer
-	ChildProvider
+	GetID() string
+	SetID(id string)
+	RenderHTML() string
+	Children() []Component
 }
 
 // ViewRenderer provides a declarative way to render the component.
@@ -132,9 +121,9 @@ type Node struct {
 	Children []any
 }
 
-## Builder API
+## Element API (Builder Pattern)
 
-The Builder API provides a fluent, declarative way to create `Node` trees.
+The `Element` struct provides a fluent, declarative way to create `Node` trees.
 
 ```go
 // Add one or more children
@@ -164,7 +153,7 @@ func (c *MyComp) Render() dom.Node {
 - `ToNode()`: terminal operation that returns a `Node`.
 
 > [!TIP]
-> Use `dom.BaseComponent` to automatically implement the `Identifiable` interface in your structs.
+> Embed `*dom.Element` in your structs to automatically implement the `Component` interface and gain access to lifecycle methods.
 
 ### WASM-Only: Mountable
 

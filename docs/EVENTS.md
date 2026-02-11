@@ -26,13 +26,15 @@ type Event interface {
 ### 1. Handling Button Clicks
 
 ```go
-btn.Click(func(e dom.Event) {
-    // Stop the click from bubbling to parents
-    e.StopPropagation()
-    
-    // Perform action
-    println("Button clicked!")
-})
+dom.Button().
+    Text("Click me").
+    OnClick(func(e dom.Event) {
+        // Stop the click from bubbling to parents
+        e.StopPropagation()
+        
+        // Perform action
+        println("Button clicked!")
+    })
 ```
 
 ### 2. Handling Form Input
@@ -40,10 +42,11 @@ btn.Click(func(e dom.Event) {
 Use `TargetValue()` to easily get the new value from an input field.
 
 ```go
-inputEl.On("input", func(e dom.Event) {
-    newValue := e.TargetValue()
-    println("User typed:", newValue)
-})
+dom.Input().
+    OnInput(func(e dom.Event) {
+        newValue := e.TargetValue()
+        println("User typed:", newValue)
+    })
 ```
 
 ### 3. Preventing Form Submission

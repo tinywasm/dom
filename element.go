@@ -12,6 +12,7 @@ type Element struct {
 	attrs    []fmt.KeyValue
 	events   []EventHandler
 	children []any
+	prefix   string // Optional semantic prefix for auto-ID
 }
 
 // ID sets the ID of the element.
@@ -82,9 +83,14 @@ func (b *Element) Render(parentID string) error {
 	return Render(parentID, b)
 }
 
-// Mount is an alias for Render.
-func (b *Element) Mount(parentID string) error {
-	return Render(parentID, b)
+// Update triggers a re-render of the component.
+func (b *Element) Update() error {
+	return Update(b)
+}
+
+// Unmount removes the component from the DOM.
+func (b *Element) Unmount() {
+	Unmount(b)
 }
 
 // ToNode converts the element to a Node tree.
@@ -130,6 +136,13 @@ func (b *Element) ToNode() Node {
 
 // GetID returns the element's ID.
 func (b *Element) GetID() string {
+	if b.id == "" {
+		if b.prefix != "" {
+			b.id = b.prefix + "-" + generateID()
+		} else {
+			b.id = generateID()
+		}
+	}
 	return b.id
 }
 

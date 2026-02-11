@@ -11,7 +11,7 @@ import (
 )
 
 type CounterComp struct {
-	dom.BaseComponent
+	*dom.Element
 	count int
 }
 
@@ -41,7 +41,7 @@ func TestBuilderAndUpdate(t *testing.T) {
 	_ = SetupDOM(t)
 
 	t.Run("Render using Builder", func(t *testing.T) {
-		c := &CounterComp{}
+		c := &CounterComp{Element: dom.Div()}
 		c.SetID("counter")
 		err := dom.Render("root", c)
 		if err != nil {
@@ -55,7 +55,7 @@ func TestBuilderAndUpdate(t *testing.T) {
 	})
 
 	t.Run("Update Component", func(t *testing.T) {
-		c := &CounterComp{count: 0}
+		c := &CounterComp{Element: dom.Div(), count: 0}
 		c.SetID("counter2")
 		dom.Render("root", c)
 
@@ -75,7 +75,7 @@ func TestBuilderAndUpdate(t *testing.T) {
 		// Create a parent container using direct JS
 		js.Global().Get("document").Call("getElementById", "root").Set("innerHTML", `<div id="list-container"></div>`)
 
-		c := &CounterComp{count: 10}
+		c := &CounterComp{Element: dom.Div(), count: 10}
 		c.SetID("counter-append")
 
 		err := dom.Append("list-container", c)

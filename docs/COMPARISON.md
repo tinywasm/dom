@@ -8,7 +8,7 @@ Using the standard library's `syscall/js` directly is the most low-level approac
 
 | Feature | TinyDOM | Raw `syscall/js` |
 | :--- | :--- | :--- |
-| **Abstraction** | High. Interfaces (`DOM`, `Element`) hide JS details. | None. Direct JS value manipulation. |
+| **Abstraction** | High. Interfaces (`DOM`, `Reference`) hide JS details. | None. Direct JS value manipulation. |
 | **Safety** | High. Type-safe methods. | Low. `js.Value` is `interface{}`-like; prone to panics. |
 | **Memory** | **Automatic**. Tracks and releases event listeners on `Unmount`. | **Manual**. Easy to leak memory (forgetting `Release()`). |
 | **Performance** | **Cached**. IDs are mapped to JS objects to avoid lookups. | **Slow**. Repeated `Call("getElementById")` is expensive. |
@@ -22,7 +22,7 @@ Libraries like Vecty or Go-App implement a full Virtual DOM (React-style) with d
 
 | Feature | TinyDOM | VDOM Libraries |
 | :--- | :--- | :--- |
-| **Update Strategy** | **Direct**. You call `SetText`. Exact & fast. | **Declarative**. You change state, lib diffs tree. |
+| **Update Strategy** | **Direct**. You call `c.Update()`. Exact & fast. | **Declarative**. You change state, lib diffs tree. |
 | **Performance** | **Predictable**. No diffing overhead. | **Variable**. Diffing large trees in WASM can be slow. |
 | **Binary Size** | **Tiny**. Minimal logic. | **Large**. Diffing engine + reconciliation logic. |
 | **Developer Exp.** | **Imperative**. "On click, update text". | **Declarative**. "State is X, view is Y". |
@@ -50,6 +50,6 @@ Libraries like Vecty or Go-App implement a full Virtual DOM (React-style) with d
 *   **Backend Compatible**: Interfaces allow mocking for server-side mounting or testing.
 
 ### ❌ Cons of TinyDOM
-*   **Manual Updates**: You must explicitly tell the DOM what to change (`SetText`). No "reactive" magic.
+*   **Manual Updates**: You must explicitly tell the DOM what to change (`c.Update()`). No "reactive" magic.
 *   **Boilerplate**: Requires defining IDs and struct methods for components.
 *   **No Component Library**: You build your own buttons, inputs, etc. (HTML/CSS).

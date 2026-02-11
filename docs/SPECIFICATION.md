@@ -28,9 +28,9 @@ This ensures consistent initialization and automatic cleanup of event listeners.
 
 ### Component Contract
 A component is a Go struct that:
-1.  Implements the `Identifiable` interface (`GetID()` and `SetID()`).
-2.  Implements methods to return its HTML/CSS.
-3.  Manages its own events via the global API.
+1.  Embeds `*dom.Element` for identity and lifecycle.
+2.  Implements `Render() dom.Node` or `RenderHTML() string`.
+3.  Manages its own state and triggers re-renders via `c.Update()`.
 
 ## 3. API Overview
 
@@ -39,24 +39,21 @@ A component is a Go struct that:
 The architecture relies on three core interfaces:
 
 ### DOM Interface
-The entry point injected into components. It handles:
-*   **Caching**: `Get(id)` returns a cached `Element`.
+The global entry point. It handles:
+*   **Caching**: `Get(id)` returns a cached `Reference`.
 *   **Lifecycle**: `Render` injects HTML and binds events; `Unmount` cleans them up; `Update` re-renders in place.
 
-### Element Interface
-Represents a DOM node. It provides methods for:
-*   **Content**: `SetText`, `SetHTML`, `AppendHTML`.
-*   **Attributes**: `AddClass`, `SetAttr`, `Value`.
-*   **Events**: `Click`, `On` (with automatic cleanup).
-*   **Manipulation**: `Remove`.
+### Reference Interface
+Represents a live DOM node. It provides methods for:
+*   **Read**: `GetAttr`, `Value`, `Checked`.
+*   **Interaction**: `On` (events), `Focus`.
 
 ### Component Interface
 The contract for UI parts:
 *   `GetID()`: Unique identifier.
 *   `SetID(id string)`: Inject unique ID.
-*   `Render()`: Returns the `dom.Node` tree (Preferred).
-*   `RenderHTML()`: Returns static HTML string (Legacy/Fallback).
-*   `Children()`: Returns child components (Optional with BaseComponent).
+*   `RenderHTML()`: Returns static HTML string.
+*   `Children()`: Returns child components.
 
 ### HTML Builder
 The builder functions are part of the `dom` package. They can be dot-imported (`. "github.com/tinywasm/dom"`) for a cleaner DSL if desired.

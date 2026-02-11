@@ -10,7 +10,7 @@ import (
 
 // DynamicComp uses ViewRenderer (DSL)
 type DynamicComp struct {
-	dom.BaseComponent
+	*dom.Element
 }
 
 func (c *DynamicComp) Render() dom.Node {
@@ -19,7 +19,7 @@ func (c *DynamicComp) Render() dom.Node {
 
 // StaticComp uses HTMLRenderer (String)
 type StaticComp struct {
-	dom.BaseComponent
+	*dom.Element
 }
 
 func (c *StaticComp) RenderHTML() string {
@@ -30,7 +30,7 @@ func TestHybridRendering(t *testing.T) {
 	_ = SetupDOM(t)
 
 	t.Run("Render Dynamic Component (DSL)", func(t *testing.T) {
-		c := &DynamicComp{}
+		c := &DynamicComp{Element: &dom.Element{}}
 		dom.Render("root", c)
 
 		el, ok := dom.Get("dynamic")
@@ -44,7 +44,7 @@ func TestHybridRendering(t *testing.T) {
 	})
 
 	t.Run("Render Static Component (String)", func(t *testing.T) {
-		c := &StaticComp{}
+		c := &StaticComp{Element: &dom.Element{}}
 		dom.Render("root", c)
 
 		_, ok := dom.Get("static")

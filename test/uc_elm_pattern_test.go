@@ -10,7 +10,7 @@ import (
 )
 
 type CounterElm struct {
-	dom.BaseComponent
+	*dom.Element
 	count int
 }
 
@@ -31,7 +31,7 @@ func TestElmPattern(t *testing.T) {
 	_ = SetupDOM(t)
 
 	t.Run("State Update and Re-render", func(t *testing.T) {
-		c := &CounterElm{count: 0}
+		c := &CounterElm{Element: &dom.Element{}, count: 0}
 		c.SetID("counter-elm") // Fixed ID for test stability
 		dom.Render("root", c)
 

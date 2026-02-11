@@ -91,6 +91,18 @@ func (d *domWasm) Get(id string) (Reference, bool) {
 	}, true
 }
 
+// getElement resolves a parentID to a js.Value, handling special cases like "body" and "head".
+func (d *domWasm) getElement(id string) js.Value {
+	switch id {
+	case "body":
+		return d.document.Get("body")
+	case "head":
+		return d.document.Get("head")
+	default:
+		return d.document.Call("getElementById", id)
+	}
+}
+
 // Render injects the component's content into the parent element.
 func (d *domWasm) Render(parentID string, component Component) error {
 	// Generate ID if not set
@@ -112,7 +124,7 @@ func (d *domWasm) Render(parentID string, component Component) error {
 		html = component.RenderHTML()
 	}
 
-	parent := d.document.Call("getElementById", parentID)
+	parent := d.getElement(parentID)
 	if parent.IsNull() || parent.IsUndefined() {
 		return fmt.Errf("parent element not found: %s", parentID)
 	}
@@ -139,7 +151,7 @@ func (d *domWasm) Update(component Component) error {
 	id := component.GetID()
 
 	// Resolve the full outer component from tracked references.
-	// This fixes Go embedding: BaseComponent.Update() passes *BaseComponent,
+	// This fixes Go embedding: Element.Update() passes *Element,
 	// but mountedComponents stores the original *Counter/*Header pointer.
 	for _, item := range d.mountedComponents {
 		if item.id == id {
@@ -222,7 +234,7 @@ func (d *domWasm) Append(parentID string, component Component) error {
 		html = component.RenderHTML()
 	}
 
-	parent := d.document.Call("getElementById", parentID)
+	parent := d.getElement(parentID)
 	if parent.IsNull() || parent.IsUndefined() {
 		return fmt.Errf("parent element not found: %s", parentID)
 	}

@@ -14,12 +14,12 @@ import (
 )
 
 type Counter struct {
-	dom.BaseComponent
+	*dom.Element
 	count int
 }
 
 func NewCounter() *Counter {
-	return &Counter{}
+	return &Counter{Element: dom.Div()}
 }
 
 // Render uses the declarative Builder API
@@ -56,19 +56,20 @@ TinyDOM automatically manages the lifecycle of child components. To enable this,
 
 ```go
 type Page struct {
-    dom.BaseComponent
+    *dom.Element
     counter *Counter // Child component
 }
 
 func NewPage() *Page {
     return &Page{
+        Element: dom.Div(),
         counter: NewCounter(),
     }
 }
 
 ```go
 type Page struct {
-	dom.BaseComponent
+	*dom.Element
 	counter *Counter
 }
 
@@ -90,7 +91,7 @@ func (p *Page) Render() dom.Node {
 ```
 
 > [!TIP]
-> `dom.BaseComponent` provides a default implementation of `Children()` that returns `nil`, so you only need to override it if the component has children.
+> `dom.Element` (when embedded) provides a default implementation of `Children()` that returns `nil`, so you only need to override it if the component has children.
 
 ## CSS Handling
 

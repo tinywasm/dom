@@ -3,14 +3,15 @@
 package dom_test
 
 import (
-	"github.com/tinywasm/dom"
 	"syscall/js"
 	"testing"
+
+	"github.com/tinywasm/dom"
 )
 
 // MockComponent is a simple component for testing.
 type MockComponent struct {
-	dom.BaseComponent
+	*dom.Element
 	Mounted bool
 }
 

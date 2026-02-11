@@ -10,7 +10,7 @@ import (
 )
 
 type TodoList struct {
-	dom.BaseComponent
+	*dom.Element
 	items []*TodoItem
 }
 
@@ -49,18 +49,19 @@ func (l *TodoList) RemoveItem(item *TodoItem) {
 You don't always need to import `tinywasm/dom` or depend on the full `DOM` interface. You can define narrow interfaces for what your component actually needs.
 
 ```go
-// This component only needs to update text. It doesn't care about Mounting or Unmounting.
-type TextSetter interface {
-    Get(id string) tinywasm/dom.Element
+// This component only needs to find an element.
+type ElementFinder interface {
+    Get(id string) (dom.Reference, bool)
 }
 
 type StatusLabel struct {
-    dom TextSetter // Narrow dependency
-    id  string
+    *dom.Element
+    dom ElementFinder // Narrow dependency
 }
 
-func (s *StatusLabel) Update(msg string) {
-    s.dom.Get(s.id).SetText(msg)
+func (s *StatusLabel) UpdateStatus(msg string) {
+    // Note: State updates should ideally happen via Render() + dom.Update(s)
+    // but direct DOM reading/focus can use the Finder.
 }
 ```
 

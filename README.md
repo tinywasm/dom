@@ -42,7 +42,7 @@ import (
 
 // Model (state)
 type Counter struct {
-	dom.BaseComponent
+	*dom.Element
 	count int
 }
 
@@ -81,7 +81,7 @@ func (c *Counter) OnMount() {
 }
 
 func main() {
-	counter := &Counter{count: 0}
+	counter := &Counter{Element: dom.Div(), count: 0}
 	dom.Render("app", counter)
 	select {}
 }
@@ -93,7 +93,7 @@ For simple, static content use string HTML (smaller binary):
 
 ```go
 type Header struct {
-	dom.BaseComponent
+	*dom.Element
 }
 
 func (h *Header) RenderHTML() string {
@@ -103,7 +103,7 @@ func (h *Header) RenderHTML() string {
 }
 
 func main() {
-	header := &Header{}
+	header := &Header{Element: &dom.Element{}}
 	dom.Render("app", header)
 }
 ```
@@ -134,7 +134,7 @@ Components can implement optional lifecycle interfaces:
 
 ```go
 type MyComponent struct {
-	dom.BaseComponent
+	*dom.Element
 	data []string
 }
 
@@ -186,7 +186,7 @@ Choose the right rendering method for each component:
 ```go
 // Static: Use string HTML
 type Footer struct {
-	dom.BaseComponent
+	*dom.Element
 }
 func (f *Footer) RenderHTML() string {
 	return `<footer>© 2026 My App</footer>`
@@ -194,7 +194,7 @@ func (f *Footer) RenderHTML() string {
 
 // Dynamic: Use DSL Builder
 type TodoList struct {
-	dom.BaseComponent
+	*dom.Element
 	todos []string
 }
 func (t *TodoList) Render() dom.Node {
@@ -212,7 +212,7 @@ Components can contain child components:
 
 ```go
 type MyList struct {
-	dom.BaseComponent
+	*dom.Element
 	items []dom.Component
 }
 
@@ -242,7 +242,7 @@ The same recursion applies to `Unmount()`, ensuring all event listeners are clea
 func (c *MyComponent) OnMount() {
 	root, _ := dom.Get(c.GetID())
 
-	// Event delegation using TargetID
+	// Reference interface focus on reading and interaction
 	root.On("click", func(e dom.Event) {
 		id := e.TargetID() // "item-1", "item-2", etc.
 		// Handle logic...
@@ -264,7 +264,7 @@ dom.Update(component)            // Re-render in place
 // Lifecycle
 dom.Unmount(component)           // Remove and cleanup
 
-// Element Access
+// Element Access (returns Reference interface)
 dom.Get(id)                      // Get element by ID
 dom.QueryAll(selector)           // Query by CSS selector
 
@@ -274,11 +274,13 @@ dom.GetHash()                    // Get current hash
 dom.SetHash(hash)                // Set hash
 ```
 
-### BaseComponent Helpers
+### Element Helpers
+
+Embedding `*dom.Element` provides these methods automatically:
 
 ```go
 type Counter struct {
-	dom.BaseComponent
+	*dom.Element
 	count int
 }
 
