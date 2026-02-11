@@ -1,126 +1,188 @@
 package dom
 
-// Event represents a DOM event.
-type Event interface {
-	// PreventDefault prevents the default action of the event.
-	PreventDefault()
-	// StopPropagation stops the event from bubbling up the DOM tree.
-	StopPropagation()
-	// TargetValue returns the value of the event's target element.
-	// Useful for input, textarea, and select elements.
-	TargetValue() string
-	// TargetID returns the ID of the event's target element.
-	TargetID() string
+import (
+	"github.com/tinywasm/fmt"
+)
+
+// Element represents a DOM element in the declarative API.
+type Element struct {
+	tag      string
+	id       string
+	classes  []string
+	attrs    []fmt.KeyValue
+	events   []EventHandler
+	children []any // Accepts: *Element, string, Component
 }
 
-// Element represents a DOM node. It provides methods for direct manipulation and event binding.
-//
-// All content methods (SetText, SetHTML, AppendHTML, SetAttr, SetValue) accept variadic arguments
-// and support multiple input types:
-//   - Strings: Concatenated without spaces
-//   - Numbers: Converted to strings
-//   - Format strings: Printf-style formatting with % specifiers
-//   - Localized strings: Using D.* dictionary for multilingual support
-//
-// For more information about translation and multilingual support, see:
-// https://github.com/tinywasm/fmt/blob/main/docs/TRANSLATE.md
-//
-// Examples:
-//
-//	elem.SetText("Hello ", "World")           // -> "Hello World"
-//	elem.SetHTML("<div>", "content", "</div>") // -> "<div>content</div>"
-//	elem.SetAttr("class", "btn-", 42)         // -> "btn-42"
-//	elem.SetText(D.Hello)                     // -> "Hello" (EN) or "Hola" (ES)
-//	elem.SetHTML("<h1>%v</h1>", 42)           // -> "<h1>42</h1>"
-type Element interface {
-	// --- Content ---
-
-	// SetText sets the text content of the element.
-	// Accepts variadic arguments that are concatenated without spaces.
-	//
-	// Examples:
-	//   elem.SetText("Count: ", 42)              // -> "Count: 42"
-	//   elem.SetText(D.Hello, " ", D.User)       // -> "Hello User" (localized)
-	SetText(v ...any)
-
-	// SetHTML sets the inner HTML of the element.
-	// Accepts variadic arguments that are concatenated without spaces.
-	// Supports format strings with % specifiers.
-	//
-	// Examples:
-	//   elem.SetHTML("<div>", "content", "</div>")  // -> "<div>content</div>"
-	//   elem.SetHTML("<h1>%v</h1>", 42)             // -> "<h1>42</h1>"
-	//   elem.SetHTML("<span>%L</span>", D.Hello)    // -> "<span>Hello</span>" (localized)
-	SetHTML(v ...any)
-
-	// AppendHTML adds HTML to the end of the element's content.
-	// Useful for adding items to a list without re-rendering the whole list.
-	// Accepts variadic arguments that are concatenated without spaces.
-	//
-	// Examples:
-	//   elem.AppendHTML("<li>", item, "</li>")
-	//   elem.AppendHTML("<div class='%s'>%v</div>", "item", count)
-	AppendHTML(v ...any)
-
-	// Remove removes the element from the DOM.
-	Remove()
-
-	// --- Attributes & Classes ---
-
-	// AddClass adds a CSS class to the element.
-	AddClass(class string)
-
-	// RemoveClass removes a CSS class from the element.
-	RemoveClass(class string)
-
-	// ToggleClass toggles a CSS class.
-	ToggleClass(class string)
-
-	// SetAttr sets an attribute value.
-	// Accepts variadic arguments that are concatenated without spaces.
-	//
-	// Examples:
-	//   elem.SetAttr("id", "item-", 42)           // -> id="item-42"
-	//   elem.SetAttr("href", "/page/", pageNum)   // -> href="/page/5"
-	//   elem.SetAttr("title", D.Hello)            // -> title="Hello" (localized)
-	SetAttr(key string, v ...any)
-
-	// GetAttr retrieves an attribute value.
-	GetAttr(key string) string
-
-	// RemoveAttr removes an attribute.
-	RemoveAttr(key string)
-
-	// --- Forms ---
-
-	// Value returns the current value of an input/textarea/select.
-	Value() string
-
-	// SetValue sets the value of an input/textarea/select.
-	// Accepts variadic arguments that are concatenated without spaces.
-	//
-	// Examples:
-	//   elem.SetValue("default value")
-	//   elem.SetValue("Item ", 42)                // -> "Item 42"
-	SetValue(v ...any)
-
-	// --- Checkboxes ---
-
-	// Checked returns the current checked state of a checkbox or radio button.
-	Checked() bool
-
-	// SetChecked sets the checked state of a checkbox or radio button.
-	SetChecked(checked bool)
-
-	// --- Events ---
-
-	// Click registers a click event handler.
-	// The handler is automatically tracked and removed when the component is unmounted.
-	Click(handler func(event Event))
-
-	// On registers a generic event handler (e.g., "change", "input", "keydown").
-	On(eventType string, handler func(event Event))
-
-	// Focus sets focus to the element.
-	Focus()
+// ID sets the ID of the element.
+func (e *Element) ID(id string) *Element {
+	e.id = id
+	return e
 }
+
+// Class adds one or more classes to the element.
+func (e *Element) Class(classes ...string) *Element {
+	e.classes = append(e.classes, classes...)
+	return e
+}
+
+// Attr sets an attribute on the element.
+func (e *Element) Attr(key, val string) *Element {
+	for i, attr := range e.attrs {
+		if attr.Key == key {
+			e.attrs[i].Value = val
+			return e
+		}
+	}
+	e.attrs = append(e.attrs, fmt.KeyValue{Key: key, Value: val})
+	return e
+}
+
+// OnClick adds a click event handler.
+func (e *Element) OnClick(handler func(Event)) *Element {
+	e.events = append(e.events, EventHandler{"click", handler})
+	return e
+}
+
+// OnInput adds an input event handler.
+func (e *Element) OnInput(handler func(Event)) *Element {
+	e.events = append(e.events, EventHandler{"input", handler})
+	return e
+}
+
+// OnChange adds a change event handler.
+func (e *Element) OnChange(handler func(Event)) *Element {
+	e.events = append(e.events, EventHandler{"change", handler})
+	return e
+}
+
+// On adds a generic event handler.
+func (e *Element) On(eventType string, handler func(Event)) *Element {
+	e.events = append(e.events, EventHandler{eventType, handler})
+	return e
+}
+
+// Add adds one or more children to the element.
+// Children can be *Element, Node, Component, or string.
+func (e *Element) Add(children ...any) *Element {
+	e.children = append(e.children, children...)
+	return e
+}
+
+// Text adds a text node child.
+func (e *Element) Text(text string) *Element {
+	e.children = append(e.children, text)
+	return e
+}
+
+// Render renders the element to the parent.
+// This is a terminal operation.
+func (e *Element) Render(parentID string) error {
+	return Render(parentID, e)
+}
+
+// ToNode converts the element to a Node tree.
+func (e *Element) ToNode() Node {
+	var attrs []fmt.KeyValue
+	if e.id != "" {
+		attrs = append(attrs, fmt.KeyValue{Key: "id", Value: e.id})
+	}
+	if len(e.classes) > 0 {
+		classStr := ""
+		for i, c := range e.classes {
+			if i > 0 {
+				classStr += " "
+			}
+			classStr += c
+		}
+		attrs = append(attrs, fmt.KeyValue{Key: "class", Value: classStr})
+	}
+	attrs = append(attrs, e.attrs...)
+
+	// Convert children
+	var children []any
+	for _, child := range e.children {
+		switch c := child.(type) {
+		case *Element:
+			children = append(children, c.ToNode())
+		case Element:
+			children = append(children, c.ToNode())
+		default:
+			children = append(children, c)
+		}
+	}
+
+	return Node{
+		Tag:      e.tag,
+		Attrs:    attrs,
+		Events:   e.events,
+		Children: children,
+	}
+}
+
+// --- Component Interface Implementation ---
+
+// GetID returns the element's ID.
+func (e *Element) GetID() string {
+	return e.id
+}
+
+// SetID sets the element's ID.
+func (e *Element) SetID(id string) {
+	e.id = id
+}
+
+// RenderHTML renders the element to HTML string.
+func (e *Element) RenderHTML() string {
+	return nodeToHTML(e.ToNode())
+}
+
+// Children returns the component's children (components only).
+func (e *Element) Children() []Component {
+	var comps []Component
+	for _, child := range e.children {
+		if c, ok := child.(Component); ok {
+			comps = append(comps, c)
+		}
+	}
+	return comps
+}
+
+// Helper to convert Node to HTML string (recursive)
+func nodeToHTML(n Node) string {
+	s := "<" + n.Tag
+	for _, attr := range n.Attrs {
+		s += " " + attr.Key + "='" + attr.Value + "'"
+	}
+	s += ">"
+	for _, child := range n.Children {
+		switch v := child.(type) {
+		case Node:
+			s += nodeToHTML(v)
+		case string:
+			s += v
+		case Component:
+			s += v.RenderHTML()
+		default:
+			// Fallback for other types if any
+			s += fmt.Sprint(v)
+		}
+	}
+	s += "</" + n.Tag + ">"
+	return s
+}
+
+// Factory functions
+func Div() *Element    { return &Element{tag: "div"} }
+func Span() *Element   { return &Element{tag: "span"} }
+func Button() *Element { return &Element{tag: "button"} }
+func H1() *Element     { return &Element{tag: "h1"} }
+func H2() *Element     { return &Element{tag: "h2"} }
+func H3() *Element     { return &Element{tag: "h3"} }
+func P() *Element      { return &Element{tag: "p"} }
+func Ul() *Element     { return &Element{tag: "ul"} }
+func Li() *Element     { return &Element{tag: "li"} }
+func Input() *Element  { return &Element{tag: "input"} }
+func Form() *Element   { return &Element{tag: "form"} }
+func A() *Element      { return &Element{tag: "a"} }
+func Img() *Element    { return &Element{tag: "img"} }
