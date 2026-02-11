@@ -14,12 +14,11 @@ type CounterElm struct {
 	count int
 }
 
-func (c *CounterElm) Render() dom.Node {
+func (c *CounterElm) Render() *dom.Element {
 	return dom.Div().
 		Add(
 			dom.Span().ID("count-val").Text(fmt.Sprint(c.count)),
-		).
-		ToNode()
+		)
 }
 
 func (c *CounterElm) Increment() {

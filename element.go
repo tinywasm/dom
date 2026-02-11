@@ -93,45 +93,6 @@ func (b *Element) Unmount() {
 	Unmount(b)
 }
 
-// ToNode converts the element to a Node tree.
-func (b *Element) ToNode() Node {
-	var attrs []fmt.KeyValue
-	if b.id != "" {
-		attrs = append(attrs, fmt.KeyValue{Key: "id", Value: b.id})
-	}
-	if len(b.classes) > 0 {
-		classStr := ""
-		for i, c := range b.classes {
-			if i > 0 {
-				classStr += " "
-			}
-			classStr += c
-		}
-		attrs = append(attrs, fmt.KeyValue{Key: "class", Value: classStr})
-	}
-	attrs = append(attrs, b.attrs...)
-
-	// Convert children
-	var children []any
-	for _, child := range b.children {
-		switch c := child.(type) {
-		case *Element:
-			children = append(children, c.ToNode())
-		case Element:
-			children = append(children, c.ToNode())
-		default:
-			children = append(children, c)
-		}
-	}
-
-	return Node{
-		Tag:      b.tag,
-		Attrs:    attrs,
-		Events:   b.events,
-		Children: children,
-	}
-}
-
 // --- Component Interface Implementation ---
 
 // GetID returns the element's ID.
@@ -153,7 +114,7 @@ func (b *Element) SetID(id string) {
 
 // RenderHTML renders the element to HTML string.
 func (b *Element) RenderHTML() string {
-	return nodeToHTML(b.ToNode())
+	return elementToHTML(b)
 }
 
 // Children returns the component's children (components only).
@@ -167,27 +128,39 @@ func (b *Element) Children() []Component {
 	return comps
 }
 
-// Helper to convert Node to HTML string (recursive)
-func nodeToHTML(n Node) string {
-	s := "<" + n.Tag
-	for _, attr := range n.Attrs {
+// Helper to convert Element to HTML string (recursive)
+func elementToHTML(el *Element) string {
+	s := "<" + el.tag
+	if el.id != "" {
+		s += " id='" + el.id + "'"
+	}
+	if len(el.classes) > 0 {
+		s += " class='"
+		for i, c := range el.classes {
+			if i > 0 {
+				s += " "
+			}
+			s += c
+		}
+		s += "'"
+	}
+	for _, attr := range el.attrs {
 		s += " " + attr.Key + "='" + attr.Value + "'"
 	}
 	s += ">"
-	for _, child := range n.Children {
+	for _, child := range el.children {
 		switch v := child.(type) {
-		case Node:
-			s += nodeToHTML(v)
+		case *Element:
+			s += elementToHTML(v)
 		case string:
 			s += v
 		case Component:
 			s += v.RenderHTML()
 		default:
-			// Fallback for other types if any
 			s += fmt.Sprint(v)
 		}
 	}
-	s += "</" + n.Tag + ">"
+	s += "</" + el.tag + ">"
 	return s
 }
 

@@ -23,7 +23,7 @@ func NewCounter() *Counter {
 }
 
 // Render uses the declarative Builder API
-func (c *Counter) Render() dom.Node {
+func (c *Counter) Render() *dom.Element {
 	return dom.Div().
 		Class("counter").
 		Add(
@@ -39,8 +39,7 @@ func (c *Counter) Render() dom.Node {
 					// Update re-render triggers automatically via Update()
 					c.Update()
 				}),
-		).
-		ToNode()
+		)
 }
 
 // OnMount is optional if you only use inline events,
@@ -78,15 +77,14 @@ func (p *Page) Children() []dom.Component {
 	return []dom.Component{p.counter}
 }
 
-func (p *Page) Render() dom.Node {
+func (p *Page) Render() *dom.Element {
 	return dom.Div().
 		Class("page").
 		Add(
 			dom.H1().Text("My Page"),
 			// Embedding a child component directly
 			p.counter,
-		).
-		ToNode()
+		)
 }
 ```
 
@@ -130,7 +128,7 @@ func (c *MyComponent) IconSvg() map[string]string {
 
 In your `Render`, you can then use the icon helper (if you create one) or just `html.Raw`:
 ```go
-func (c *MyComponent) Render() dom.Node {
+func (c *MyComponent) Render() *dom.Element {
 	return Div(
 		Class("icon"),
 		Raw(`<svg><use href="#my-icon-id"></use></svg>`),

@@ -5,7 +5,7 @@
 *   **Minimalist**: A thin wrapper over the browser DOM, optimized for TinyGo/WASM.
 *   **No `syscall/js` exposure**: Components interact *only* with the TinyDOM Go interface.
 *   **Zero StdLib**: Uses `tinystring` for string manipulation to keep binary size small.
-*   **Declarative Builder**: Uses a type-safe `dom.Node` builder pattern (`dom.Div`, etc.) for UI construction.
+*   **Declarative Builder**: Uses a type-safe `*dom.Element` builder pattern (`dom.Div`, etc.) for UI construction.
 *   **Direct & Cached**: Instead of a heavy VDOM tree diffing algorithm, it uses an **ID-based caching mechanism** and direct DOM updates via `c.Update()`.
 *   **Standard HTML/CSS**: Components can still use raw HTML strings if needed, but the Builder API is preferred.
 *   **Dependency Injection**: The `DOM` is injected into components, not imported globally.
@@ -15,21 +15,21 @@
 ## 2. Architecture
 
 ### The "Virtual" DOM (Builder Layer)
-The library uses a lightweight `Node` tree structure to:
+The library uses a lightweight element tree structure to:
 1.  Define the UI properties (Tags, Attributes, Events) declaratively.
 2.  Auto-generate IDs for elements with event listeners.
 3.  Hydrate events automatically on the client side.
 
 ### Child Component Strategy
 TinyDOM automatically manages the lifecycle of child components.
-1.  Parent components include child `Node`s or `Component`s in their `Render` method.
+1.  Parent components include child elements or `Component`s in their `Render` method.
 2.  The library recursively calls `Render` and `OnMount`.
 This ensures consistent initialization and automatic cleanup of event listeners.
 
-### Component Contract
+ ### Component Contract
 A component is a Go struct that:
 1.  Embeds `*dom.Element` for identity and lifecycle.
-2.  Implements `Render() dom.Node` or `RenderHTML() string`.
+2.  Implements `Render() *dom.Element` or `RenderHTML() string`.
 3.  Manages its own state and triggers re-renders via `c.Update()`.
 
 ## 3. API Overview
@@ -72,10 +72,10 @@ The builder functions are part of the `dom` package. They can be dot-imported (`
 ## 6. Key Design Decisions
 
 1.  **ID Management**: **Automatic**. `dom.Render` and `injectComponentID` handle unique ID generation. Component roots in `Render()` get their ID automatically.
-2.  **Child Components**: **Recursive Lifecycle**. The library automatically renders and unmounts child components found in the `Node` tree.
+2.  **Child Components**: **Recursive Lifecycle**. The library automatically renders and unmounts child components found in the element tree.
 3.  **State Updates**: **Component-Level Reactivity**. Calling `c.Update()` re-renders the component and replaces it in the DOM.
 4.  **Builder API**: **Declarative vs Imperative**. We use a Builder pattern (`dom.Div`) to ensure type safety, correct HTML structure, and automated event wiring.
-5.  **TinyGo Optimization**: **Slices vs Maps**. To minimize WASM binary size and improve performance, elements use `[]fmt.KeyValue` for attributes and `[]EventHandler` for events instead of Go maps. Linear scans are faster for typical attribute counts (< 10) and avoid the heavy map runtime support.
+5.  **TinyGo Optimization**: **Slices vs Maps**. To minimize WASM binary size and improve performance, elements use `[]fmt.KeyValue` for attributes and internal slices for events instead of Go maps. Linear scans are faster for typical attribute counts (< 10) and avoid the heavy map runtime support.
 6.  **CSS Strategy**: **Global**. Standard CSS classes.
 7.  **Routing**: **Single Page Root**. The "Index" is the root component.
 

@@ -47,7 +47,7 @@ type Counter struct {
 }
 
 // View (rendering)
-func (c *Counter) Render() dom.Node {
+func (c *Counter) Render() *dom.Element {
 	return dom.Div().
 		Class("counter").
 		Add(
@@ -60,8 +60,7 @@ func (c *Counter) Render() dom.Node {
 			dom.Button().
 				Text("+").
 				OnClick(c.Increment),
-		).
-		ToNode()
+		)
 }
 
 // Update (state mutations)
@@ -163,14 +162,14 @@ All components must implement:
 type Component interface {
 	GetID() string
 	SetID(string)
-	RenderHTML() string  // OR Render() dom.Node
+	RenderHTML() string  // OR Render() *Element
 	Children() []Component
 }
 ```
 
 **Two rendering options**:
 1. **`RenderHTML() string`** - For static components (smaller binary)
-2. **`Render() dom.Node`** - For dynamic components (type-safe, composable)
+2. **`Render() *dom.Element`** - For dynamic components (type-safe, composable)
 
 Components can implement **either or both**. DOM checks `Render()` first, falls back to `RenderHTML()`.
 
@@ -181,7 +180,7 @@ Choose the right rendering method for each component:
 | Component Type | Method | Benefit |
 |---------------|--------|---------|
 | **Static** (no interactivity) | `RenderHTML() string` | Smaller binary, less overhead |
-| **Dynamic** (interactive, state) | `Render() dom.Node` | Type-safe, composable, fluent API |
+| **Dynamic** (interactive, state) | `Render() *dom.Element` | Type-safe, composable, fluent API |
 
 ```go
 // Static: Use string HTML
@@ -197,12 +196,12 @@ type TodoList struct {
 	*dom.Element
 	todos []string
 }
-func (t *TodoList) Render() dom.Node {
+func (t *TodoList) Render() *dom.Element {
 	list := dom.Ul() // ID is auto-injected from t.GetID()
 	for _, todo := range t.todos {
 		list.Add(dom.Li().Text(todo))
 	}
-	return list.ToNode()
+	return list
 }
 ```
 
@@ -220,12 +219,12 @@ func (c *MyList) Children() []dom.Component {
 	return c.items
 }
 
-func (c *MyList) Render() dom.Node {
+func (c *MyList) Render() *dom.Element {
 	list := dom.Div()
 	for _, item := range c.items {
 		list.Add(item) // Components can be children
 	}
-	return list.ToNode()
+	return list
 }
 ```
 

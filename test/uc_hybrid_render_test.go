@@ -13,8 +13,8 @@ type DynamicComp struct {
 	*dom.Element
 }
 
-func (c *DynamicComp) Render() dom.Node {
-	return dom.Div().ID("dynamic").Text("Dynamic Content").ToNode()
+func (c *DynamicComp) Render() *dom.Element {
+	return dom.Div().ID("dynamic").Text("Dynamic Content")
 }
 
 // StaticComp uses HTMLRenderer (String)

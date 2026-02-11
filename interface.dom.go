@@ -1,7 +1,5 @@
 package dom
 
-import "github.com/tinywasm/fmt"
-
 // DOM is the main entry point for interacting with the browser.
 // It is designed to be injected into your components.
 type DOM interface {
@@ -57,7 +55,7 @@ type Component interface {
 
 // ViewRenderer returns a Node tree for declarative UI.
 type ViewRenderer interface {
-	Render() Node
+	Render() *Element
 }
 
 // Mountable is an optional interface for components that need initialization logic.
@@ -79,12 +77,4 @@ type Unmountable interface {
 type EventHandler struct {
 	Name    string
 	Handler func(Event)
-}
-
-// Node represents a DOM node in the declarative builder.
-type Node struct {
-	Tag      string
-	Attrs    []fmt.KeyValue
-	Events   []EventHandler
-	Children []any // Can be Node, string, or Component
 }

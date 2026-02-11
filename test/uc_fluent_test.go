@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/tinywasm/dom"
+	"github.com/tinywasm/fmt"
 )
 
 func TestFluentBuilder(t *testing.T) {
@@ -19,46 +20,21 @@ func TestFluentBuilder(t *testing.T) {
 			Attr("data-foo", "bar").
 			Text("Hello")
 
-		// Verify builder state by converting to Node
-		node := el.ToNode()
+		// Verify builder state by checking rendered HTML
+		html := el.RenderHTML()
 
-		if node.Tag != "div" {
-			t.Errorf("Expected tag div, got %s", node.Tag)
+		if html == "" {
+			t.Error("RenderHTML returned empty string")
 		}
 
-		// Check attributes
-		idFound := false
-		classFound := false
-		attrFound := false
-
-		for _, a := range node.Attrs {
-			if a.Key == "id" && a.Value == "test-id" {
-				idFound = true
+		// Look for expected substrings since it's easier than full parsing here
+		expected := []string{
+			"<div", "id='test-id'", "class='cls1 cls2'", "data-foo='bar'", ">Hello</div>",
+		}
+		for _, exp := range expected {
+			if !fmt.Contains(html, exp) {
+				t.Errorf("Expected HTML to contain %q, but got %q", exp, html)
 			}
-			if a.Key == "class" && a.Value == "cls1 cls2" {
-				classFound = true
-			}
-			if a.Key == "data-foo" && a.Value == "bar" {
-				attrFound = true
-			}
-		}
-
-		if !idFound {
-			t.Error("ID attribute not found or incorrect")
-		}
-		if !classFound {
-			t.Error("Class attribute not found or incorrect")
-		}
-		if !attrFound {
-			t.Error("Custom attribute not found or incorrect")
-		}
-
-		// Check children
-		if len(node.Children) != 1 {
-			t.Errorf("Expected 1 child, got %d", len(node.Children))
-		}
-		if txt, ok := node.Children[0].(string); !ok || txt != "Hello" {
-			t.Error("Child text incorrect")
 		}
 	})
 
@@ -69,19 +45,14 @@ func TestFluentBuilder(t *testing.T) {
 				dom.Span().ID("child").Text("Child"),
 			)
 
-		node := parent.ToNode()
-		if len(node.Children) != 1 {
-			t.Fatal("Expected 1 child")
+		html := parent.RenderHTML()
+		expected := []string{
+			"id='parent'", "<span id='child'>Child</span>",
 		}
-
-		// Children are Nodes now (converted by ToNode)
-		childNode, ok := node.Children[0].(dom.Node)
-		if !ok {
-			t.Fatal("Child is not a Node")
-		}
-
-		if childNode.Tag != "span" {
-			t.Errorf("Expected child tag span, got %s", childNode.Tag)
+		for _, exp := range expected {
+			if !fmt.Contains(html, exp) {
+				t.Errorf("Expected HTML to contain %q, but got %q", exp, html)
+			}
 		}
 	})
 	t.Run("Variadic Add", func(t *testing.T) {
@@ -91,26 +62,20 @@ func TestFluentBuilder(t *testing.T) {
 			dom.Span().Text("Three"),
 		)
 
-		node := el.ToNode()
-		if len(node.Children) != 3 {
-			t.Errorf("Expected 3 children, got %d", len(node.Children))
+		html := el.RenderHTML()
+		expected := []string{"One", "Two", "Three"}
+		for _, exp := range expected {
+			if !fmt.Contains(html, exp) {
+				t.Errorf("Expected HTML to contain %q, but got %q", exp, html)
+			}
 		}
 	})
 
 	t.Run("Variadic Class", func(t *testing.T) {
 		el := dom.Div().Class("cls1", "cls2", "cls3")
-		node := el.ToNode()
-
-		classFound := false
-		for _, a := range node.Attrs {
-			if a.Key == "class" && a.Value == "cls1 cls2 cls3" {
-				classFound = true
-				break
-			}
-		}
-
-		if !classFound {
-			t.Error("Variadic Class attribute not found or incorrect")
+		html := el.RenderHTML()
+		if !fmt.Contains(html, "class='cls1 cls2 cls3'") {
+			t.Errorf("Expected HTML to contain class='cls1 cls2 cls3', but got %q", html)
 		}
 	})
 }

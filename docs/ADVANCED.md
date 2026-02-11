@@ -14,11 +14,11 @@ type TodoList struct {
 	items []*TodoItem
 }
 
-func (l *TodoList) Render() dom.Node {
+func (l *TodoList) Render() *dom.Element {
 	// Initial render might be empty or have initial items.
 	// We use a container that we can append to later.
 	// dom.Ul root automatically gets l.GetID() in Render cycle.
-	return dom.Ul().ToNode()
+	return dom.Ul()
 }
 
 func (l *TodoList) AddItem(label string) {

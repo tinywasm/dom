@@ -115,11 +115,11 @@ func (d *domWasm) Render(parentID string, component Component) error {
 	var html string
 
 	if vr, ok := component.(ViewRenderer); ok {
-		node := vr.Render()
-		node = injectComponentID(node, component.GetID())
-		html = d.renderToHTML(node, &children)
+		root := vr.Render()
+		injectComponentID(root, component.GetID())
+		html = d.renderToHTML(root, &children)
 	} else if el, ok := component.(*Element); ok {
-		html = d.renderToHTML(el.ToNode(), &children)
+		html = d.renderToHTML(el, &children)
 	} else {
 		html = component.RenderHTML()
 	}
@@ -173,11 +173,11 @@ func (d *domWasm) Update(component Component) error {
 	var html string
 
 	if vr, ok := component.(ViewRenderer); ok {
-		node := vr.Render()
-		node = injectComponentID(node, id)
-		html = d.renderToHTML(node, &children)
+		root := vr.Render()
+		injectComponentID(root, id)
+		html = d.renderToHTML(root, &children)
 	} else if el, ok := component.(*Element); ok {
-		html = d.renderToHTML(el.ToNode(), &children)
+		html = d.renderToHTML(el, &children)
 	} else {
 		html = component.RenderHTML()
 	}
@@ -225,11 +225,11 @@ func (d *domWasm) Append(parentID string, component Component) error {
 	var children []Component
 	var html string
 	if vr, ok := component.(ViewRenderer); ok {
-		node := vr.Render()
-		node = injectComponentID(node, component.GetID())
-		html = d.renderToHTML(node, &children)
+		root := vr.Render()
+		injectComponentID(root, component.GetID())
+		html = d.renderToHTML(root, &children)
 	} else if el, ok := component.(*Element); ok {
-		html = d.renderToHTML(el.ToNode(), &children)
+		html = d.renderToHTML(el, &children)
 	} else {
 		html = component.RenderHTML()
 	}
@@ -277,37 +277,41 @@ func (d *domWasm) Unmount(component Component) {
 	d.untrackComponent(id)
 }
 
-func (d *domWasm) renderToHTML(n Node, comps *[]Component) string {
-	// If the node has events but no ID, generate one
-	id := ""
-	for _, attr := range n.Attrs {
-		if attr.Key == "id" {
-			id = attr.Value
-			break
-		}
+func (d *domWasm) renderToHTML(el *Element, comps *[]Component) string {
+	// If the element has events but no ID, generate one
+	if len(el.events) > 0 && el.id == "" {
+		el.id = "auto-" + generateID()
 	}
 
-	if len(n.Events) > 0 && id == "" {
-		id = "auto-" + generateID()
-		n.Attrs = append(n.Attrs, fmt.KeyValue{Key: "id", Value: id})
-	}
-
-	for _, ev := range n.Events {
+	for _, ev := range el.events {
 		d.pendingEvents = append(d.pendingEvents, struct {
 			id      string
 			name    string
 			handler func(Event)
-		}{id, ev.Name, ev.Handler})
+		}{el.id, ev.Name, ev.Handler})
 	}
 
-	s := "<" + n.Tag
-	for _, attr := range n.Attrs {
+	s := "<" + el.tag
+	if el.id != "" {
+		s += " id='" + el.id + "'"
+	}
+	if len(el.classes) > 0 {
+		s += " class='"
+		for i, c := range el.classes {
+			if i > 0 {
+				s += " "
+			}
+			s += c
+		}
+		s += "'"
+	}
+	for _, attr := range el.attrs {
 		s += " " + attr.Key + "='" + attr.Value + "'"
 	}
 	s += ">"
-	for _, child := range n.Children {
+	for _, child := range el.children {
 		switch v := child.(type) {
-		case Node:
+		case *Element:
 			s += d.renderToHTML(v, comps)
 		case string:
 			s += v
@@ -321,7 +325,7 @@ func (d *domWasm) renderToHTML(n Node, comps *[]Component) string {
 			if vr, ok := v.(ViewRenderer); ok {
 				s += d.renderToHTML(vr.Render(), comps)
 			} else if el, ok := v.(*Element); ok {
-				s += d.renderToHTML(el.ToNode(), comps)
+				s += d.renderToHTML(el, comps)
 			} else {
 				s += v.RenderHTML()
 			}
@@ -329,7 +333,7 @@ func (d *domWasm) renderToHTML(n Node, comps *[]Component) string {
 			s += fmt.Sprint(v)
 		}
 	}
-	s += "</" + n.Tag + ">"
+	s += "</" + el.tag + ">"
 	return s
 }
 

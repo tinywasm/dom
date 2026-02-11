@@ -13,7 +13,7 @@ type Counter struct {
 	count int
 }
 
-func (c *Counter) Render() Node {
+func (c *Counter) Render() *Element {
 	return Div().
 		Class("counter").
 		Add(
@@ -26,8 +26,7 @@ func (c *Counter) Render() Node {
 			Button().
 				Text("+").
 				OnClick(c.Increment),
-		).
-		ToNode()
+		)
 }
 
 func (c *Counter) Increment(e Event) {

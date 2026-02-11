@@ -15,7 +15,8 @@
 **Tareas a realizar:**
 
 1.  **Interfaces Base (`dom.go`, `element.go`):**
-    *   Define las interfaces `DOM`, `Element` y `Component` exactamente como están en [docs/API.md](API.md).
+    *   Define the interfaces `DOM`, `Component`, `ViewRenderer` and the `Element` struct exactly as they are in [docs/API.md](API.md).
+    *   Note: The `Node` struct has been eliminated; use `*Element` as the unified return type for `Render()`.
     *   Asegúrate de que `Element` incluya los métodos nuevos `AppendHTML` y `Remove`.
 
 2.  **Implementación Stub (`dom_stub.go`, `element_stub.go`):**

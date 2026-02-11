@@ -15,7 +15,7 @@ type CounterComp struct {
 	count int
 }
 
-func (c *CounterComp) Render() dom.Node {
+func (c *CounterComp) Render() *dom.Element {
 	// Using fluent API
 	return dom.Div().
 		Add(
@@ -29,8 +29,7 @@ func (c *CounterComp) Render() dom.Node {
 					dom.Update(c)
 				}).
 				Text("Increment"),
-		).
-		ToNode()
+		)
 }
 
 func (c *CounterComp) RenderHTML() string {

@@ -93,15 +93,11 @@ func SetLog(log func(v ...any)) {
 	shared.log = log
 }
 
-// injectComponentID sets the component ID on the root node if not already set.
-func injectComponentID(n Node, id string) Node {
-	for _, attr := range n.Attrs {
-		if attr.Key == "id" {
-			return n // Already has an ID, don't override
-		}
+// injectComponentID sets the component ID on the root element if not already set.
+func injectComponentID(el *Element, id string) {
+	if el.id == "" {
+		el.id = id
 	}
-	n.Attrs = append([]fmt.KeyValue{{Key: "id", Value: id}}, n.Attrs...)
-	return n
 }
 
 // Log provides logging functionality using the log function passed to New.

@@ -15,15 +15,14 @@ type RenderableComp struct {
 	label string
 }
 
-func (c *RenderableComp) Render() dom.Node {
+func (c *RenderableComp) Render() *dom.Element {
 	return dom.Div().
 		Class("test-comp").
 		Add(
 			dom.Span().
 				ID(c.GetID() + "-label").
 				Text(c.label),
-		).
-		ToNode()
+		)
 }
 
 func (c *RenderableComp) RenderHTML() string { return "" }

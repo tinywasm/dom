@@ -104,7 +104,7 @@ type Component interface {
 
 // ViewRenderer provides a declarative way to render the component.
 type ViewRenderer interface {
-	Render() Node
+	Render() *Element
 }
 
 // EventHandler represents a DOM event handler in the declarative builder.
@@ -113,17 +113,12 @@ type EventHandler struct {
 	Handler func(Event)
 }
 
-// Node represents a DOM element in the declarative Builder API.
-type Node struct {
-	Tag      string
-	Attrs    []fmt.KeyValue
-	Events   []EventHandler
-	Children []any
-}
+// Element represents a DOM element in the declarative Builder API.
+// It is the unified type for building and rendering.
 
 ## Element API (Builder Pattern)
 
-The `Element` struct provides a fluent, declarative way to create `Node` trees.
+The `Element` struct provides a fluent, declarative way to create element trees.
 
 ```go
 // Add one or more children
@@ -133,12 +128,11 @@ Div().Add(
 )
 
 // Auto-ID Injection
-// When used in a ViewRenderer, the root node automatically gets the component's ID.
-func (c *MyComp) Render() dom.Node {
+// When used in a ViewRenderer, the root element automatically gets the component's ID.
+func (c *MyComp) Render() *dom.Element {
     return dom.Div(). // ID(c.GetID()) is no longer required here
         Class("my-comp").
-        Add(Span().Text("Content")).
-        ToNode()
+        Add(Span().Text("Content"))
 }
 ```
 
@@ -147,10 +141,9 @@ func (c *MyComp) Render() dom.Node {
 - `ID(id string)`: Sets the element's ID.
 - `Class(name string)`: Adds a CSS class.
 - `Attr(key, val string)`: Sets a custom attribute.
-- `Add(children ...any)`: Adds multiple children (Builders, Nodes, Components, or strings).
 - `Text(text string)`: Adds a text node child.
 - `OnClick(handler func(Event))`: Binds a click event.
-- `ToNode()`: terminal operation that returns a `Node`.
+- `RenderHTML()`: Terminal operation that returns the HTML string representation.
 
 > [!TIP]
 > Embed `*dom.Element` in your structs to automatically implement the `Component` interface and gain access to lifecycle methods.
