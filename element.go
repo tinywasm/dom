@@ -4,92 +4,98 @@ import (
 	"github.com/tinywasm/fmt"
 )
 
-// Element represents a DOM element in the declarative API.
+// Element represents a DOM element in the fluent Element API.
 type Element struct {
 	tag      string
 	id       string
 	classes  []string
 	attrs    []fmt.KeyValue
 	events   []EventHandler
-	children []any // Accepts: *Element, string, Component
+	children []any
 }
 
 // ID sets the ID of the element.
-func (e *Element) ID(id string) *Element {
-	e.id = id
-	return e
+func (b *Element) ID(id string) *Element {
+	b.id = id
+	return b
 }
 
-// Class adds one or more classes to the element.
-func (e *Element) Class(classes ...string) *Element {
-	e.classes = append(e.classes, classes...)
-	return e
+// Class adds a class to the element.
+func (b *Element) Class(class string) *Element {
+	b.classes = append(b.classes, class)
+	return b
 }
 
 // Attr sets an attribute on the element.
-func (e *Element) Attr(key, val string) *Element {
-	for i, attr := range e.attrs {
+func (b *Element) Attr(key, val string) *Element {
+	for i, attr := range b.attrs {
 		if attr.Key == key {
-			e.attrs[i].Value = val
-			return e
+			b.attrs[i].Value = val
+			return b
 		}
 	}
-	e.attrs = append(e.attrs, fmt.KeyValue{Key: key, Value: val})
-	return e
+	b.attrs = append(b.attrs, fmt.KeyValue{Key: key, Value: val})
+	return b
 }
 
 // OnClick adds a click event handler.
-func (e *Element) OnClick(handler func(Event)) *Element {
-	e.events = append(e.events, EventHandler{"click", handler})
-	return e
+func (b *Element) OnClick(handler func(Event)) *Element {
+	b.events = append(b.events, EventHandler{"click", handler})
+	return b
 }
 
 // OnInput adds an input event handler.
-func (e *Element) OnInput(handler func(Event)) *Element {
-	e.events = append(e.events, EventHandler{"input", handler})
-	return e
+func (b *Element) OnInput(handler func(Event)) *Element {
+	b.events = append(b.events, EventHandler{"input", handler})
+	return b
 }
 
 // OnChange adds a change event handler.
-func (e *Element) OnChange(handler func(Event)) *Element {
-	e.events = append(e.events, EventHandler{"change", handler})
-	return e
-}
-
-// On adds a generic event handler.
-func (e *Element) On(eventType string, handler func(Event)) *Element {
-	e.events = append(e.events, EventHandler{eventType, handler})
-	return e
+func (b *Element) OnChange(handler func(Event)) *Element {
+	b.events = append(b.events, EventHandler{"change", handler})
+	return b
 }
 
 // Add adds one or more children to the element.
 // Children can be *Element, Node, Component, or string.
-func (e *Element) Add(children ...any) *Element {
-	e.children = append(e.children, children...)
-	return e
+func (b *Element) Add(children ...any) *Element {
+	b.children = append(b.children, children...)
+	return b
+}
+
+// Append adds a child to the element.
+// Deprecated: use Add instead.
+func (b *Element) Append(child any) *Element {
+	b.children = append(b.children, child)
+	return b
 }
 
 // Text adds a text node child.
-func (e *Element) Text(text string) *Element {
-	e.children = append(e.children, text)
-	return e
+func (b *Element) Text(text string) *Element {
+	b.children = append(b.children, text)
+	return b
 }
 
 // Render renders the element to the parent.
 // This is a terminal operation.
-func (e *Element) Render(parentID string) error {
-	return Render(parentID, e)
+func (b *Element) Render(parentID string) error {
+	return Render(parentID, b)
+}
+
+// Mount is an alias for Render.
+func (b *Element) Mount(parentID string) error {
+	return Render(parentID, b)
 }
 
 // ToNode converts the element to a Node tree.
-func (e *Element) ToNode() Node {
+func (b *Element) ToNode() Node {
 	var attrs []fmt.KeyValue
-	if e.id != "" {
-		attrs = append(attrs, fmt.KeyValue{Key: "id", Value: e.id})
+	if b.id != "" {
+		attrs = append(attrs, fmt.KeyValue{Key: "id", Value: b.id})
 	}
-	if len(e.classes) > 0 {
+	if len(b.classes) > 0 {
 		classStr := ""
-		for i, c := range e.classes {
+		for i, c := range b.classes {
 			if i > 0 {
 				classStr += " "
 			}
@@ -97,11 +103,11 @@ func (e *Element) ToNode() Node {
 		}
 		attrs = append(attrs, fmt.KeyValue{Key: "class", Value: classStr})
 	}
-	attrs = append(attrs, e.attrs...)
+	attrs = append(attrs, b.attrs...)
 
 	// Convert children
 	var children []any
-	for _, child := range e.children {
+	for _, child := range b.children {
 		switch c := child.(type) {
 		case *Element:
 			children = append(children, c.ToNode())
@@ -113,9 +119,9 @@ func (e *Element) ToNode() Node {
 	}
 
 	return Node{
-		Tag:      e.tag,
+		Tag:      b.tag,
 		Attrs:    attrs,
-		Events:   e.events,
+		Events:   b.events,
 		Children: children,
 	}
 }
@@ -123,24 +129,24 @@ func (e *Element) ToNode() Node {
 // --- Component Interface Implementation ---
 
 // GetID returns the element's ID.
-func (e *Element) GetID() string {
-	return e.id
+func (b *Element) GetID() string {
+	return b.id
 }
 
 // SetID sets the element's ID.
-func (e *Element) SetID(id string) {
-	e.id = id
+func (b *Element) SetID(id string) {
+	b.id = id
 }
 
 // RenderHTML renders the element to HTML string.
-func (e *Element) RenderHTML() string {
-	return nodeToHTML(e.ToNode())
+func (b *Element) RenderHTML() string {
+	return nodeToHTML(b.ToNode())
 }
 
 // Children returns the component's children (components only).
-func (e *Element) Children() []Component {
+func (b *Element) Children() []Component {
 	var comps []Component
-	for _, child := range e.children {
+	for _, child := range b.children {
 		if c, ok := child.(Component); ok {
 			comps = append(comps, c)
 		}
