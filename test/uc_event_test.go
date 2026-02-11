@@ -3,9 +3,10 @@
 package dom_test
 
 import (
-	"github.com/tinywasm/dom"
 	"syscall/js"
 	"testing"
+
+	"github.com/tinywasm/dom"
 )
 
 // EventComponent registers listeners in OnMount
@@ -37,11 +38,11 @@ func TestEvents(t *testing.T) {
 	t.Run("Basic Event Handling", func(t *testing.T) {
 		comp := &MockComponent{}
 		comp.SetID("comp-basic-event")
-		dom.Mount("root", comp)
+		dom.Render("root", comp)
 		el, _ := dom.Get("comp-basic-event")
 
 		clicked := false
-		el.Click(func(e dom.Event) {
+		el.On("click", func(e dom.Event) {
 			clicked = true
 		})
 
@@ -58,7 +59,7 @@ func TestEvents(t *testing.T) {
 		comp := &EventComponent{}
 		comp.SetID("comp-events")
 
-		dom.Mount("root", comp)
+		dom.Render("root", comp)
 
 		// Trigger events
 		rawEl := doc.Call("getElementById", "comp-events")
@@ -94,8 +95,7 @@ func TestEvents(t *testing.T) {
 	})
 
 	t.Run("Event Target Value", func(t *testing.T) {
-		root, _ := dom.Get("root")
-		root.AppendHTML(`<input id="test-input" value="initial">`)
+		js.Global().Get("document").Call("getElementById", "root").Set("innerHTML", `<input id="test-input" value="initial">`)
 		el, _ := dom.Get("test-input")
 
 		var targetVal string

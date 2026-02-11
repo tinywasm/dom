@@ -8,7 +8,7 @@ type DOM interface {
 	// Get retrieves an element by its ID.
 	// It uses an internal cache to avoid repeated DOM lookups.
 	// Returns the element and a boolean indicating if it was found.
-	Get(id string) (Element, bool)
+	Get(id string) (Reference, bool)
 
 	// Render injects a component into a parent element.
 	// 1. It calls component.Render() (if ViewRenderer) or component.RenderHTML()
@@ -33,7 +33,7 @@ type DOM interface {
 	SetHash(hash string)
 
 	// QueryAll finds all elements matching a CSS selector.
-	QueryAll(selector string) []Element
+	QueryAll(selector string) []Reference
 
 	// Unmount removes a component from the DOM (by clearing the parent's HTML or removing the node)
 	// and cleans up any event listeners registered via the Element interface.
@@ -46,21 +46,13 @@ type DOM interface {
 	Log(v ...any)
 }
 
-// HTMLRenderer renders the component's HTML structure
-type HTMLRenderer interface {
-	RenderHTML() string
-}
-
-// ChildProvider returns the child components of a component.
-type ChildProvider interface {
-	// Children returns the child components.
-	Children() []Component
-}
-
-// Identifiable provides a unique identifier for a component.
-type Identifiable interface {
+// Component is the minimal interface for components.
+// All components must implement this for both SSR (backend) and WASM (frontend).
+type Component interface {
 	GetID() string
 	SetID(id string)
+	RenderHTML() string
+	Children() []Component
 }
 
 // ViewRenderer returns a Node tree for declarative UI.
@@ -81,14 +73,6 @@ type Updatable interface {
 // Unmountable is an optional interface for components that need cleanup logic.
 type Unmountable interface {
 	OnUnmount()
-}
-
-// Component is the minimal interface for components.
-// All components must implement this for both SSR (backend) and WASM (frontend).
-type Component interface {
-	Identifiable
-	HTMLRenderer
-	ChildProvider
 }
 
 // EventHandler represents a DOM event handler in the declarative builder.

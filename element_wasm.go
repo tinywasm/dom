@@ -4,55 +4,13 @@ package dom
 
 import (
 	"syscall/js"
-
-	"github.com/tinywasm/fmt"
 )
 
-// elementWasm is the WASM implementation of the Element interface.
+// elementWasm is the WASM implementation of the Reference interface.
 type elementWasm struct {
 	val js.Value
 	dom *domWasm
 	id  string
-}
-
-// SetText sets the text content of the element.
-func (e *elementWasm) SetText(v ...any) {
-	e.val.Set("textContent", fmt.Html(v...).String())
-}
-
-// SetHTML sets the inner HTML of the element.
-func (e *elementWasm) SetHTML(v ...any) {
-	e.val.Set("innerHTML", fmt.Html(v...).String())
-}
-
-// AppendHTML adds HTML to the end of the element's content.
-func (e *elementWasm) AppendHTML(v ...any) {
-	e.val.Call("insertAdjacentHTML", "beforeend", fmt.Html(v...).String())
-}
-
-// Remove removes the element from the DOM.
-func (e *elementWasm) Remove() {
-	e.val.Call("remove")
-}
-
-// AddClass adds a CSS class to the element.
-func (e *elementWasm) AddClass(class string) {
-	e.val.Get("classList").Call("add", class)
-}
-
-// RemoveClass removes a CSS class from the element.
-func (e *elementWasm) RemoveClass(class string) {
-	e.val.Get("classList").Call("remove", class)
-}
-
-// ToggleClass toggles a CSS class.
-func (e *elementWasm) ToggleClass(class string) {
-	e.val.Get("classList").Call("toggle", class)
-}
-
-// SetAttr sets an attribute value.
-func (e *elementWasm) SetAttr(key string, v ...any) {
-	e.val.Call("setAttribute", key, fmt.Html(v...).String())
 }
 
 // GetAttr retrieves an attribute value.
@@ -60,34 +18,14 @@ func (e *elementWasm) GetAttr(key string) string {
 	return e.val.Call("getAttribute", key).String()
 }
 
-// RemoveAttr removes an attribute.
-func (e *elementWasm) RemoveAttr(key string) {
-	e.val.Call("removeAttribute", key)
-}
-
 // Value returns the current value of an input/textarea/select.
 func (e *elementWasm) Value() string {
 	return e.val.Get("value").String()
 }
 
-// SetValue sets the value of an input/textarea/select.
-func (e *elementWasm) SetValue(v ...any) {
-	e.val.Set("value", fmt.Html(v...).String())
-}
-
 // Checked returns current checked state.
 func (e *elementWasm) Checked() bool {
 	return e.val.Get("checked").Bool()
-}
-
-// SetChecked sets checked state.
-func (e *elementWasm) SetChecked(checked bool) {
-	e.val.Set("checked", checked)
-}
-
-// Click registers a click event handler.
-func (e *elementWasm) Click(handler func(event Event)) {
-	e.On("click", handler)
 }
 
 // On registers a generic event handler.

@@ -3,9 +3,10 @@
 package dom_test
 
 import (
-	"github.com/tinywasm/dom"
 	"syscall/js"
 	"testing"
+
+	"github.com/tinywasm/dom"
 )
 
 func TestElementMethods(t *testing.T) {
@@ -14,7 +15,7 @@ func TestElementMethods(t *testing.T) {
 	// Mount a component to test on
 	comp := &MockComponent{}
 	comp.SetID("comp-elem")
-	dom.Mount("root", comp)
+	dom.Render("root", comp)
 
 	el, ok := dom.Get("comp-elem")
 	if !ok {
@@ -27,88 +28,32 @@ func TestElementMethods(t *testing.T) {
 	}
 	rawEl := getRaw("comp-elem")
 
-	t.Run("SetText", func(t *testing.T) {
-		el.SetText("Hello World")
-		if rawEl.Get("textContent").String() != "Hello World" {
-			t.Error("SetText failed with string")
-		}
-
-		// Test with non-string (int)
-		el.SetText("Count: ", 42)
-		if rawEl.Get("textContent").String() != "Count: 42" {
-			t.Error("SetText failed with variadic args")
-		}
-	})
-
-	t.Run("SetHTML", func(t *testing.T) {
-		el.SetHTML("<span>Inner</span>")
-		if rawEl.Get("innerHTML").String() != "<span>Inner</span>" {
-			t.Error("SetHTML failed")
-		}
-	})
-
-	t.Run("AppendHTML", func(t *testing.T) {
-		el.AppendHTML("<span>Appended</span>")
-		html := rawEl.Get("innerHTML").String()
-		if html != "<span>Inner</span><span>Appended</span>" {
-			t.Errorf("AppendHTML failed, got: %s", html)
-		}
-	})
-
 	t.Run("Classes", func(t *testing.T) {
-		el.AddClass("test-class")
+		// Use direct JS to set classes, then verify with Reference interface if possible
+		// (Simplified Reference doesn't have class methods)
+		rawEl.Get("classList").Call("add", "test-class")
 		if !rawEl.Get("classList").Call("contains", "test-class").Bool() {
 			t.Error("AddClass failed")
-		}
-		el.ToggleClass("test-class")
-		if rawEl.Get("classList").Call("contains", "test-class").Bool() {
-			t.Error("ToggleClass (remove) failed")
-		}
-		el.ToggleClass("test-class")
-		if !rawEl.Get("classList").Call("contains", "test-class").Bool() {
-			t.Error("ToggleClass (add) failed")
-		}
-		el.RemoveClass("test-class")
-		if rawEl.Get("classList").Call("contains", "test-class").Bool() {
-			t.Error("RemoveClass failed")
 		}
 	})
 
 	t.Run("Attributes", func(t *testing.T) {
-		el.SetAttr("data-test", "value")
+		rawEl.Call("setAttribute", "data-test", "value")
 		if el.GetAttr("data-test") != "value" {
-			t.Error("SetAttr/GetAttr failed")
-		}
-		el.RemoveAttr("data-test")
-		val := el.GetAttr("data-test")
-		if val != "" && val != "<null>" {
-			t.Errorf("RemoveAttr failed, got: %s", val)
+			t.Error("GetAttr failed")
 		}
 	})
 
-	t.Run("Remove Edge Cases", func(t *testing.T) {
-		root, _ := dom.Get("root")
-		root.AppendHTML(`<div id="temp-remove"></div>`)
-		tempEl, _ := dom.Get("temp-remove")
-		tempEl.Remove()
-		// Calling remove again should be fine
-		tempEl.Remove()
-	})
-
-	t.Run("Focus and SetValue", func(t *testing.T) {
-		root, _ := dom.Get("root")
-		root.AppendHTML(`<input id="test-focus">`)
+	t.Run("Focus and Value", func(t *testing.T) {
+		rawEl.Set("innerHTML", `<input id="test-focus">`)
 		inputEl, _ := dom.Get("test-focus")
+		rawInput := doc.Call("getElementById", "test-focus")
 
-		inputEl.SetValue("new-value")
+		rawInput.Set("value", "new-value")
 		if inputEl.Value() != "new-value" {
-			t.Error("SetValue failed")
+			t.Error("Value() failed")
 		}
 
 		inputEl.Focus()
-		active := doc.Get("activeElement")
-		if !active.Equal(doc.Call("getElementById", "test-focus")) {
-			t.Log("Focus check failed (might be browser restriction)")
-		}
 	})
 }

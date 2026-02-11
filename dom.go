@@ -16,7 +16,7 @@ type tinyDOM struct {
 }
 
 // Get retrieves an element by its ID.
-func Get(id string) (Element, bool) {
+func Get(id string) (Reference, bool) {
 	return instance.Get(id)
 }
 
@@ -40,12 +40,6 @@ func Append(parentID string, component Component) error {
 		component.SetID(generateID())
 	}
 	return instance.Append(parentID, component)
-}
-
-// Mount is an alias for Render for backward compatibility.
-// Deprecated: use Render instead.
-func Mount(parentID string, component Component) error {
-	return Render(parentID, component)
 }
 
 // Hydrate attaches event listeners to existing HTML.
@@ -90,7 +84,7 @@ func SetHash(hash string) {
 }
 
 // QueryAll query elements.
-func QueryAll(selector string) []Element {
+func QueryAll(selector string) []Reference {
 	return instance.QueryAll(selector)
 }
 

@@ -62,10 +62,10 @@ func TestFluentBuilder(t *testing.T) {
 		}
 	})
 
-	t.Run("Nested Builders", func(t *testing.T) {
+	t.Run("Nested Elements", func(t *testing.T) {
 		parent := dom.Div().
 			ID("parent").
-			Append(
+			Add(
 				dom.Span().ID("child").Text("Child"),
 			)
 
@@ -94,6 +94,23 @@ func TestFluentBuilder(t *testing.T) {
 		node := el.ToNode()
 		if len(node.Children) != 3 {
 			t.Errorf("Expected 3 children, got %d", len(node.Children))
+		}
+	})
+
+	t.Run("Variadic Class", func(t *testing.T) {
+		el := dom.Div().Class("cls1", "cls2", "cls3")
+		node := el.ToNode()
+
+		classFound := false
+		for _, a := range node.Attrs {
+			if a.Key == "class" && a.Value == "cls1 cls2 cls3" {
+				classFound = true
+				break
+			}
+		}
+
+		if !classFound {
+			t.Error("Variadic Class attribute not found or incorrect")
 		}
 	})
 }

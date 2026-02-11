@@ -21,8 +21,8 @@ func (b *Element) ID(id string) *Element {
 }
 
 // Class adds a class to the element.
-func (b *Element) Class(class string) *Element {
-	b.classes = append(b.classes, class)
+func (b *Element) Class(class ...string) *Element {
+	b.classes = append(b.classes, class...)
 	return b
 }
 

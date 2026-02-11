@@ -1,7 +1,5 @@
 //go:build wasm
 
-// rebuild trigger
-
 package main
 
 import (

@@ -17,7 +17,7 @@ func newDom(td *tinyDOM) DOM {
 }
 
 // Get is not implemented for backend.
-func (d *domBackend) Get(id string) (Element, bool) {
+func (d *domBackend) Get(id string) (Reference, bool) {
 	return nil, false
 }
 
@@ -48,4 +48,4 @@ func (d *domBackend) Unmount(component Component) {
 func (d *domBackend) OnHashChange(handler func(hash string)) {}
 func (d *domBackend) GetHash() string                        { return "" }
 func (d *domBackend) SetHash(hash string)                    {}
-func (d *domBackend) QueryAll(selector string) []Element     { return nil }
+func (d *domBackend) QueryAll(selector string) []Reference   { return nil }

@@ -3,6 +3,7 @@
 package dom_test
 
 import (
+	"syscall/js"
 	"testing"
 
 	"github.com/tinywasm/dom"
@@ -64,18 +65,15 @@ func TestBuilderAndUpdate(t *testing.T) {
 			t.Fatalf("Update failed: %v", err)
 		}
 
-		el, ok := dom.Get("counter2-val")
+		_, ok := dom.Get("counter2-val")
 		if !ok {
 			t.Error("Counter value element lost after update")
 		}
-		// Since we can't easily check InnerHTML via Element interface, we trust element exists.
-		_ = el
 	})
 
 	t.Run("Append Component", func(t *testing.T) {
-		// Create a parent container
-		root, _ := dom.Get("root")
-		root.AppendHTML(`<div id="list-container"></div>`)
+		// Create a parent container using direct JS
+		js.Global().Get("document").Call("getElementById", "root").Set("innerHTML", `<div id="list-container"></div>`)
 
 		c := &CounterComp{count: 10}
 		c.SetID("counter-append")
@@ -86,11 +84,9 @@ func TestBuilderAndUpdate(t *testing.T) {
 		}
 
 		// Verify it exists in DOM
-		el, ok := dom.Get("counter-append-val")
+		_, ok := dom.Get("counter-append-val")
 		if !ok {
 			t.Fatal("Appended component element not found")
 		}
-
-		_ = el
 	})
 }

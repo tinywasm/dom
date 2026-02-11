@@ -3,8 +3,10 @@
 package dom_test
 
 import (
-	"github.com/tinywasm/dom"
+	"syscall/js"
 	"testing"
+
+	"github.com/tinywasm/dom"
 )
 
 func TestLifecycle(t *testing.T) {
@@ -48,7 +50,7 @@ func TestLifecycle(t *testing.T) {
 	t.Run("Mount Component", func(t *testing.T) {
 		comp := &MockComponent{}
 		comp.SetID("comp1")
-		err := dom.Mount("root", comp)
+		err := dom.Render("root", comp)
 		if err != nil {
 			t.Fatalf("Mount failed: %v", err)
 		}
@@ -61,7 +63,7 @@ func TestLifecycle(t *testing.T) {
 		if !ok {
 			t.Fatal("Component element not found in DOM")
 		}
-		if val := el.Value(); val != "" && val != "<undefined>" {
+		if val := el.Value(); val != "" && val != "<undefined>" && val != "undefined" {
 			t.Errorf("Expected empty value or <undefined> for div, got: %s", val)
 		}
 	})
@@ -88,7 +90,7 @@ func TestLifecycle(t *testing.T) {
 	t.Run("Mount Invalid Parent", func(t *testing.T) {
 		comp := &MockComponent{}
 		comp.SetID("comp-invalid")
-		err := dom.Mount("invalid-parent-id", comp)
+		err := dom.Render("invalid-parent-id", comp)
 		if err == nil {
 			t.Error("Expected error when mounting to invalid parent")
 		}
@@ -98,9 +100,8 @@ func TestLifecycle(t *testing.T) {
 		comp := &MockComponent{}
 		comp.SetID("comp-no-listeners")
 		// Need to add parent first
-		root, _ := dom.Get("root")
-		root.AppendHTML(`<div id="root-no-listeners"></div>`)
-		dom.Mount("root-no-listeners", comp)
+		js.Global().Get("document").Call("getElementById", "root").Set("innerHTML", `<div id="root-no-listeners"></div>`)
+		dom.Render("root-no-listeners", comp)
 		dom.Unmount(comp)
 	})
 

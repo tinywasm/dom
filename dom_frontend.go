@@ -51,7 +51,7 @@ func newDom(td *tinyDOM) DOM {
 }
 
 // Get retrieves an element by ID from the cache or the DOM.
-func (d *domWasm) Get(id string) (Element, bool) {
+func (d *domWasm) Get(id string) (Reference, bool) {
 	// Linear search in cache
 	for _, item := range d.elementCache {
 		if item.id == id {
@@ -93,11 +93,6 @@ func (d *domWasm) Get(id string) (Element, bool) {
 
 // Render injects the component's content into the parent element.
 func (d *domWasm) Render(parentID string, component Component) error {
-	parent, ok := d.Get(parentID)
-	if !ok {
-		return fmt.Errf("parent element not found: %s", parentID)
-	}
-
 	// Generate ID if not set
 	if component.GetID() == "" {
 		component.SetID(generateID())
@@ -111,13 +106,17 @@ func (d *domWasm) Render(parentID string, component Component) error {
 		node := vr.Render()
 		node = injectComponentID(node, component.GetID())
 		html = d.renderToHTML(node, &children)
-	} else if el, ok := component.(*Builder); ok {
+	} else if el, ok := component.(*Element); ok {
 		html = d.renderToHTML(el.ToNode(), &children)
 	} else {
 		html = component.RenderHTML()
 	}
 
-	parent.SetHTML(html)
+	parent := d.document.Call("getElementById", parentID)
+	if parent.IsNull() || parent.IsUndefined() {
+		return fmt.Errf("parent element not found: %s", parentID)
+	}
+	parent.Set("innerHTML", html)
 
 	// Update lifecycle maps
 	d.trackComponent(component)
@@ -149,11 +148,6 @@ func (d *domWasm) Update(component Component) error {
 		}
 	}
 
-	el, ok := d.Get(id)
-	if !ok {
-		return fmt.Errf("component element not found: %s", id)
-	}
-
 	// Clean up old children listeners/lifecycle
 	d.cleanupChildren(id)
 
@@ -170,15 +164,18 @@ func (d *domWasm) Update(component Component) error {
 		node := vr.Render()
 		node = injectComponentID(node, id)
 		html = d.renderToHTML(node, &children)
-	} else if el, ok := component.(*Builder); ok {
+	} else if el, ok := component.(*Element); ok {
 		html = d.renderToHTML(el.ToNode(), &children)
 	} else {
 		html = component.RenderHTML()
 	}
 
 	// Replace the element in the DOM
-	elWasm := el.(*elementWasm)
-	elWasm.val.Set("outerHTML", html)
+	elRaw := d.document.Call("getElementById", id)
+	if elRaw.IsNull() || elRaw.IsUndefined() {
+		return fmt.Errf("component element not found: %s", id)
+	}
+	elRaw.Set("outerHTML", html)
 
 	// Clear element from cache as it was replaced
 	d.removeFromElementCache(id)
@@ -209,11 +206,6 @@ func (d *domWasm) Update(component Component) error {
 
 // Append injects the component's content after the last child of the parent element.
 func (d *domWasm) Append(parentID string, component Component) error {
-	parent, ok := d.Get(parentID)
-	if !ok {
-		return fmt.Errf("parent element not found: %s", parentID)
-	}
-
 	if component.GetID() == "" {
 		component.SetID(generateID())
 	}
@@ -224,13 +216,17 @@ func (d *domWasm) Append(parentID string, component Component) error {
 		node := vr.Render()
 		node = injectComponentID(node, component.GetID())
 		html = d.renderToHTML(node, &children)
-	} else if el, ok := component.(*Builder); ok {
+	} else if el, ok := component.(*Element); ok {
 		html = d.renderToHTML(el.ToNode(), &children)
 	} else {
 		html = component.RenderHTML()
 	}
 
-	parent.AppendHTML(html)
+	parent := d.document.Call("getElementById", parentID)
+	if parent.IsNull() || parent.IsUndefined() {
+		return fmt.Errf("parent element not found: %s", parentID)
+	}
+	parent.Call("insertAdjacentHTML", "beforeend", html)
 
 	d.trackComponent(component)
 	d.trackChildren(component.GetID(), children)
@@ -260,9 +256,9 @@ func (d *domWasm) Unmount(component Component) {
 
 	// Remove the element from the DOM
 	id := component.GetID()
-	el, ok := d.Get(id)
-	if ok {
-		el.Remove()
+	el := d.document.Call("getElementById", id)
+	if !el.IsNull() && !el.IsUndefined() {
+		el.Call("remove")
 	}
 
 	d.removeFromElementCache(id)
@@ -312,7 +308,7 @@ func (d *domWasm) renderToHTML(n Node, comps *[]Component) string {
 
 			if vr, ok := v.(ViewRenderer); ok {
 				s += d.renderToHTML(vr.Render(), comps)
-			} else if el, ok := v.(*Builder); ok {
+			} else if el, ok := v.(*Element); ok {
 				s += d.renderToHTML(el.ToNode(), comps)
 			} else {
 				s += v.RenderHTML()
@@ -546,10 +542,10 @@ func (d *domWasm) SetHash(hash string) {
 }
 
 // QueryAll performs a document.querySelectorAll and wraps the results.
-func (d *domWasm) QueryAll(selector string) []Element {
+func (d *domWasm) QueryAll(selector string) []Reference {
 	nodes := d.document.Call("querySelectorAll", selector)
 	count := nodes.Length()
-	elems := make([]Element, count)
+	elems := make([]Reference, count)
 	for i := 0; i < count; i++ {
 		val := nodes.Index(i)
 		id := val.Get("id").String()
