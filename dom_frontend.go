@@ -108,7 +108,9 @@ func (d *domWasm) Render(parentID string, component Component) error {
 	var html string
 
 	if vr, ok := component.(ViewRenderer); ok {
-		html = d.renderToHTML(vr.Render(), &children)
+		node := vr.Render()
+		node = injectComponentID(node, component.GetID())
+		html = d.renderToHTML(node, &children)
 	} else if el, ok := component.(*Builder); ok {
 		html = d.renderToHTML(el.ToNode(), &children)
 	} else {
@@ -165,7 +167,9 @@ func (d *domWasm) Update(component Component) error {
 	var html string
 
 	if vr, ok := component.(ViewRenderer); ok {
-		html = d.renderToHTML(vr.Render(), &children)
+		node := vr.Render()
+		node = injectComponentID(node, id)
+		html = d.renderToHTML(node, &children)
 	} else if el, ok := component.(*Builder); ok {
 		html = d.renderToHTML(el.ToNode(), &children)
 	} else {
@@ -217,7 +221,9 @@ func (d *domWasm) Append(parentID string, component Component) error {
 	var children []Component
 	var html string
 	if vr, ok := component.(ViewRenderer); ok {
-		html = d.renderToHTML(vr.Render(), &children)
+		node := vr.Render()
+		node = injectComponentID(node, component.GetID())
+		html = d.renderToHTML(node, &children)
 	} else if el, ok := component.(*Builder); ok {
 		html = d.renderToHTML(el.ToNode(), &children)
 	} else {
@@ -430,7 +436,10 @@ func (d *domWasm) trackComponent(c Component) {
 			return // Already tracked
 		}
 	}
-	d.mountedComponents = append(d.mountedComponents, struct{id string; comp Component}{id, c})
+	d.mountedComponents = append(d.mountedComponents, struct {
+		id   string
+		comp Component
+	}{id, c})
 }
 
 func (d *domWasm) untrackComponent(id string) {
@@ -461,7 +470,10 @@ func (d *domWasm) trackChildren(parentID string, children []Component) {
 		}
 	}
 	if !found {
-		d.childrenMap = append(d.childrenMap, struct{parentID string; childIDs []string}{parentID, childIDs})
+		d.childrenMap = append(d.childrenMap, struct {
+			parentID string
+			childIDs []string
+		}{parentID, childIDs})
 	}
 }
 

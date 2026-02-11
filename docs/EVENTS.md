@@ -15,6 +15,9 @@ type Event interface {
     // TargetValue returns the value of the event's target element.
     // Extremely useful for <input>, <textarea>, and <select> changes.
     TargetValue() string
+
+    // TargetID returns the ID of the event's target element.
+    TargetID() string
 }
 ```
 

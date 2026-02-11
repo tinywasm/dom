@@ -56,7 +56,15 @@ func (b *Builder) OnChange(handler func(Event)) *Builder {
 	return b
 }
 
+// Add adds one or more children to the element.
+// Children can be *Builder, Node, Component, or string.
+func (b *Builder) Add(children ...any) *Builder {
+	b.children = append(b.children, children...)
+	return b
+}
+
 // Append adds a child to the element.
+// Deprecated: use Add instead.
 func (b *Builder) Append(child any) *Builder {
 	b.children = append(b.children, child)
 	return b

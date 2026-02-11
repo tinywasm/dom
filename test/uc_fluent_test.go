@@ -84,4 +84,16 @@ func TestFluentBuilder(t *testing.T) {
 			t.Errorf("Expected child tag span, got %s", childNode.Tag)
 		}
 	})
+	t.Run("Variadic Add", func(t *testing.T) {
+		el := dom.Div().Add(
+			dom.Span().Text("One"),
+			dom.Span().Text("Two"),
+			dom.Span().Text("Three"),
+		)
+
+		node := el.ToNode()
+		if len(node.Children) != 3 {
+			t.Errorf("Expected 3 children, got %d", len(node.Children))
+		}
+	})
 }

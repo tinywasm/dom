@@ -16,8 +16,7 @@ type CounterElm struct {
 
 func (c *CounterElm) Render() dom.Node {
 	return dom.Div().
-		ID(c.GetID()).
-		Append(
+		Add(
 			dom.Span().ID("count-val").Text(fmt.Sprint(c.count)),
 		).
 		ToNode()

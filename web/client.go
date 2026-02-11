@@ -1,5 +1,7 @@
 //go:build wasm
 
+// rebuild trigger
+
 package main
 
 import (
@@ -15,19 +17,14 @@ type Counter struct {
 
 func (c *Counter) Render() dom.Node {
 	return dom.Div().
-		ID(c.GetID()).
 		Class("counter").
-		Append(
+		Add(
 			dom.Button().
 				Text("-").
 				OnClick(c.Decrement),
-		).
-		Append(
 			dom.Span().
 				Class("count").
 				Text(fmt.Sprint(c.count)),
-		).
-		Append(
 			dom.Button().
 				Text("+").
 				OnClick(c.Increment),

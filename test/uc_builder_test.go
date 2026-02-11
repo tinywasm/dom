@@ -17,15 +17,12 @@ type CounterComp struct {
 func (c *CounterComp) Render() dom.Node {
 	// Using fluent API
 	return dom.Div().
-		ID(c.GetID()).
-		Append(
+		Add(
 			dom.Span().
-				ID(c.GetID() + "-val").
+				ID(c.GetID()+"-val").
 				Text(fmt.Sprint(c.count)),
-		).
-		Append(
 			dom.Button().
-				ID(c.GetID() + "-btn").
+				ID(c.GetID()+"-btn").
 				OnClick(func(e dom.Event) {
 					c.count++
 					dom.Update(c)

@@ -49,19 +49,14 @@ type Counter struct {
 // View (rendering)
 func (c *Counter) Render() dom.Node {
 	return dom.Div().
-		ID(c.GetID()).
 		Class("counter").
-		Append(
+		Add(
 			dom.Button().
 				Text("-").
 				OnClick(c.Decrement),
-		).
-		Append(
 			dom.Span().
 				Class("count").
 				Text(fmt.Sprint(c.count)),
-		).
-		Append(
 			dom.Button().
 				Text("+").
 				OnClick(c.Increment),
@@ -121,12 +116,10 @@ The new fluent API allows chaining for concise, readable code:
 dom.Div().
 	ID("container").
 	Class("flex items-center").
-	Append(
+	Add(
 		dom.Button().
 			Text("Click me").
 			OnClick(handleClick),
-	).
-	Append(
 		dom.Span().
 			Text("Hello World"),
 	).
@@ -205,9 +198,9 @@ type TodoList struct {
 	todos []string
 }
 func (t *TodoList) Render() dom.Node {
-	list := dom.Ul().ID(t.GetID())
+	list := dom.Ul() // ID is auto-injected from t.GetID()
 	for _, todo := range t.todos {
-		list.Append(dom.Li().Text(todo))
+		list.Add(dom.Li().Text(todo))
 	}
 	return list.ToNode()
 }
@@ -228,9 +221,9 @@ func (c *MyList) Children() []dom.Component {
 }
 
 func (c *MyList) Render() dom.Node {
-	list := dom.Div().ID(c.GetID())
+	list := dom.Div()
 	for _, item := range c.items {
-		list.Append(item) // Components can be children
+		list.Add(item) // Components can be children
 	}
 	return list.ToNode()
 }

@@ -11,7 +11,6 @@ import (
 	"fmt"
 
 	"github.com/tinywasm/dom"
-	. "github.com/tinywasm/dom/html"
 )
 
 type Counter struct {
@@ -25,30 +24,29 @@ func NewCounter() *Counter {
 
 // Render uses the declarative Builder API
 func (c *Counter) Render() dom.Node {
-	return Div(
-		ID(c.ID()),
-		Class("counter"),
-		Span(
-			ID(c.ID()+"-val"),
-			Text(fmt.Sprint(c.count)),
-		),
-		Button(
-			ID(c.ID()+"-btn"),
-			Text("Increment"),
-			// Event handling is now inline and declarative!
-			OnClick(func(e dom.Event) {
-				c.count++
-				// Update re-renders the component in place
-				dom.Update(c)
-			}),
-		),
-	)
+	return dom.Div().
+		Class("counter").
+		Add(
+			dom.Span().
+				ID(c.GetID()+"-val").
+				Text(fmt.Sprint(c.count)),
+			dom.Button().
+				ID(c.GetID()+"-btn").
+				Text("Increment").
+				// Event handling is now inline and declarative!
+				OnClick(func(e dom.Event) {
+					c.count++
+					// Update re-render triggers automatically via Update()
+					c.Update()
+				}),
+		).
+		ToNode()
 }
 
 // OnMount is optional if you only use inline events,
 // but still available for complex logic.
 func (c *Counter) OnMount() {
-	dom.Log("Counter mounted:", c.ID())
+	dom.Log("Counter mounted:", c.GetID())
 }
 ```
 
@@ -80,13 +78,14 @@ func (p *Page) Children() []dom.Component {
 }
 
 func (p *Page) Render() dom.Node {
-	return Div(
-		ID(p.ID()),
-		Class("page"),
-		H1(Text("My Page")),
-		// Embedding a child component directly
-		p.counter,
-	)
+	return dom.Div().
+		Class("page").
+		Add(
+			dom.H1().Text("My Page"),
+			// Embedding a child component directly
+			p.counter,
+		).
+		ToNode()
 }
 ```
 

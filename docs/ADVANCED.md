@@ -7,7 +7,6 @@ When working with lists, you often want to add or remove items without re-render
 ```go
 import (
 	"github.com/tinywasm/dom"
-	. "github.com/tinywasm/dom/html"
 )
 
 type TodoList struct {
@@ -16,21 +15,22 @@ type TodoList struct {
 }
 
 func (l *TodoList) Render() dom.Node {
-	// Initial render might be empty or have initial items
+	// Initial render might be empty or have initial items.
 	// We use a container that we can append to later.
-	return Ul(ID(l.ID()))
+	// dom.Ul root automatically gets l.GetID() in Render cycle.
+	return dom.Ul().ToNode()
 }
 
 func (l *TodoList) AddItem(label string) {
 	// 1. Create new component
-	newItem := NewTodoItem(l.ID() + "-item-" + uniqueID(), label)
+	newItem := NewTodoItem(l.GetID() + "-item-" + uniqueID(), label)
 	l.items = append(l.items, newItem)
 
 	// 2. Append the new item to the list
 	// dom.Append renders the component and injects it at the end of the parent
 	// while preserving the existing DOM (and focus).
 	// It also automatically handles lifecycle (OnMount / Events).
-	dom.Append(l.ID(), newItem)
+	dom.Append(l.GetID(), newItem)
 }
 
 func (l *TodoList) RemoveItem(item *TodoItem) {

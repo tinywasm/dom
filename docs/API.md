@@ -100,8 +100,8 @@ Provides unique identification for components.
 
 ```go
 type Identifiable interface {
-	// ID returns the unique identifier.
-	ID() string
+	// GetID returns the unique identifier.
+	GetID() string
 	// SetID sets the unique identifier.
 	SetID(id string)
 }
@@ -131,6 +131,37 @@ type Node struct {
 	Events   []EventHandler
 	Children []any
 }
+
+## Builder API
+
+The Builder API provides a fluent, declarative way to create `Node` trees.
+
+```go
+// Add one or more children
+Div().Add(
+    Span().Text("Hello"),
+    Button().Text("Click Me"),
+)
+
+// Auto-ID Injection
+// When used in a ViewRenderer, the root node automatically gets the component's ID.
+func (c *MyComp) Render() dom.Node {
+    return dom.Div(). // ID(c.GetID()) is no longer required here
+        Class("my-comp").
+        Add(Span().Text("Content")).
+        ToNode()
+}
+```
+
+### Methods
+
+- `ID(id string)`: Sets the element's ID.
+- `Class(name string)`: Adds a CSS class.
+- `Attr(key, val string)`: Sets a custom attribute.
+- `Add(children ...any)`: Adds multiple children (Builders, Nodes, Components, or strings).
+- `Text(text string)`: Adds a text node child.
+- `OnClick(handler func(Event))`: Binds a click event.
+- `ToNode()`: terminal operation that returns a `Node`.
 
 > [!TIP]
 > Use `dom.BaseComponent` to automatically implement the `Identifiable` interface in your structs.

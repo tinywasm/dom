@@ -5,8 +5,8 @@
 *   **Minimalist**: A thin wrapper over the browser DOM, optimized for TinyGo/WASM.
 *   **No `syscall/js` exposure**: Components interact *only* with the TinyDOM Go interface.
 *   **Zero StdLib**: Uses `tinystring` for string manipulation to keep binary size small.
-*   **Declarative Builder**: Uses a type-safe `dom.Node` builder pattern (`html.Div`, etc., from the `dom/html` subpackage) for UI construction.
-*   **Direct & Cached**: Instead of a heavy VDOM tree diffing algorithm, it uses an **ID-based caching mechanism** and direct DOM updates via `dom.Update()`.
+*   **Declarative Builder**: Uses a type-safe `dom.Node` builder pattern (`dom.Div`, etc.) for UI construction.
+*   **Direct & Cached**: Instead of a heavy VDOM tree diffing algorithm, it uses an **ID-based caching mechanism** and direct DOM updates via `c.Update()`.
 *   **Standard HTML/CSS**: Components can still use raw HTML strings if needed, but the Builder API is preferred.
 *   **Dependency Injection**: The `DOM` is injected into components, not imported globally.
 *   **Auto ID Management**: The library automatically assigns unique IDs to components and event targets.
@@ -28,7 +28,7 @@ This ensures consistent initialization and automatic cleanup of event listeners.
 
 ### Component Contract
 A component is a Go struct that:
-1.  Implements the `Identifiable` interface (`ID()` and `SetID()`).
+1.  Implements the `Identifiable` interface (`GetID()` and `SetID()`).
 2.  Implements methods to return its HTML/CSS.
 3.  Manages its own events via the global API.
 
@@ -52,14 +52,14 @@ Represents a DOM node. It provides methods for:
 
 ### Component Interface
 The contract for UI parts:
-*   `ID()`: Unique identifier.
+*   `GetID()`: Unique identifier.
 *   `SetID(id string)`: Inject unique ID.
 *   `Render()`: Returns the `dom.Node` tree (Preferred).
 *   `RenderHTML()`: Returns static HTML string (Legacy/Fallback).
 *   `Children()`: Returns child components (Optional with BaseComponent).
 
-### HTML Builder (`dom/html`)
-A dedicated subpackage for declarative UI construction. It can be dot-imported (`. "github.com/tinywasm/dom/html"`) for a cleaner DSL.
+### HTML Builder
+The builder functions are part of the `dom` package. They can be dot-imported (`. "github.com/tinywasm/dom"`) for a cleaner DSL if desired.
 
 
 ## 4. Usage Example
@@ -74,10 +74,10 @@ A dedicated subpackage for declarative UI construction. It can be dot-imported (
 
 ## 6. Key Design Decisions
 
-1.  **ID Management**: **Automatic**. `dom.Render` and `html.Tag` handle unique ID generation for you.
+1.  **ID Management**: **Automatic**. `dom.Render` and `injectComponentID` handle unique ID generation. Component roots in `Render()` get their ID automatically.
 2.  **Child Components**: **Recursive Lifecycle**. The library automatically renders and unmounts child components found in the `Node` tree.
-3.  **State Updates**: **Component-Level Reactivity**. Calling `dom.Update(component)` re-renders the component and replaces it in the DOM.
-4.  **Builder API**: **Declarative vs Imperative**. We use a Builder pattern (`html.Div`) to ensure type safety, correct HTML structure, and automated event wiring. The builder functions are housed in the `dom/html` subpackage to facilitate dot-imports without polluting the root `dom` namespace.
+3.  **State Updates**: **Component-Level Reactivity**. Calling `c.Update()` re-renders the component and replaces it in the DOM.
+4.  **Builder API**: **Declarative vs Imperative**. We use a Builder pattern (`dom.Div`) to ensure type safety, correct HTML structure, and automated event wiring.
 5.  **TinyGo Optimization**: **Slices vs Maps**. To minimize WASM binary size and improve performance, elements use `[]fmt.KeyValue` for attributes and `[]EventHandler` for events instead of Go maps. Linear scans are faster for typical attribute counts (< 10) and avoid the heavy map runtime support.
 6.  **CSS Strategy**: **Global**. Standard CSS classes.
 7.  **Routing**: **Single Page Root**. The "Index" is the root component.
