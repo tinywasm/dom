@@ -24,7 +24,7 @@ func (c *CounterComp) Render() *dom.Element {
 				Text(fmt.Sprint(c.count)),
 			dom.Button().
 				ID(c.GetID()+"-btn").
-				OnClick(func(e dom.Event) {
+				On("click", func(e dom.Event) {
 					c.count++
 					dom.Update(c)
 				}).
@@ -47,7 +47,7 @@ func TestBuilderAndUpdate(t *testing.T) {
 			t.Fatalf("Render failed: %v", err)
 		}
 
-		_, ok := dom.Get("counter-val")
+		_, ok := GetRef("counter-val")
 		if !ok {
 			t.Fatal("Counter value element not found")
 		}
@@ -64,7 +64,7 @@ func TestBuilderAndUpdate(t *testing.T) {
 			t.Fatalf("Update failed: %v", err)
 		}
 
-		_, ok := dom.Get("counter2-val")
+		_, ok := GetRef("counter2-val")
 		if !ok {
 			t.Error("Counter value element lost after update")
 		}
@@ -83,7 +83,7 @@ func TestBuilderAndUpdate(t *testing.T) {
 		}
 
 		// Verify it exists in DOM
-		_, ok := dom.Get("counter-append-val")
+		_, ok := GetRef("counter-append-val")
 		if !ok {
 			t.Fatal("Appended component element not found")
 		}

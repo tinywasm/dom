@@ -41,8 +41,9 @@ func (e *elementWasm) On(eventType string, handler func(event Event)) {
 	// Append to eventFuncs
 	e.dom.eventFuncs = append(e.dom.eventFuncs, struct {
 		key string
+		val js.Value
 		fn  js.Func
-	}{eventKey, fn})
+	}{eventKey, e.val, fn})
 
 	// Associate the event with the component currently being mounted.
 	if e.dom.currentComponentID != "" {

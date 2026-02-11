@@ -3,41 +3,26 @@ package dom
 // DOM is the main entry point for interacting with the browser.
 // It is designed to be injected into your components.
 type DOM interface {
-	// Get retrieves an element by its ID.
-	// It uses an internal cache to avoid repeated DOM lookups.
-	// Returns the element and a boolean indicating if it was found.
-	Get(id string) (Reference, bool)
-
-	// Render injects a component into a parent element.
-	// 1. It calls component.Render() (if ViewRenderer) or component.RenderHTML()
-	// 2. It sets the content of the parent element (found by parentID)
-	// 3. It calls component.OnMount() to bind events
+	// Render injecta un componente en un elemento padre.
+	// 1. Llama a componente.Render() (si es ViewRenderer) o componente.RenderHTML()
+	// 2. Establece el contenido del elemento padre (buscado por parentID)
+	// 3. Llama a componente.OnMount() para enlazar eventos
 	Render(parentID string, component Component) error
 
-	// Append injects a component AFTER the last child of the parent element.
-	// Useful for dynamic lists.
+	// Append injecta un componente DESPUÉS del último hijo del elemento padre.
+	// Útil para listas dinámicas.
 	Append(parentID string, component Component) error
 
-	// Hydrate attaches event listeners to existing HTML without re-rendering it.
-	Hydrate(parentID string, component Component) error
-
-	// OnHashChange registers a listener for URL hash changes.
+	// OnHashChange registra un listener para cambios en el hash de la URL.
 	OnHashChange(handler func(hash string))
 
-	// GetHash returns the current URL hash (e.g., "#help").
+	// GetHash devuelve el hash actual de la URL (ej. "#help").
 	GetHash() string
 
-	// SetHash updates the URL hash.
+	// SetHash actualiza el hash de la URL.
 	SetHash(hash string)
 
-	// QueryAll finds all elements matching a CSS selector.
-	QueryAll(selector string) []Reference
-
-	// Unmount removes a component from the DOM (by clearing the parent's HTML or removing the node)
-	// and cleans up any event listeners registered via the Element interface.
-	Unmount(component Component)
-
-	// Update re-renders the component in its current position in the DOM.
+	// Update re-renderiza el componente en su posición actual en el DOM.
 	Update(component Component) error
 
 	// Log provides logging functionality using the log function passed to New.

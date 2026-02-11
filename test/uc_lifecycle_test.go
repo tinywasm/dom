@@ -13,7 +13,7 @@ func TestLifecycle(t *testing.T) {
 	_ = SetupDOM(t)
 
 	t.Run("Get Existing Element", func(t *testing.T) {
-		el, ok := dom.Get("root")
+		el, ok := GetRef("root")
 		if !ok {
 			t.Fatal("Expected to find root element")
 		}
@@ -23,14 +23,14 @@ func TestLifecycle(t *testing.T) {
 	})
 
 	t.Run("Get Non-Existing Element", func(t *testing.T) {
-		_, ok := dom.Get("non-existent")
+		_, ok := GetRef("non-existent")
 		if ok {
 			t.Error("Expected not to find non-existent element")
 		}
 	})
 
 	t.Run("Get Body and Head", func(t *testing.T) {
-		body, ok := dom.Get("body")
+		body, ok := GetRef("body")
 		if !ok {
 			t.Error("Expected to find body")
 		}
@@ -38,7 +38,7 @@ func TestLifecycle(t *testing.T) {
 			t.Error("Body elem should not be nil")
 		}
 
-		head, ok := dom.Get("head")
+		head, ok := GetRef("head")
 		if !ok {
 			t.Error("Expected to find head")
 		}
@@ -59,7 +59,7 @@ func TestLifecycle(t *testing.T) {
 			t.Error("OnMount was not called")
 		}
 
-		el, ok := dom.Get("comp1")
+		el, ok := GetRef("comp1")
 		if !ok {
 			t.Fatal("Component element not found in DOM")
 		}
@@ -75,13 +75,13 @@ func TestLifecycle(t *testing.T) {
 		// but setupDOM clears body. Wait, setupDOM is called once per TestLifecycle.
 		// So state persists between sub-tests.
 
-		dom.Unmount(comp)
-
+		// Unmount via replacement
+		dom.Render("root", dom.Div().ID("root-placeholder"))
 		if comp.Mounted {
 			// See previous note about new struct instance
 		}
 
-		_, ok := dom.Get("comp1")
+		_, ok := GetRef("comp1")
 		if ok {
 			t.Error("Element should be removed from cache")
 		}
@@ -102,16 +102,16 @@ func TestLifecycle(t *testing.T) {
 		// Need to add parent first
 		js.Global().Get("document").Call("getElementById", "root").Set("innerHTML", `<div id="root-no-listeners"></div>`)
 		dom.Render("root-no-listeners", comp)
-		dom.Unmount(comp)
+		// dom.Unmount removed
 	})
 
 	t.Run("Get Cache Hit", func(t *testing.T) {
-		_, ok := dom.Get("root")
+		_, ok := GetRef("root")
 		if !ok {
 			t.Fatal("Root not found")
 		}
 
-		el, ok := dom.Get("root")
+		el, ok := GetRef("root")
 		if !ok {
 			t.Fatal("Root not found in cache")
 		}

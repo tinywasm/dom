@@ -15,7 +15,6 @@ tinywasm/dom provides a minimalist, WASM-optimized way to interact with the brow
 *   **TinyGo Optimized**: Avoids heavy standard library packages to keep WASM binaries <500KB
 *   **Direct DOM Manipulation**: No Virtual DOM overhead. You control the updates.
 *   **ID-Based Caching**: Efficient element lookup and caching strategy
-*   **Memory Safe**: Automatic event listener cleanup on `Unmount`
 *   **Lifecycle Hooks**: `OnMount`, `OnUpdate`, `OnUnmount` for fine-grained control
 
 ## 📦 Installation
@@ -26,86 +25,11 @@ go get github.com/tinywasm/dom
 
 ## ⚡ Quick Start
 
-### Example 1: Dynamic Component (Elm Pattern)
+For a complete example including Elm architecture (Dynamic Components) and Static Components, check the following file:
 
-Counter component with state management:
+👉 **[web/client.go](web/client.go)**
 
-```go
-//go:build wasm
-
-package main
-
-import (
-	"github.com/tinywasm/dom"
-	"github.com/tinywasm/fmt"
-)
-
-// Model (state)
-type Counter struct {
-	*dom.Element
-	count int
-}
-
-// View (rendering)
-func (c *Counter) Render() *dom.Element {
-	return dom.Div().
-		Class("counter").
-		Add(
-			dom.Button().
-				Text("-").
-				OnClick(c.Decrement),
-			dom.Span().
-				Class("count").
-				Text(fmt.Sprint(c.count)),
-			dom.Button().
-				Text("+").
-				OnClick(c.Increment),
-		)
-}
-
-// Update (state mutations)
-func (c *Counter) Increment(e dom.Event) {
-	c.count++
-	c.Update() // Explicit re-render
-}
-
-func (c *Counter) Decrement(e dom.Event) {
-	c.count--
-	c.Update()
-}
-
-// Lifecycle (optional)
-func (c *Counter) OnMount() {
-	fmt.Println("Counter mounted with ID:", c.GetID())
-}
-
-func main() {
-	counter := &Counter{Element: dom.Div(), count: 0}
-	dom.Render("app", counter)
-	select {}
-}
-```
-
-### Example 2: Static Component (String HTML)
-
-For simple, static content use string HTML (smaller binary):
-
-```go
-type Header struct {
-	*dom.Element
-}
-
-func (h *Header) RenderHTML() string {
-	return `<header class="app-header">
-		<h1>My Application</h1>
-	</header>`
-}
-
-func main() {
-	header := &Header{Element: &dom.Element{}}
-	dom.Render("app", header)
-}
-```
+This file contains the reference implementation used for testing and demonstrations.
 
 ## 🎨 Fluent Builder API
 
@@ -118,7 +42,7 @@ dom.Div().
 	Add(
 		dom.Button().
 			Text("Click me").
-			OnClick(handleClick),
+			On("click", handleClick),
 		dom.Span().
 			Text("Hello World"),
 	).
@@ -182,28 +106,7 @@ Choose the right rendering method for each component:
 | **Static** (no interactivity) | `RenderHTML() string` | Smaller binary, less overhead |
 | **Dynamic** (interactive, state) | `Render() *dom.Element` | Type-safe, composable, fluent API |
 
-```go
-// Static: Use string HTML
-type Footer struct {
-	*dom.Element
-}
-func (f *Footer) RenderHTML() string {
-	return `<footer>© 2026 My App</footer>`
-}
-
-// Dynamic: Use DSL Builder
-type TodoList struct {
-	*dom.Element
-	todos []string
-}
-func (t *TodoList) Render() *dom.Element {
-	list := dom.Ul() // ID is auto-injected from t.GetID()
-	for _, todo := range t.todos {
-		list.Add(dom.Li().Text(todo))
-	}
-	return list
-}
-```
+See the implementation examples in **[web/client.go](web/client.go)** to see both approaches in action.
 
 ## 🧩 Nested Components
 
@@ -233,21 +136,12 @@ When you call `dom.Render("app", myList)`, the library will:
 2. Call `OnMount()` for `MyList`
 3. Recursively call `OnMount()` for all `items`
 
-The same recursion applies to `Unmount()`, ensuring all event listeners are cleaned up.
+The same recursion applies to cleanup, ensuring all event listeners are cleaned up when a parent is replaced.
 
 ## 🎯 Event Handling
 
-```go
-func (c *MyComponent) OnMount() {
-	root, _ := dom.Get(c.GetID())
+Event handling is integrated directly into the Builder API via `On(eventType, handler)`.
 
-	// Reference interface focus on reading and interaction
-	root.On("click", func(e dom.Event) {
-		id := e.TargetID() // "item-1", "item-2", etc.
-		// Handle logic...
-	})
-}
-```
 
 ## 🔧 Core API
 
@@ -257,15 +151,7 @@ func (c *MyComponent) OnMount() {
 // Rendering
 dom.Render(parentID, component)  // Replace parent's content
 dom.Append(parentID, component)  // Append after last child
-dom.Hydrate(parentID, component) // Attach to server-rendered HTML
 dom.Update(component)            // Re-render in place
-
-// Lifecycle
-dom.Unmount(component)           // Remove and cleanup
-
-// Element Access (returns Reference interface)
-dom.Get(id)                      // Get element by ID
-dom.QueryAll(selector)           // Query by CSS selector
 
 // Routing (hash-based)
 dom.OnHashChange(handler)        // Listen to hash changes
@@ -285,7 +171,6 @@ type Counter struct {
 
 // Chainable helpers
 counter.Update()              // Trigger re-render
-counter.Unmount()             // Remove from DOM
 counter.GetID()               // Get unique ID
 counter.SetID("my-id")        // Set custom ID
 ```

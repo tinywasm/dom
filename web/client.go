@@ -19,13 +19,13 @@ func (c *Counter) Render() *Element {
 		Add(
 			Button().
 				Text("-").
-				OnClick(c.Decrement),
+				On("click", c.Decrement),
 			Span().
 				Class("count").
 				Text(fmt.Sprint(c.count)),
 			Button().
 				Text("+").
-				OnClick(c.Increment),
+				On("click", c.Increment),
 		)
 }
 

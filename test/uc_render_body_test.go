@@ -51,7 +51,7 @@ func TestBodyHeadResolution(t *testing.T) {
 			t.Fatalf("Append to body failed: %v", err)
 		}
 
-		el, ok := dom.Get("body-append-vr-label")
+		el, ok := GetRef("body-append-vr-label")
 		if !ok {
 			t.Fatal("Appended component not found in body")
 		}
@@ -68,7 +68,7 @@ func TestBodyHeadResolution(t *testing.T) {
 			t.Fatalf("Append static to body failed: %v", err)
 		}
 
-		_, ok := dom.Get("body-static")
+		_, ok := GetRef("body-static")
 		if !ok {
 			t.Fatal("Appended static component not found in body")
 		}
@@ -85,7 +85,7 @@ func TestBodyHeadResolution(t *testing.T) {
 			t.Fatalf("Append to head failed: %v", err)
 		}
 
-		_, ok := dom.Get("head-item")
+		_, ok := GetRef("head-item")
 		if !ok {
 			t.Fatal("Component not found in head")
 		}

@@ -33,7 +33,7 @@ func TestHybridRendering(t *testing.T) {
 		c := &DynamicComp{Element: &dom.Element{}}
 		dom.Render("root", c)
 
-		el, ok := dom.Get("dynamic")
+		el, ok := GetRef("dynamic")
 		if !ok {
 			t.Fatal("Dynamic component not rendered")
 		}
@@ -47,7 +47,7 @@ func TestHybridRendering(t *testing.T) {
 		c := &StaticComp{Element: &dom.Element{}}
 		dom.Render("root", c)
 
-		_, ok := dom.Get("static")
+		_, ok := GetRef("static")
 		if !ok {
 			t.Fatal("Static component not rendered")
 		}

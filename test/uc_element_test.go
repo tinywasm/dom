@@ -17,7 +17,7 @@ func TestElementMethods(t *testing.T) {
 	comp.SetID("comp-elem")
 	dom.Render("root", comp)
 
-	el, ok := dom.Get("comp-elem")
+	el, ok := GetRef("comp-elem")
 	if !ok {
 		t.Fatal("Component element not found")
 	}
@@ -46,7 +46,7 @@ func TestElementMethods(t *testing.T) {
 
 	t.Run("Focus and Value", func(t *testing.T) {
 		rawEl.Set("innerHTML", `<input id="test-focus">`)
-		inputEl, _ := dom.Get("test-focus")
+		inputEl, _ := GetRef("test-focus")
 		rawInput := doc.Call("getElementById", "test-focus")
 
 		rawInput.Set("value", "new-value")

@@ -35,7 +35,7 @@ func TestElmPattern(t *testing.T) {
 		dom.Render("root", c)
 
 		// Check initial render
-		el, ok := dom.Get("count-val")
+		el, ok := GetRef("count-val")
 		if !ok {
 			t.Fatal("Counter value not found")
 		}
@@ -48,7 +48,7 @@ func TestElmPattern(t *testing.T) {
 		c.Increment()
 
 		// Verify re-render occurred (no error)
-		el, ok = dom.Get("count-val")
+		el, ok = GetRef("count-val")
 		if !ok {
 			t.Fatal("Counter value lost after update")
 		}

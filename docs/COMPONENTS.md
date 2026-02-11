@@ -34,7 +34,7 @@ func (c *Counter) Render() *dom.Element {
 				ID(c.GetID()+"-btn").
 				Text("Increment").
 				// Event handling is now inline and declarative!
-				OnClick(func(e dom.Event) {
+				On("click", func(e dom.Event) {
 					c.count++
 					// Update re-render triggers automatically via Update()
 					c.Update()

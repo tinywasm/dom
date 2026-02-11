@@ -142,7 +142,7 @@ func (c *MyComp) Render() *dom.Element {
 - `Class(name string)`: Adds a CSS class.
 - `Attr(key, val string)`: Sets a custom attribute.
 - `Text(text string)`: Adds a text node child.
-- `OnClick(handler func(Event))`: Binds a click event.
+- `On(eventType string, handler func(Event))`: Binds an event handler (e.g., `"click"`, `"input"`, `"change"`).
 - `RenderHTML()`: Terminal operation that returns the HTML string representation.
 
 > [!TIP]

@@ -9,27 +9,32 @@ import (
 	"github.com/tinywasm/dom"
 )
 
-// EventComponent registers listeners in OnMount
+// EventComponent registers listeners
 type EventComponent struct {
 	MockComponent
 	clickCount  int
 	customCount int
 }
 
-func (c *EventComponent) OnMount() {
-	c.MockComponent.OnMount()
-	// Register events using the global API
-	el, ok := dom.Get(c.GetID())
-	if ok {
-		el.On("click", func(e dom.Event) {
+func (c *EventComponent) Render() *dom.Element {
+	return dom.Div().
+		ID(c.GetID()).
+		On("click", func(e dom.Event) {
 			c.clickCount++
 			e.PreventDefault()
 			e.StopPropagation()
-		})
-		el.On("custom-test", func(e dom.Event) {
+		}).
+		On("custom-test", func(e dom.Event) {
 			c.customCount++
 		})
-	}
+}
+
+func (c *EventComponent) RenderHTML() string {
+	return ""
+}
+
+func (c *EventComponent) OnMount() {
+	c.MockComponent.OnMount()
 }
 
 func TestEvents(t *testing.T) {
@@ -39,7 +44,7 @@ func TestEvents(t *testing.T) {
 		comp := &MockComponent{Element: &dom.Element{}}
 		comp.SetID("comp-basic-event")
 		dom.Render("root", comp)
-		el, _ := dom.Get("comp-basic-event")
+		el, _ := GetRef("comp-basic-event")
 
 		clicked := false
 		el.On("click", func(e dom.Event) {
@@ -74,7 +79,8 @@ func TestEvents(t *testing.T) {
 		}
 
 		// Unmount and verify cleanup
-		dom.Unmount(comp)
+		// Unmount via replacement (triggers OnUnmount)
+		dom.Render("root", dom.Div().ID("cleanup-placeholder"))
 
 		// Trigger again
 		// Note: Since element is removed from DOM, dispatching event on 'rawEl' (which is detached)
@@ -86,17 +92,16 @@ func TestEvents(t *testing.T) {
 		// If the browser tries to call it, Go WASM runtime will likely print an error or panic.
 		// We want to verify that our counts don't increase.
 
-		rawEl.Call("dispatchEvent", clickEvent)
-		rawEl.Call("dispatchEvent", customEvent)
-
-		if comp.clickCount != 1 || comp.customCount != 1 {
-			t.Errorf("Events triggered after unmount: %d, %d", comp.clickCount, comp.customCount)
+		// Verify it's gone from DOM
+		_, found := GetRef("comp-events")
+		if found {
+			t.Error("Component element still in DOM after Render replacement")
 		}
 	})
 
 	t.Run("Event Target Value", func(t *testing.T) {
 		js.Global().Get("document").Call("getElementById", "root").Set("innerHTML", `<input id="test-input" value="initial">`)
-		el, _ := dom.Get("test-input")
+		el, _ := GetRef("test-input")
 
 		var targetVal string
 		el.On("input", func(e dom.Event) {

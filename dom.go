@@ -15,11 +15,6 @@ type tinyDOM struct {
 	log func(v ...any)
 }
 
-// Get retrieves an element by its ID.
-func Get(id string) (Reference, bool) {
-	return instance.Get(id)
-}
-
 // generateID creates a unique ID for a component.
 func generateID() string {
 	idCounter++
@@ -42,25 +37,9 @@ func Append(parentID string, component Component) error {
 	return instance.Append(parentID, component)
 }
 
-// Hydrate attaches event listeners to existing HTML.
-func Hydrate(parentID string, component Component) error {
-	if component.GetID() == "" {
-		// In hydration, we assume the ID matches what was rendered.
-		// If not provided, we generate one, but this might not match server-rendered ID.
-		// Ideally hydration requires consistent IDs.
-		component.SetID(generateID())
-	}
-	return instance.Hydrate(parentID, component)
-}
-
 // Update re-renders a component.
 func Update(component Component) error {
 	return instance.Update(component)
-}
-
-// Unmount removes a component from the DOM.
-func Unmount(component Component) {
-	instance.Unmount(component)
 }
 
 // Log provides logging functionality.
@@ -81,11 +60,6 @@ func GetHash() string {
 // SetHash sets the current hash.
 func SetHash(hash string) {
 	instance.SetHash(hash)
-}
-
-// QueryAll query elements.
-func QueryAll(selector string) []Reference {
-	return instance.QueryAll(selector)
 }
 
 // SetLog sets the logging function.

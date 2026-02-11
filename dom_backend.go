@@ -16,8 +16,8 @@ func newDom(td *tinyDOM) DOM {
 	}
 }
 
-// Get is not implemented for backend.
-func (d *domBackend) Get(id string) (Reference, bool) {
+// get is not implemented for backend.
+func (d *domBackend) get(id string) (Reference, bool) {
 	return nil, false
 }
 
@@ -31,21 +31,15 @@ func (d *domBackend) Append(parentID string, component Component) error {
 	return fmt.Errf("Append not supported in backend/stub")
 }
 
-// Hydrate is not implemented for backend.
-func (d *domBackend) Hydrate(parentID string, component Component) error {
-	return fmt.Errf("Hydrate is not implemented for backend")
-}
-
 // Update is not implemented for backend.
 func (d *domBackend) Update(component Component) error {
 	return fmt.Errf("Update is not implemented for backend")
 }
 
-// Unmount is not implemented for backend.
-func (d *domBackend) Unmount(component Component) {
+// unmount is not implemented for backend.
+func (d *domBackend) unmount(component Component) {
 }
 
 func (d *domBackend) OnHashChange(handler func(hash string)) {}
 func (d *domBackend) GetHash() string                        { return "" }
 func (d *domBackend) SetHash(hash string)                    {}
-func (d *domBackend) QueryAll(selector string) []Reference   { return nil }

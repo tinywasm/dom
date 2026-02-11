@@ -28,7 +28,7 @@ type Event interface {
 ```go
 dom.Button().
     Text("Click me").
-    OnClick(func(e dom.Event) {
+    On("click", func(e dom.Event) {
         // Stop the click from bubbling to parents
         e.StopPropagation()
         
@@ -43,7 +43,7 @@ Use `TargetValue()` to easily get the new value from an input field.
 
 ```go
 dom.Input().
-    OnInput(func(e dom.Event) {
+    On("input", func(e dom.Event) {
         newValue := e.TargetValue()
         println("User typed:", newValue)
     })

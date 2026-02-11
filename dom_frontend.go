@@ -18,6 +18,7 @@ type domWasm struct {
 	}
 	eventFuncs []struct {
 		key string
+		val js.Value // The element where listener is attached
 		fn  js.Func
 	}
 	componentListeners []struct {
@@ -50,8 +51,8 @@ func newDom(td *tinyDOM) DOM {
 	}
 }
 
-// Get retrieves an element by ID from the cache or the DOM.
-func (d *domWasm) Get(id string) (Reference, bool) {
+// get retrieves an element by ID from the cache or the DOM.
+func (d *domWasm) get(id string) (Reference, bool) {
 	// Linear search in cache
 	for _, item := range d.elementCache {
 		if item.id == id {
@@ -128,6 +129,10 @@ func (d *domWasm) Render(parentID string, component Component) error {
 	if parent.IsNull() || parent.IsUndefined() {
 		return fmt.Errf("parent element not found: %s", parentID)
 	}
+
+	// Clean up any existing components in this parent before wiping content
+	d.cleanupChildren(parentID)
+
 	parent.Set("innerHTML", html)
 
 	// Update lifecycle maps
@@ -251,19 +256,8 @@ func (d *domWasm) Append(parentID string, component Component) error {
 	return nil
 }
 
-// Hydrate attaches event listeners to existing HTML.
-func (d *domWasm) Hydrate(parentID string, component Component) error {
-	_, ok := d.Get(parentID)
-	if !ok {
-		return fmt.Errf("parent element not found: %s", parentID)
-	}
-	d.trackComponent(component)
-	d.mountRecursive(component)
-	return nil
-}
-
-// Unmount removes a component from the DOM and recursively cleans up children.
-func (d *domWasm) Unmount(component Component) {
+// unmount removes a component from the DOM and recursively cleans up children.
+func (d *domWasm) unmount(component Component) {
 	d.unmountRecursive(component)
 
 	// Remove the element from the DOM
@@ -502,40 +496,66 @@ func (d *domWasm) removeFromElementCache(id string) {
 
 func (d *domWasm) wirePendingEvents() {
 	for _, pe := range d.pendingEvents {
-		if el, ok := d.Get(pe.id); ok {
+		if el, ok := d.get(pe.id); ok {
+			// Track listener for the component that owns the element
+			prev := d.currentComponentID
+			d.currentComponentID = pe.id
 			el.On(pe.name, pe.handler)
+			d.currentComponentID = prev
 		}
 	}
 	d.pendingEvents = nil
 }
 
 func (d *domWasm) cleanupListeners(id string) {
-	var listeners []string
+	var keysToRemove []string
 	compIndex := -1
 	for i, item := range d.componentListeners {
 		if item.id == id {
-			listeners = item.keys
+			keysToRemove = item.keys
 			compIndex = i
 			break
 		}
 	}
 
 	if compIndex != -1 {
-		for _, key := range listeners {
-			for i, ef := range d.eventFuncs {
+		for _, key := range keysToRemove {
+			// Find and remove from eventFuncs
+			for i := 0; i < len(d.eventFuncs); i++ {
+				ef := d.eventFuncs[i]
 				if ef.key == key {
+					// Split key into id::type
+					// We need the type to call removeEventListener
+					parts := d.splitEventKey(key)
+					if len(parts) == 2 {
+						eventType := parts[1]
+						ef.val.Call("removeEventListener", eventType, ef.fn)
+					}
 					ef.fn.Release()
+
+					// Remove from slice
 					lastIdx := len(d.eventFuncs) - 1
 					d.eventFuncs[i] = d.eventFuncs[lastIdx]
 					d.eventFuncs = d.eventFuncs[:lastIdx]
-					break
+					i-- // Re-check this index as it now contains the last element
 				}
 			}
 		}
+		// Remove from componentListeners
 		lastIdx := len(d.componentListeners) - 1
 		d.componentListeners[compIndex] = d.componentListeners[lastIdx]
 		d.componentListeners = d.componentListeners[:lastIdx]
 	}
+}
+
+func (d *domWasm) splitEventKey(key string) []string {
+	// Simple manual split to avoid importing strings just for this
+	for i := 0; i < len(key)-1; i++ {
+		if key[i] == ':' && key[i+1] == ':' {
+			return []string{key[:i], key[i+2:]}
+		}
+	}
+	return nil
 }
 
 // OnHashChange registers a listener for window.hashchange.
@@ -555,21 +575,4 @@ func (d *domWasm) GetHash() string {
 // SetHash updates window.location.hash.
 func (d *domWasm) SetHash(hash string) {
 	js.Global().Get("location").Set("hash", hash)
-}
-
-// QueryAll performs a document.querySelectorAll and wraps the results.
-func (d *domWasm) QueryAll(selector string) []Reference {
-	nodes := d.document.Call("querySelectorAll", selector)
-	count := nodes.Length()
-	elems := make([]Reference, count)
-	for i := 0; i < count; i++ {
-		val := nodes.Index(i)
-		id := val.Get("id").String()
-		elems[i] = &elementWasm{
-			val: val,
-			dom: d,
-			id:  id,
-		}
-	}
-	return elems
 }

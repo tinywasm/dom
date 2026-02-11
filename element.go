@@ -39,21 +39,9 @@ func (b *Element) Attr(key, val string) *Element {
 	return b
 }
 
-// OnClick adds a click event handler.
-func (b *Element) OnClick(handler func(Event)) *Element {
-	b.events = append(b.events, EventHandler{"click", handler})
-	return b
-}
-
-// OnInput adds an input event handler.
-func (b *Element) OnInput(handler func(Event)) *Element {
-	b.events = append(b.events, EventHandler{"input", handler})
-	return b
-}
-
-// OnChange adds a change event handler.
-func (b *Element) OnChange(handler func(Event)) *Element {
-	b.events = append(b.events, EventHandler{"change", handler})
+// On adds a generic event handler.
+func (b *Element) On(eventType string, handler func(Event)) *Element {
+	b.events = append(b.events, EventHandler{eventType, handler})
 	return b
 }
 
@@ -86,11 +74,6 @@ func (b *Element) Render(parentID string) error {
 // Update triggers a re-render of the component.
 func (b *Element) Update() error {
 	return Update(b)
-}
-
-// Unmount removes the component from the DOM.
-func (b *Element) Unmount() {
-	Unmount(b)
 }
 
 // --- Component Interface Implementation ---
