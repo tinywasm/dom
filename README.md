@@ -190,7 +190,13 @@ For more detailed information, please refer to the documentation in the `docs/` 
 5.  **[Advanced Patterns](docs/ADVANCED.md)**: Dynamic lists, decoupling, and performance tips.
 6.  **[Comparison](docs/COMPARISON.md)**: TinyDOM vs. syscall/js, VDOM, and JS frameworks.
 
-## 🆕 What's New in v0.2.0
+## 🆕 What's New in v0.5.0
+
+- ✅ **Major API Redesign** - JSX-like factories (`Div(H1("Title"))`)
+- ✅ **Typed Form Elements** - Semantic chaining (`Email("u").Required()`)
+- ✅ **Internal Privatization** - Cleaned up public API (privatized `EventHandler`, etc.)
+- ✅ **Void Element Rendering** - Correct HTML for `<br>`, `<img>`, `<input>`
+- ✅ **Auto-ID Generation** - Simplified IDs without `auto-` prefix
 
 - ✅ **JSX-like factories** - Concise nesting (`Div(H1("Title"), P("..."))`)
 - ✅ **Typed Form Elements** - Semantic chaining (`Email("u").Required()`)
