@@ -26,8 +26,7 @@ type Event interface {
 ### 1. Handling Button Clicks
 
 ```go
-dom.Button().
-    Text("Click me").
+dom.Button("Click me").
     On("click", func(e dom.Event) {
         // Stop the click from bubbling to parents
         e.StopPropagation()
@@ -42,7 +41,7 @@ dom.Button().
 Use `TargetValue()` to easily get the new value from an input field.
 
 ```go
-dom.Input().
+dom.Text("username").
     On("input", func(e dom.Event) {
         newValue := e.TargetValue()
         println("User typed:", newValue)
@@ -51,12 +50,14 @@ dom.Input().
 
 ### 3. Preventing Form Submission
 
+You can use the generic `On("submit", ...)` or the specialized `OnSubmit(...)` for `*FormEl`.
+
 ```go
-formEl.On("submit", func(e dom.Event) {
-    // Prevent the browser from reloading the page
-    e.PreventDefault()
-    
-    // Handle submission via AJAX/Fetch
-    submitData()
+dom.Form(
+    dom.Text("query"),
+    dom.Button("Search"),
+).OnSubmit(func(e dom.Event) {
+    e.PreventDefault() // Handled automatically by some wrappers, but safe to call
+    handleSearch()
 })
 ```

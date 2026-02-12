@@ -5,31 +5,19 @@
 TinyDOM provides a global API for direct access to the DOM in WASM environments.
 
 ```go
-// Get retrieves an element reference by its ID.
-Get(id string) (Reference, bool)
-
 // Render injects a component into a parent element.
-// If the component has an empty ID, it auto-generates a unique one (e.g., "tiny-1").
 Render(parentID string, component Component) error
 
 // Append injects a component AFTER the last child of the parent element.
 Append(parentID string, component Component) error
 
-// Hydrate attaches event listeners to existing HTML without re-rendering it.
-// Use this for server-rendered components to enable interactivity without flicker.
-Hydrate(parentID string, component Component) error
-
 // Update re-renders a component in-place.
 Update(component Component) error
 
-// Unmount removes a component from the DOM.
-Unmount(component Component)
-
-// Log provides logging functionality.
-Log(v ...any)
-
-// SetLog sets the logging function.
-SetLog(log func(v ...any))
+// Routing (hash-based)
+OnHashChange(handler func(hash string))
+GetHash() string
+SetHash(hash string)
 ```
 
 ## Reference Interface
@@ -116,34 +104,54 @@ type EventHandler struct {
 // Element represents a DOM element in the declarative Builder API.
 // It is the unified type for building and rendering.
 
-## Element API (Builder Pattern)
+## Element API (JSX-like Builder)
 
-The `Element` struct provides a fluent, declarative way to create element trees.
+The `Element` API provides a declarative way to create element trees with concise nesting and typed form elements.
+
+### Basic Containers
+All container factories accept `(children ...any)`. Children can be `*Element`, `Component`, `string`, or `any` (which uses `fmt.Sprint`).
 
 ```go
-// Add one or more children
-Div().Add(
-    Span().Text("Hello"),
-    Button().Text("Click Me"),
+Div(
+    H1("Title"),
+    P("This is a paragraph with ", Strong("bold text"), "."),
+    Ul(
+        Li("Item 1"),
+        Li("Item 2"),
+    ),
 )
-
-// Auto-ID Injection
-// When used in a ViewRenderer, the root element automatically gets the component's ID.
-func (c *MyComp) Render() *dom.Element {
-    return dom.Div(). // ID(c.GetID()) is no longer required here
-        Class("my-comp").
-        Add(Span().Text("Content"))
-}
 ```
 
-### Methods
+### Strongly Typed Form Elements
+Concrete types like `*InputEl`, `*FormEl`, `*SelectEl`, and `*TextareaEl` provide semantic methods that preserve the typed chain.
 
+```go
+Form(
+    Text("username", "Enter username").Required(),
+    Email("email").Placeholder("Your email").Class("field"),
+    Password("pwd"),
+    Select("role",
+        Option("admin", "Administrator"),
+        SelectedOption("user", "User"),
+    ),
+    Textarea("bio").Rows(5),
+    Button("Submit").Attr("type", "submit"),
+).Action("/api/login").Method("POST")
+```
+
+### Void Elements
+Void elements render correctly without closing tags (e.g., `<br>` instead of `<br></br>`).
+- `Br()`, `Hr()`
+- `Img(src, alt)`
+- All `Input` types (renders as `<input type='...'>`)
+
+### Common Chaining Methods
+Available on all elements (shadowed on typed elements to preserve the chain):
 - `ID(id string)`: Sets the element's ID.
-- `Class(name string)`: Adds a CSS class.
+- `Class(names ...string)`: Adds one or more CSS classes.
 - `Attr(key, val string)`: Sets a custom attribute.
-- `Text(text string)`: Adds a text node child.
-- `On(eventType string, handler func(Event))`: Binds an event handler (e.g., `"click"`, `"input"`, `"change"`).
-- `RenderHTML()`: Terminal operation that returns the HTML string representation.
+- `On(eventType string, handler func(Event))`: Binds an event handler.
+- `Add(children ...any)`: Adds children dynamically.
 
 > [!TIP]
 > Embed `*dom.Element` in your structs to automatically implement the `Component` interface and gain access to lifecycle methods.

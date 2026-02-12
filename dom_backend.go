@@ -17,7 +17,7 @@ func newDom(td *tinyDOM) DOM {
 }
 
 // get is not implemented for backend.
-func (d *domBackend) get(id string) (Reference, bool) {
+func (d *domBackend) get(id string) (reference, bool) {
 	return nil, false
 }
 

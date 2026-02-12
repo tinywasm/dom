@@ -9,9 +9,9 @@ tinywasm/dom provides a minimalist, WASM-optimized way to interact with the brow
 
 ## 🚀 Features
 
-*   **Elm-Inspired Architecture**: Component-local state with explicit updates (Model → Update → View)
-*   **Fluent Builder API**: Chainable methods for concise, readable code
-*   **Hybrid Rendering**: Choose DSL for dynamic components or string HTML for static ones
+*   **JSX-like Declarative View**: Concise nesting with `Div(H1("Title"), P("..."))`
+*   **Typed Form Elements**: Semantic API for forms with `Text("email").Required()`
+*   **Void Element Fix**: Correctly renders `<br>`, `<img>`, `<input>` without closing tags
 *   **TinyGo Optimized**: Avoids heavy standard library packages to keep WASM binaries <500KB
 *   **Direct DOM Manipulation**: No Virtual DOM overhead. You control the updates.
 *   **ID-Based Caching**: Efficient element lookup and caching strategy
@@ -31,25 +31,29 @@ For a complete example including Elm architecture (Dynamic Components) and Stati
 
 This file contains the reference implementation used for testing and demonstrations.
 
-## 🎨 Fluent Builder API
+## 🎨 JSX-like Builder API
 
-The new fluent API allows chaining for concise, readable code:
+The API allows concise nesting and typed chaining:
 
 ```go
-dom.Div().
-	ID("container").
-	Class("flex items-center").
-	Add(
-		dom.Button().
-			Text("Click me").
-			On("click", handleClick),
-		dom.Span().
-			Text("Hello World"),
-	).
-	Render("app") // Terminal operation
+import . "github.com/tinywasm/dom"
+
+Div(
+	H1("Welcome"),
+	P("Enter your credentials:"),
+	Form(
+		Email("user_email", "Email address").Required(false),
+		Password("pwd").Placeholder("Secret password"),
+		Button("Login").Attr("type", "submit"),
+	).Action("/login"),
+).Class("container")
 ```
 
-**Available builders**: `Div()`, `Span()`, `Button()`, `H1()`, `H2()`, `H3()`, `P()`, `Ul()`, `Li()`, `Input()`, `Form()`, `A()`, `Img()`
+**Available builders**:
+- **Containers**: `Div`, `Span`, `P`, `H1`-`H6`, `Ul`, `Ol`, `Li`, `Section`, `Main`, `Article`, `Header`, `Footer`, `Nav`, `Aside`, `Table`, `Thead`, `Tbody`, `Tr`, `Td`, etc.
+- **Typed Inputs**: `Text`, `Email`, `Password`, `Number`, `Checkbox`, `Radio`, `File`, `Date`, `Hidden`, `Search`, `Tel`, `Url`, `Range`, `Color`.
+- **Specialized**: `Form`, `Select`, `Textarea`, `Button`, `A`.
+- **Void Elements**: `Img`, `Br`, `Hr`.
 
 ## 🔄 Lifecycle Hooks
 
@@ -188,12 +192,13 @@ For more detailed information, please refer to the documentation in the `docs/` 
 
 ## 🆕 What's New in v0.2.0
 
-- ✅ **Elm-inspired architecture** - Component-local state with explicit updates
+- ✅ **JSX-like factories** - Concise nesting (`Div(H1("Title"), P("..."))`)
+- ✅ **Typed Form Elements** - Semantic chaining (`Email("u").Required()`)
+- ✅ **Void Element Rendering** - Correct HTML for `<br>`, `<img>`, `<input>`
 - ✅ **Fluent Builder API** - Chainable methods (`dom.Div().ID("x").Class("y")`)
 - ✅ **Hybrid rendering** - Choose DSL or string HTML per component
 - ✅ **Lifecycle hooks** - `OnMount`, `OnUpdate`, `OnUnmount`
 - ✅ **Auto-ID generation** - All components get unique IDs automatically
-- ✅ **Smaller binaries** - TinyGo-optimized, <500KB for typical apps
 
 ## 📊 Performance
 

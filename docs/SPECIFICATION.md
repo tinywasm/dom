@@ -5,12 +5,12 @@
 *   **Minimalist**: A thin wrapper over the browser DOM, optimized for TinyGo/WASM.
 *   **No `syscall/js` exposure**: Components interact *only* with the TinyDOM Go interface.
 *   **Zero StdLib**: Uses `tinystring` for string manipulation to keep binary size small.
-*   **Declarative Builder**: Uses a type-safe `*dom.Element` builder pattern (`dom.Div`, etc.) for UI construction.
-*   **Direct & Cached**: Instead of a heavy VDOM tree diffing algorithm, it uses an **ID-based caching mechanism** and direct DOM updates via `c.Update()`.
-*   **Standard HTML/CSS**: Components can still use raw HTML strings if needed, but the Builder API is preferred.
-*   **Dependency Injection**: The `DOM` is injected into components, not imported globally.
-*   **Auto ID Management**: The library automatically assigns unique IDs to components and event targets.
-*   **Reactivity**: Components trigger their own re-render via `dom.Update(c)`.
+*   **JSX-like Declarative View**: Uses a type-safe factory pattern (`dom.Div`, etc.) with children varargs for concise UI construction.
+*   **Direct & Minimal**: Avoids heavy VDOM tree diffing. Updates are component-level via `c.Update()`, replacing the underlying DOM node directly.
+*   **Strongly Typed Form Elements**: Specialized wrappers (`InputEl`, `FormEl`) provide a semantic, type-safe API for form building.
+*   **Standard HTML5 Support**: Correct rendering of void elements (`<br>`, `<img>`) and automatic event wiring.
+*   **Auto ID Management**: Unique IDs are generated automatically for components and elements with event listeners.
+*   **Reactivity**: Components trigger their own re-render via `c.Update()`.
 
 ## 2. Architecture
 
@@ -40,8 +40,7 @@ The architecture relies on three core interfaces:
 
 ### DOM Interface
 The global entry point. It handles:
-*   **Caching**: `Get(id)` returns a cached `Reference`.
-*   **Lifecycle**: `Render` injects HTML and binds events; `Unmount` cleans them up; `Update` re-renders in place.
+*   **Lifecycle**: `Render` injects HTML and binds events; `Update` re-renders in place; `Append` adds content.
 
 ### Reference Interface
 Represents a live DOM node. It provides methods for:
@@ -81,13 +80,9 @@ The builder functions are part of the `dom` package. They can be dot-imported (`
 
 ## 7. API Design Philosophy (Q&A)
 
-### Why `Get(id string)` and not `Get(c Component)`?
-*   **Flexibility**: Often you need to manipulate a plain DOM element (like a container `<div>` or an input) that doesn't have a corresponding Go Component struct.
-*   **Decoupling**: It allows the DOM to be treated as a collection of nodes, regardless of how they were created.
+### Why did we remove `Get(id string)`?
+*   **Enforce Declarativity**: Imperative DOM manipulation by ID often leads to "spaghetti code" and makes state management unpredictable.
+*   **State as Truth**: By removing direct access to nodes, we force the developer to treat the component structure as a projection of state. If you need to change something, update the state and call `Update()`.
 
 ### Why `Render(parentID string, ...)`?
-*   The target container (e.g., `<div id="app">`) usually exists in the static HTML or is part of a parent's template. It is rarely a Component itself.
-
-### Decoupled Components
-Components can define their own narrow interfaces to avoid depending on the full `tinywasm/dom.DOM` package.
-*   *Example*: If a component only needs to update text, it can define `type TextUpdater interface { Get(id string) Element }` and accept that, making it easier to test and reuse.
+*   The target container (e.g., `<div id="app">`) usually exists in the static HTML or is part of a parent's template. It is a stable entry point for the application.

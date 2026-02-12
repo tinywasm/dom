@@ -1,7 +1,7 @@
 package dom
 
-// Reference represents a reference to a DOM node. It provides methods for reading and interaction.
-type Reference interface {
+// reference represents a reference to a DOM node. It provides methods for reading and interaction.
+type reference interface {
 	// --- Attributes ---
 
 	// GetAttr retrieves an attribute value.

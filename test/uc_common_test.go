@@ -52,7 +52,16 @@ func SetupDOM(t *testing.T) js.Value {
 	return doc
 }
 
-// TestReference is a test-only implementation of dom.Reference for integration tests.
+// Reference interface matches the unexported dom.reference for testing purposes.
+type Reference interface {
+	GetAttr(key string) string
+	Value() string
+	Checked() bool
+	On(eventType string, handler func(event dom.Event))
+	Focus()
+}
+
+// TestReference is a test-only implementation of Reference for integration tests.
 type TestReference struct {
 	val js.Value
 }
@@ -127,7 +136,7 @@ func (e *MockEvent) TargetChecked() bool {
 }
 
 // GetRef is a test helper to get a Reference for an element by ID.
-func GetRef(id string) (dom.Reference, bool) {
+func GetRef(id string) (Reference, bool) {
 	var val js.Value
 	doc := js.Global().Get("document")
 	switch id {

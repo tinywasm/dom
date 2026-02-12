@@ -43,6 +43,12 @@ type ViewRenderer interface {
 	Render() *Element
 }
 
+// elementNode identifies components that provide direct access to an underlying Element.
+type elementNode interface {
+	Component
+	AsElement() *Element
+}
+
 // Mountable is an optional interface for components that need initialization logic.
 type Mountable interface {
 	OnMount()
@@ -58,8 +64,8 @@ type Unmountable interface {
 	OnUnmount()
 }
 
-// EventHandler represents a DOM event handler in the declarative builder.
-type EventHandler struct {
+// eventHandler represents a DOM event handler in the declarative builder.
+type eventHandler struct {
 	Name    string
 	Handler func(Event)
 }

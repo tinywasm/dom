@@ -52,7 +52,7 @@ func newDom(td *tinyDOM) DOM {
 }
 
 // get retrieves an element by ID from the cache or the DOM.
-func (d *domWasm) get(id string) (Reference, bool) {
+func (d *domWasm) get(id string) (reference, bool) {
 	// Linear search in cache
 	for _, item := range d.elementCache {
 		if item.id == id {
@@ -119,6 +119,8 @@ func (d *domWasm) Render(parentID string, component Component) error {
 		root := vr.Render()
 		injectComponentID(root, component.GetID())
 		html = d.renderToHTML(root, &children)
+	} else if en, ok := component.(elementNode); ok {
+		html = d.renderToHTML(en.AsElement(), &children)
 	} else if el, ok := component.(*Element); ok {
 		html = d.renderToHTML(el, &children)
 	} else {
@@ -181,6 +183,8 @@ func (d *domWasm) Update(component Component) error {
 		root := vr.Render()
 		injectComponentID(root, id)
 		html = d.renderToHTML(root, &children)
+	} else if en, ok := component.(elementNode); ok {
+		html = d.renderToHTML(en.AsElement(), &children)
 	} else if el, ok := component.(*Element); ok {
 		html = d.renderToHTML(el, &children)
 	} else {
@@ -233,6 +237,8 @@ func (d *domWasm) Append(parentID string, component Component) error {
 		root := vr.Render()
 		injectComponentID(root, component.GetID())
 		html = d.renderToHTML(root, &children)
+	} else if en, ok := component.(elementNode); ok {
+		html = d.renderToHTML(en.AsElement(), &children)
 	} else if el, ok := component.(*Element); ok {
 		html = d.renderToHTML(el, &children)
 	} else {
@@ -274,7 +280,7 @@ func (d *domWasm) unmount(component Component) {
 func (d *domWasm) renderToHTML(el *Element, comps *[]Component) string {
 	// If the element has events but no ID, generate one
 	if len(el.events) > 0 && el.id == "" {
-		el.id = "auto-" + generateID()
+		el.id = generateID()
 	}
 
 	for _, ev := range el.events {
@@ -303,12 +309,22 @@ func (d *domWasm) renderToHTML(el *Element, comps *[]Component) string {
 		s += " " + attr.Key + "='" + attr.Value + "'"
 	}
 	s += ">"
+	if el.void {
+		return s // No children, no closing tag
+	}
+
 	for _, child := range el.children {
 		switch v := child.(type) {
 		case *Element:
 			s += d.renderToHTML(v, comps)
 		case string:
 			s += v
+		case elementNode: // NEW: before Component
+			*comps = append(*comps, v)
+			if v.GetID() == "" {
+				v.SetID(generateID())
+			}
+			s += d.renderToHTML(v.AsElement(), comps)
 		case Component:
 			*comps = append(*comps, v)
 			// Ensure ID
@@ -318,6 +334,8 @@ func (d *domWasm) renderToHTML(el *Element, comps *[]Component) string {
 
 			if vr, ok := v.(ViewRenderer); ok {
 				s += d.renderToHTML(vr.Render(), comps)
+			} else if en, ok := v.(elementNode); ok {
+				s += d.renderToHTML(en.AsElement(), comps)
 			} else if el, ok := v.(*Element); ok {
 				s += d.renderToHTML(el, comps)
 			} else {

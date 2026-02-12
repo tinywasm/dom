@@ -7,62 +7,58 @@ When working with lists, you often want to add or remove items without re-render
 ```go
 import (
 	"github.com/tinywasm/dom"
+	"github.com/tinywasm/fmt"
 )
 
 type TodoList struct {
 	*dom.Element
-	items []*TodoItem
+	items []string
 }
 
 func (l *TodoList) Render() *dom.Element {
-	// Initial render might be empty or have initial items.
-	// We use a container that we can append to later.
-	// dom.Ul root automatically gets l.GetID() in Render cycle.
-	return dom.Ul()
+	var children []any
+	for _, item := range l.items {
+		children = append(children, dom.Li(item))
+	}
+	return dom.Ul(children...)
 }
 
 func (l *TodoList) AddItem(label string) {
-	// 1. Create new component
-	newItem := NewTodoItem(l.GetID() + "-item-" + uniqueID(), label)
-	l.items = append(l.items, newItem)
-
-	// 2. Append the new item to the list
-	// dom.Append renders the component and injects it at the end of the parent
-	// while preserving the existing DOM (and focus).
-	// It also automatically handles lifecycle (OnMount / Events).
-	dom.Append(l.GetID(), newItem)
-}
-
-func (l *TodoList) RemoveItem(item *TodoItem) {
-	// 1. Unmount handles everything recursively:
-	// - Finds the element by ID
-	// - Removes it from the browser DOM
-	// - Cleans up all event listeners recursively
-	dom.Unmount(item)
-
-	// 2. Update internal state (remove from slice)...
+	l.items = append(l.items, label)
+	l.Update()
 }
 ```
 
-## Decoupled Components (Interface Segregation)
+### Partial Updates (Append)
 
-You don't always need to import `tinywasm/dom` or depend on the full `DOM` interface. You can define narrow interfaces for what your component actually needs.
+If the list is very large, you can use `dom.Append` to add a single item without re-rendering the entire list. This preserves scroll position and focus of existing elements.
 
 ```go
-// This component only needs to find an element.
-type ElementFinder interface {
-    Get(id string) (dom.Reference, bool)
-}
-
-type StatusLabel struct {
-    *dom.Element
-    dom ElementFinder // Narrow dependency
-}
-
-func (s *StatusLabel) UpdateStatus(msg string) {
-    // Note: State updates should ideally happen via Render() + dom.Update(s)
-    // but direct DOM reading/focus can use the Finder.
+func (l *TodoList) AddItemEfficiently(label string) {
+	l.items = append(l.items, label)
+	
+	// Append only the new item to the DOM parent
+	itemComp := dom.Li(label)
+	dom.Append(l.GetID(), itemComp)
 }
 ```
 
-This makes `StatusLabel` easier to test (you only need to mock `Get`) and less coupled to the framework core.
+## Decoupled Components
+
+Instead of relying on imperative DOM selection, define components that receive data via their `Render` cycle. This makes them easier to test and more predictable.
+
+```go
+type StatusLabel struct {
+    *dom.Element
+    status string
+}
+
+func (s *StatusLabel) SetStatus(status string) {
+    s.status = status
+    s.Update() // Declarative update
+}
+
+func (s *StatusLabel) Render() *dom.Element {
+    return dom.Span(s.status).Class("status-label")
+}
+```

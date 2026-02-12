@@ -22,24 +22,15 @@ func NewCounter() *Counter {
 	return &Counter{Element: dom.Div()}
 }
 
-// Render uses the declarative Builder API
+// Render uses the declarative JSX-like API
 func (c *Counter) Render() *dom.Element {
-	return dom.Div().
-		Class("counter").
-		Add(
-			dom.Span().
-				ID(c.GetID()+"-val").
-				Text(fmt.Sprint(c.count)),
-			dom.Button().
-				ID(c.GetID()+"-btn").
-				Text("Increment").
-				// Event handling is now inline and declarative!
-				On("click", func(e dom.Event) {
-					c.count++
-					// Update re-render triggers automatically via Update()
-					c.Update()
-				}),
-		)
+	return dom.Div(
+		dom.Span(fmt.Sprint(c.count)).Class("count"),
+		dom.Button("Increment").On("click", func(e dom.Event) {
+			c.count++
+			c.Update()
+		}),
+	).Class("counter")
 }
 
 // OnMount is optional if you only use inline events,
@@ -78,13 +69,10 @@ func (p *Page) Children() []dom.Component {
 }
 
 func (p *Page) Render() *dom.Element {
-	return dom.Div().
-		Class("page").
-		Add(
-			dom.H1().Text("My Page"),
-			// Embedding a child component directly
-			p.counter,
-		)
+	return dom.Div(
+		dom.H1("My Page"),
+		p.counter, // Embedding a child component directly
+	).Class("page")
 }
 ```
 
@@ -136,27 +124,11 @@ func (c *MyComponent) Render() *dom.Element {
 }
 ```
 
-## Build Tags & Separation (SSR vs WASM)
+## Separation (SSR vs WASM)
 
 To keep WASM binaries tiny, separate your component logic using build tags:
 
 1.  **Main File** (`comp.go`): Interface, struct, and `Render`.
 2.  **SSR File** (`ssr.go`): `//go:build !wasm`. Define `RenderCSS` and `IconSvg` here.
 3.  **WASM File** (`front.go`): `//go:build wasm`. Define complex `OnMount` logic here (if needed).
-
-## SSR & Hydration
-
-To avoid a flicker when your application starts, use `dom.Hydrate` for the initial server-rendered module.
-
-1.  **Server (Backend)**: Renders the full HTML.
-2.  **Client (WASM)**: Calls `dom.Hydrate` on the root element. This attaches all event listeners and triggers `OnMount` without replacing the existing DOM nodes.
-
-```go
-// main.go (WASM)
-func main() {
-    // Correct way to "awaken" server-rendered HTML
-    dom.Hydrate("app", myRootComponent)
-    select {}
-}
-```
 
