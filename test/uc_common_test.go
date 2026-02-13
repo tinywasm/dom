@@ -17,8 +17,16 @@ type MockComponent struct {
 
 // HandlerName removed in favor of Identifiable.GetID() provided by BaseComponent
 
+func (c *MockComponent) Render() *dom.Element {
+	return c.Element
+}
+
+func (c *MockComponent) AsElement() *dom.Element {
+	return c.Element
+}
+
 func (c *MockComponent) RenderHTML() string {
-	return `<div id="` + c.GetID() + `">Content</div>`
+	return c.Element.RenderHTML()
 }
 
 func (c *MockComponent) OnMount() {

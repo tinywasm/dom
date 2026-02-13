@@ -16,20 +16,19 @@ type CounterComp struct {
 }
 
 func (c *CounterComp) Render() *dom.Element {
-	// Using fluent API
-	return dom.Div().
-		Add(
-			dom.Span().
-				ID(c.GetID()+"-val").
-				Text(fmt.Sprint(c.count)),
-			dom.Button().
-				ID(c.GetID()+"-btn").
-				On("click", func(e dom.Event) {
-					c.count++
-					dom.Update(c)
-				}).
-				Text("Increment"),
-		)
+	// Using JSX-like pattern
+	return dom.Div(
+		dom.Span().
+			ID(c.GetID()+"-val").
+			Text(fmt.Sprint(c.count)),
+		dom.Button().
+			ID(c.GetID()+"-btn").
+			On("click", func(e dom.Event) {
+				c.count++
+				dom.Update(c)
+			}).
+			Text("Increment"),
+	)
 }
 
 func (c *CounterComp) RenderHTML() string {

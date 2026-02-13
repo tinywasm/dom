@@ -30,7 +30,7 @@ func TestHybridRendering(t *testing.T) {
 	_ = SetupDOM(t)
 
 	t.Run("Render Dynamic Component (DSL)", func(t *testing.T) {
-		c := &DynamicComp{Element: &dom.Element{}}
+		c := &DynamicComp{Element: dom.Div()}
 		dom.Render("root", c)
 
 		el, ok := GetRef("dynamic")
@@ -44,7 +44,7 @@ func TestHybridRendering(t *testing.T) {
 	})
 
 	t.Run("Render Static Component (String)", func(t *testing.T) {
-		c := &StaticComp{Element: &dom.Element{}}
+		c := &StaticComp{Element: dom.Div()}
 		dom.Render("root", c)
 
 		_, ok := GetRef("static")

@@ -11,4 +11,7 @@ type Event interface {
 	TargetValue() string
 	// TargetID returns the ID of the event's target element.
 	TargetID() string
+	// TargetChecked returns the checked status of the event's target element.
+	// Useful for checkbox and radio input elements.
+	TargetChecked() bool
 }

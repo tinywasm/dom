@@ -41,7 +41,7 @@ func TestEvents(t *testing.T) {
 	doc := SetupDOM(t)
 
 	t.Run("Basic Event Handling", func(t *testing.T) {
-		comp := &MockComponent{Element: &dom.Element{}}
+		comp := &MockComponent{Element: dom.Div()}
 		comp.SetID("comp-basic-event")
 		dom.Render("root", comp)
 		el, _ := GetRef("comp-basic-event")
@@ -61,7 +61,7 @@ func TestEvents(t *testing.T) {
 	})
 
 	t.Run("Complex Event Handling and Cleanup", func(t *testing.T) {
-		comp := &EventComponent{MockComponent: MockComponent{Element: &dom.Element{}}}
+		comp := &EventComponent{MockComponent: MockComponent{Element: dom.Div()}}
 		comp.SetID("comp-events")
 
 		dom.Render("root", comp)

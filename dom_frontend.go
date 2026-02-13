@@ -106,6 +106,9 @@ func (d *domWasm) getElement(id string) js.Value {
 
 // Render injects the component's content into the parent element.
 func (d *domWasm) Render(parentID string, component Component) error {
+	if d.document.IsNull() || d.document.IsUndefined() {
+		return fmt.Errf("document not found")
+	}
 	// Generate ID if not set
 	if component.GetID() == "" {
 		component.SetID(generateID())
@@ -141,8 +144,11 @@ func (d *domWasm) Render(parentID string, component Component) error {
 	d.trackComponent(component)
 	d.trackChildren(component.GetID(), children)
 
-	// Wire pending events
+	// Set current component ID for event wiring
+	prevID := d.currentComponentID
+	d.currentComponentID = component.GetID()
 	d.wirePendingEvents()
+	d.currentComponentID = prevID
 
 	// Mount logic
 	d.mountRecursive(component)
@@ -155,6 +161,9 @@ func (d *domWasm) Render(parentID string, component Component) error {
 
 // Update re-renders the component and replaces it in the DOM.
 func (d *domWasm) Update(component Component) error {
+	if d.document.IsNull() || d.document.IsUndefined() {
+		return fmt.Errf("document not found")
+	}
 	id := component.GetID()
 
 	// Resolve the full outer component from tracked references.
@@ -204,18 +213,17 @@ func (d *domWasm) Update(component Component) error {
 	// Update lifecycle maps
 	d.trackChildren(id, children)
 
-	// Wire events (DSL)
-	d.wirePendingEvents()
-
-	// Set current component ID for OnUpdate and manual listeners
+	// Set current component ID for event wiring, OnUpdate and manual listeners
 	prevID := d.currentComponentID
 	d.currentComponentID = id
-	defer func() { d.currentComponentID = prevID }()
+	d.wirePendingEvents()
 
 	// Call OnUpdate hook if implemented
 	if updatable, ok := component.(Updatable); ok {
 		updatable.OnUpdate()
 	}
+
+	d.currentComponentID = prevID
 
 	// Mount new children
 	for _, child := range children {
@@ -253,7 +261,11 @@ func (d *domWasm) Append(parentID string, component Component) error {
 
 	d.trackComponent(component)
 	d.trackChildren(component.GetID(), children)
+
+	prevID := d.currentComponentID
+	d.currentComponentID = component.GetID()
 	d.wirePendingEvents()
+	d.currentComponentID = prevID
 
 	d.mountRecursive(component)
 	for _, child := range children {
@@ -417,6 +429,7 @@ func (d *domWasm) unmountRecursive(c Component) {
 	}
 
 	d.cleanupListeners(c.GetID())
+	d.untrackComponent(c.GetID())
 }
 
 func (d *domWasm) cleanupChildren(parentID string) {
@@ -537,6 +550,7 @@ func (d *domWasm) cleanupListeners(id string) {
 	}
 
 	if compIndex != -1 {
+		d.Log("Cleaning up listeners for ", id, " count: ", len(keysToRemove))
 		for _, key := range keysToRemove {
 			// Find and remove from eventFuncs
 			for i := 0; i < len(d.eventFuncs); i++ {
@@ -545,7 +559,7 @@ func (d *domWasm) cleanupListeners(id string) {
 					// Split key into id::type
 					// We need the type to call removeEventListener
 					parts := d.splitEventKey(key)
-					if len(parts) == 2 {
+					if len(parts) == 2 && !ef.val.IsNull() && !ef.val.IsUndefined() {
 						eventType := parts[1]
 						ef.val.Call("removeEventListener", eventType, ef.fn)
 					}

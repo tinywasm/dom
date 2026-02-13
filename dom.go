@@ -23,17 +23,11 @@ func generateID() string {
 
 // Render injects a component into a parent element.
 func Render(parentID string, component Component) error {
-	if component.GetID() == "" {
-		component.SetID(generateID())
-	}
 	return instance.Render(parentID, component)
 }
 
 // Append injects a component AFTER the last child of the parent element.
 func Append(parentID string, component Component) error {
-	if component.GetID() == "" {
-		component.SetID(generateID())
-	}
 	return instance.Append(parentID, component)
 }
 

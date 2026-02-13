@@ -13,7 +13,7 @@ func TestElementMethods(t *testing.T) {
 	doc := SetupDOM(t)
 
 	// Mount a component to test on
-	comp := &MockComponent{Element: &dom.Element{}}
+	comp := &MockComponent{Element: dom.Div()}
 	comp.SetID("comp-elem")
 	dom.Render("root", comp)
 

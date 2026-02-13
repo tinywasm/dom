@@ -44,7 +44,7 @@ func TestBodyHeadResolution(t *testing.T) {
 	// Testing dom.Append("body", ...) is sufficient to verify that getElement("body") works.
 
 	t.Run("Append ViewRenderer to body", func(t *testing.T) {
-		comp := &RenderableComp{Element: &dom.Element{}, label: "body-append"}
+		comp := &RenderableComp{Element: dom.Div(), label: "body-append"}
 		comp.SetID("body-append-vr")
 		err := dom.Append("body", comp)
 		if err != nil {
@@ -61,7 +61,7 @@ func TestBodyHeadResolution(t *testing.T) {
 	})
 
 	t.Run("Append RenderHTML to body", func(t *testing.T) {
-		comp := &StaticTestComp{Element: &dom.Element{}}
+		comp := &StaticTestComp{Element: dom.Div()}
 		comp.SetID("body-static")
 		err := dom.Append("body", comp)
 		if err != nil {
@@ -76,7 +76,7 @@ func TestBodyHeadResolution(t *testing.T) {
 
 	t.Run("Append to head", func(t *testing.T) {
 		// Use a meta tag wrapper or just a hidden div to test head injection
-		comp := &StaticTestComp{Element: &dom.Element{}}
+		comp := &StaticTestComp{Element: dom.Div()}
 		comp.SetID("head-item")
 		// Override RenderHTML to be valid head content
 		// (Though browsers are lenient, keeping it simple)
@@ -96,7 +96,7 @@ func TestBodyHeadResolution(t *testing.T) {
 func TestAutoID(t *testing.T) {
 	_ = SetupDOM(t)
 
-	comp := &RenderableComp{Element: &dom.Element{}, label: "auto"}
+	comp := &RenderableComp{Element: dom.Div(), label: "auto"}
 	// Intentionally do NOT set an ID
 	err := dom.Render("root", comp)
 	if err != nil {

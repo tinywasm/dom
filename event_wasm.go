@@ -23,10 +23,27 @@ func (e *eventWasm) StopPropagation() {
 
 // TargetValue returns the value of the event's target element.
 func (e *eventWasm) TargetValue() string {
-	return e.Get("target").Get("value").String()
+	v := e.Get("target").Get("value")
+	if v.IsUndefined() || v.IsNull() {
+		return ""
+	}
+	return v.String()
 }
 
 // TargetID returns the ID of the event's target element.
 func (e *eventWasm) TargetID() string {
-	return e.Get("target").Get("id").String()
+	v := e.Get("target").Get("id")
+	if v.IsUndefined() || v.IsNull() {
+		return ""
+	}
+	return v.String()
+}
+
+// TargetChecked returns the checked status of the event's target element.
+func (e *eventWasm) TargetChecked() bool {
+	v := e.Get("target").Get("checked")
+	if v.IsUndefined() || v.IsNull() {
+		return false
+	}
+	return v.Bool()
 }

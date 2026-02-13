@@ -52,13 +52,6 @@ func (b *Element) Add(children ...any) *Element {
 	return b
 }
 
-// Append adds a child to the element.
-// Deprecated: use Add instead.
-func (b *Element) Append(child any) *Element {
-	b.children = append(b.children, child)
-	return b
-}
-
 // Text adds a text node child.
 func (b *Element) Text(text string) *Element {
 	b.children = append(b.children, text)
@@ -146,7 +139,6 @@ func elementToHTML(el *Element) string {
 	return s
 }
 
-// Factory functions
 // Factory functions
 func Div(children ...any) *Element        { return &Element{tag: "div", children: children} }
 func Span(children ...any) *Element       { return &Element{tag: "span", children: children} }

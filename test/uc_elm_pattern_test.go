@@ -30,7 +30,7 @@ func TestElmPattern(t *testing.T) {
 	_ = SetupDOM(t)
 
 	t.Run("State Update and Re-render", func(t *testing.T) {
-		c := &CounterElm{Element: &dom.Element{}, count: 0}
+		c := &CounterElm{Element: dom.Div(), count: 0}
 		c.SetID("counter-elm") // Fixed ID for test stability
 		dom.Render("root", c)
 

@@ -9,10 +9,15 @@ type InputEl struct{ *Element }
 func (i *InputEl) AsElement() *Element { return i.Element }
 
 // Semantic methods — all return *InputEl
-func (i *InputEl) Name(n string) *InputEl         { i.Element.Attr("name", n); return i }
-func (i *InputEl) Value(v string) *InputEl        { i.Element.Attr("value", v); return i }
-func (i *InputEl) Placeholder(p string) *InputEl  { i.Element.Attr("placeholder", p); return i }
-func (i *InputEl) Required() *InputEl             { i.Element.Attr("required", ""); return i }
+func (i *InputEl) Name(n string) *InputEl        { i.Element.Attr("name", n); return i }
+func (i *InputEl) Value(v string) *InputEl       { i.Element.Attr("value", v); return i }
+func (i *InputEl) Placeholder(p string) *InputEl { i.Element.Attr("placeholder", p); return i }
+func (i *InputEl) Required(v ...bool) *InputEl {
+	if len(v) == 0 || v[0] {
+		i.Element.Attr("required", "")
+	}
+	return i
+}
 func (i *InputEl) Disabled() *InputEl             { i.Element.Attr("disabled", ""); return i }
 func (i *InputEl) Readonly() *InputEl             { i.Element.Attr("readonly", ""); return i }
 func (i *InputEl) Checked() *InputEl              { i.Element.Attr("checked", ""); return i }

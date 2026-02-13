@@ -10,9 +10,14 @@ func (s *SelectEl) AsElement() *Element { return s.Element }
 
 // Semantic methods
 func (s *SelectEl) Name(n string) *SelectEl { s.Element.Attr("name", n); return s }
-func (s *SelectEl) Required() *SelectEl     { s.Element.Attr("required", ""); return s }
-func (s *SelectEl) Disabled() *SelectEl     { s.Element.Attr("disabled", ""); return s }
-func (s *SelectEl) Multiple() *SelectEl     { s.Element.Attr("multiple", ""); return s }
+func (s *SelectEl) Required(v ...bool) *SelectEl {
+	if len(v) == 0 || v[0] {
+		s.Element.Attr("required", "")
+	}
+	return s
+}
+func (s *SelectEl) Disabled() *SelectEl { s.Element.Attr("disabled", ""); return s }
+func (s *SelectEl) Multiple() *SelectEl { s.Element.Attr("multiple", ""); return s }
 
 // Shadow methods
 func (s *SelectEl) ID(id string) *SelectEl               { s.Element.ID(id); return s }
