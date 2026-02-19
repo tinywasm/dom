@@ -53,6 +53,7 @@ Div(
 - **Containers**: `Div`, `Span`, `P`, `H1`-`H6`, `Ul`, `Ol`, `Li`, `Section`, `Main`, `Article`, `Header`, `Footer`, `Nav`, `Aside`, `Table`, `Thead`, `Tbody`, `Tr`, `Td`, etc.
 - **Typed Inputs**: `Text`, `Email`, `Password`, `Number`, `Checkbox`, `Radio`, `File`, `Date`, `Hidden`, `Search`, `Tel`, `Url`, `Range`, `Color`.
 - **Specialized**: `Form`, `Select`, `Textarea`, `Button`, `A`.
+- **SVG**: `Svg`, `Use`.
 - **Void Elements**: `Img`, `Br`, `Hr`.
 
 ## 🔄 Lifecycle Hooks

@@ -140,6 +140,10 @@ func elementToHTML(el *Element) string {
 }
 
 // Factory functions
+
+func Svg(children ...any) *Element { return &Element{tag: "svg", children: children} }
+func Use(children ...any) *Element { return &Element{tag: "use", children: children} }
+
 func Div(children ...any) *Element        { return &Element{tag: "div", children: children} }
 func Span(children ...any) *Element       { return &Element{tag: "span", children: children} }
 func P(children ...any) *Element          { return &Element{tag: "p", children: children} }
