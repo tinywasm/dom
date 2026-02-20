@@ -11,8 +11,8 @@ func TestBackendStubs(t *testing.T) {
 	d := newDom(td)
 
 	if _, ok := d.(interface {
-		get(string) (reference, bool)
-	}).get("test"); ok {
+		Get(string) (Reference, bool)
+	}).Get("test"); ok {
 		t.Error("get should return false on backend")
 	}
 

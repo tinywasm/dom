@@ -41,6 +41,11 @@ func Log(v ...any) {
 	instance.Log(v...)
 }
 
+// Get retrieves an element by ID.
+func Get(id string) (Reference, bool) {
+	return instance.Get(id)
+}
+
 // OnHashChange registers a hash change listener.
 func OnHashChange(handler func(hash string)) {
 	instance.OnHashChange(handler)

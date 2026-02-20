@@ -25,6 +25,9 @@ type DOM interface {
 	// Update re-renderiza el componente en su posición actual en el DOM.
 	Update(component Component) error
 
+	// Get retrieves an element by ID.
+	Get(id string) (Reference, bool)
+
 	// Log provides logging functionality using the log function passed to New.
 	Log(v ...any)
 }

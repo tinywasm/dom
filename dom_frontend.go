@@ -51,8 +51,8 @@ func newDom(td *tinyDOM) DOM {
 	}
 }
 
-// get retrieves an element by ID from the cache or the DOM.
-func (d *domWasm) get(id string) (reference, bool) {
+// Get retrieves an element by ID from the cache or the DOM.
+func (d *domWasm) Get(id string) (Reference, bool) {
 	// Linear search in cache
 	for _, item := range d.elementCache {
 		if item.id == id {
@@ -527,7 +527,7 @@ func (d *domWasm) removeFromElementCache(id string) {
 
 func (d *domWasm) wirePendingEvents() {
 	for _, pe := range d.pendingEvents {
-		if el, ok := d.get(pe.id); ok {
+		if el, ok := d.Get(pe.id); ok {
 			// Track listener for the component that owns the element
 			prev := d.currentComponentID
 			d.currentComponentID = pe.id

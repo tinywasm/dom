@@ -157,6 +157,7 @@ Event handling is integrated directly into the Builder API via `On(eventType, ha
 dom.Render(parentID, component)  // Replace parent's content
 dom.Append(parentID, component)  // Append after last child
 dom.Update(component)            // Re-render in place
+dom.Get(id)                      // Get a DOM Reference (value, focus, events)
 
 // Routing (hash-based)
 dom.OnHashChange(handler)        // Listen to hash changes
