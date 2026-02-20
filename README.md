@@ -184,13 +184,7 @@ counter.SetID("my-id")        // Set custom ID
 
 For more detailed information, please refer to the documentation in the `docs/` directory:
 
-1.  **[Specification & Philosophy](docs/SPECIFICATION.md)**: Design goals, architecture, and key decisions.
-2.  **[API Reference](docs/API.md)**: Detailed definition of `DOM`, `Element`, and `Component` interfaces.
-3.  **[Creating Components](docs/COMPONENTS.md)**: Guide to building basic and nested components.
-4.  **[Event Handling](docs/EVENTS.md)**: Using the `Event` interface for clicks, inputs, and forms.
-5.  **[Advanced Patterns](docs/ADVANCED.md)**: Dynamic lists, decoupling, and performance tips.
-6.  **[Comparison](docs/COMPARISON.md)**: TinyDOM vs. syscall/js, VDOM, and JS frameworks.
-
+1.  **[Architecture & Builder API Guide](docs/ARCHITECTURE.md)**: Comprehensive LLM-optimized guide covering the isomorphic component model, the JSX-like builder, event handling, and optimization strategies for TinyGo.
 ## 🆕 What's New in v0.5.0
 
 - ✅ **Major API Redesign** - JSX-like factories (`Div(H1("Title"))`)
