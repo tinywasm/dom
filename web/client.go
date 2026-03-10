@@ -65,9 +65,9 @@ func (a *App) renderRoute() *Element {
 	switch a.currentRoute {
 	case "#about":
 		return Div(
-			H1("About This Library"),
+			H1("Sobre Esta Libreria."),
 			P("tinywasm/dom is a minimalist, WASM-optimized DOM toolkit for Go."),
-			P("It features a JSX-like Builder API, Elm-inspired state management, and no Virtual DOM overhead."),
+			P("It features a JSX- like Builder API, Elm-inspired state management, and no Virtual DOM overhead."),
 		).Class("card")
 	default: // "#home"
 		return Div(
