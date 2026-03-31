@@ -123,10 +123,10 @@ func TestInternalWasm(t *testing.T) {
 	})
 
 	t.Run("Factories", func(t *testing.T) {
-		_ = Email("e1")
-		_ = Email("e2", "p1")
-		_ = Textarea("t1")
-		_ = Textarea("t2", "p1")
+		_ = Div("e1")
+		_ = Span("e2", "p1")
+		_ = Button("t1")
+		_ = P("t2", "p1")
 	})
 }
 

@@ -143,6 +143,20 @@ func (e *MockEvent) TargetChecked() bool {
 	return target.Get("checked").Bool()
 }
 
+func TriggerEvent(id, eventType string, value string) {
+	doc := js.Global().Get("document")
+	rawEl := doc.Call("getElementById", id)
+	if !rawEl.IsNull() && !rawEl.IsUndefined() {
+		if value != "" {
+			rawEl.Set("value", value)
+		}
+		event := js.Global().Get("Event").New(eventType, map[string]interface{}{
+			"bubbles": true,
+		})
+		rawEl.Call("dispatchEvent", event)
+	}
+}
+
 // GetRef is a test helper to get a Reference for an element by ID.
 func GetRef(id string) (Reference, bool) {
 	var val js.Value

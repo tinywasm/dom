@@ -9,155 +9,6 @@ import (
 	"github.com/tinywasm/fmt"
 )
 
-func TestCoverageSpecializedElements(t *testing.T) {
-	_ = SetupDOM(t)
-
-	t.Run("InputEl methods", func(t *testing.T) {
-		i := dom.Input("text").
-			ID("test-input").
-			Class("c1", "c2").
-			Attr("data-test", "val").
-			Name("test-name").
-			Value("test-value").
-			Placeholder("test-placeholder").
-			Required().
-			Disabled().
-			Readonly().
-			Checked().
-			Min("0").
-			Max("100").
-			Step("5").
-			Pattern("[0-9]*").
-			AutoComplete("off")
-
-		html := i.RenderHTML()
-		checks := []string{
-			"id='test-input'",
-			"class='c1 c2'",
-			"data-test='val'",
-			"name='test-name'",
-			"value='test-value'",
-			"placeholder='test-placeholder'",
-			"required=''",
-			"disabled=''",
-			"readonly=''",
-			"checked=''",
-			"min='0'",
-			"max='100'",
-			"step='5'",
-			"pattern='[0-9]*'",
-			"autocomplete='off'",
-		}
-		for _, c := range checks {
-			if !fmt.Contains(html, c) {
-				t.Errorf("Input HTML missing attribute: %s, got: %s", c, html)
-			}
-		}
-
-		// Test Required(false)
-		i.Required(false) // This is a no-op in currently implementation if it already has it,
-		// wait, Required(false) should remove it if we want full opt-out,
-		// but the instruction was "no-op (allows explicit opt-out in form contexts)"
-		// which usually means if you pass false it does nothing.
-		// Actually, if it's already there, it stays there with current implementation:
-		// func (i *InputEl) Required(v ...bool) *InputEl {
-		// 	if len(v) == 0 || v[0] {
-		// 		i.Element.Attr("required", "")
-		// 	}
-		// 	return i
-		// }
-		// So Required(false) does nothing.
-	})
-
-	t.Run("Input Typed Factories", func(t *testing.T) {
-		factories := []struct {
-			el  dom.Component
-			tag string
-		}{
-			{dom.Number("n"), "type='number'"},
-			{dom.Radio("r", "v"), "type='radio'"},
-			{dom.Radio("r", "v").Name("rn"), "name='rn'"}, // coverage for Name
-			{dom.File("f"), "type='file'"},
-			{dom.Date("d"), "type='date'"},
-			{dom.Hidden("h", "v"), "type='hidden'"},
-			{dom.Email("e", "p"), "type='email'"},
-			{dom.Search("s", "p"), "type='search'"},
-			{dom.Tel("t", "p"), "type='tel'"},
-			{dom.Url("u", "p"), "type='url'"},
-			{dom.Range("ra"), "type='range'"},
-			{dom.Color("co"), "type='color'"},
-			{dom.Submit("Go"), "type='submit'"},
-			{dom.Reset("Clear"), "type='reset'"},
-		}
-		for _, f := range factories {
-			html := f.el.RenderHTML()
-			if !fmt.Contains(html, f.tag) {
-				t.Errorf("Factory HTML missing %s: %s", f.tag, html)
-			}
-		}
-	})
-
-	t.Run("SelectEl methods", func(t *testing.T) {
-		s := dom.Select("test-select").
-			Required().
-			Disabled().
-			Multiple().
-			ID("sel-id").
-			Class("sel-class").
-			Attr("data-sel", "val")
-
-		html := s.RenderHTML()
-		checks := []string{
-			"required=''",
-			"disabled=''",
-			"multiple=''",
-			"id='sel-id'",
-			"class='sel-class'",
-			"data-sel='val'",
-		}
-		for _, c := range checks {
-			if !fmt.Contains(html, c) {
-				t.Errorf("Select HTML missing %s: %s", c, html)
-			}
-		}
-	})
-
-	t.Run("TextareaEl methods", func(t *testing.T) {
-		ta := dom.Textarea("test-ta").
-			Placeholder("placeholder").
-			Rows(10).
-			Cols(50).
-			Required().
-			Readonly().
-			MaxLength(100).
-			Value("initial value").
-			ID("ta-id").
-			Class("ta-class").
-			Attr("data-ta", "val").
-			On("input", func(e dom.Event) {})
-
-		html := ta.RenderHTML()
-		checks := []string{
-			"rows='10'",
-			"cols='50'",
-			"required=''",
-			"readonly=''",
-			"maxlength='100'",
-			"initial value",
-			"name='test-ta'",
-			"placeholder='placeholder'",
-			"id='ta-id'",
-			"class='ta-class'",
-			"data-ta='val'",
-		}
-		for _, c := range checks {
-			if !fmt.Contains(html, c) {
-				t.Errorf("Textarea HTML missing %s: %s", c, html)
-			}
-		}
-	})
-}
-
 func TestCoverageElementFactories(t *testing.T) {
 	t.Run("All Element Factories", func(t *testing.T) {
 		els := []dom.Component{
@@ -248,21 +99,6 @@ func TestCoverageEvents(t *testing.T) {
 		}
 	})
 
-	t.Run("Event interface methods - Checkbox", func(t *testing.T) {
-		var ev dom.Event
-		triggered := false
-		check := dom.Checkbox("check").ID("check-ev").On("change", func(e dom.Event) {
-			ev = e
-			triggered = true
-		})
-		dom.Render("root", check)
-		TriggerEvent(check.GetID(), "change", "")
-
-		if triggered && ev != nil {
-			_ = ev.TargetChecked()
-		}
-	})
-
 	t.Run("Append logic", func(t *testing.T) {
 		parent := dom.Div().ID("parent-append")
 		dom.Render("root", parent)
@@ -299,12 +135,12 @@ func TestLifecycleDeep(t *testing.T) {
 	})
 
 	t.Run("ElementNode in children", func(t *testing.T) {
-		// Form is an elementNode
-		f := dom.Form(dom.Text("q")).ID("myform")
-		el := dom.Div(f)
+		// MockComponent is an elementNode (implements AsElement())
+		c := &MockComponent{Element: dom.Div().ID("mock-child")}
+		el := dom.Div(c)
 		html := el.RenderHTML()
-		if !fmt.Contains(html, "<form id='myform'") {
-			t.Error("Form elementNode not rendered correctly in children")
+		if !fmt.Contains(html, "<div id='mock-child'") {
+			t.Error("MockComponent elementNode not rendered correctly in children")
 		}
 	})
 
@@ -455,16 +291,3 @@ func TestCoverageCleanup(t *testing.T) {
 	})
 }
 
-func TestCoverageForm(t *testing.T) {
-	t.Run("Form helpers", func(t *testing.T) {
-		f := dom.Form().
-			Action("/submit").
-			Method("POST").
-			NoValidate().
-			OnSubmit(func(e dom.Event) {})
-
-		if !fmt.Contains(f.RenderHTML(), "action='/submit'") {
-			t.Error("Form Action failed")
-		}
-	})
-}
