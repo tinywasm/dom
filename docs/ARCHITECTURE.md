@@ -5,7 +5,7 @@
 ## 1. Core Principles & Philosophy
 - **Isomorphic Core**: Same structs compile for server (`!wasm`) and client (`wasm`).
 - **No Virtual DOM**: Uses direct `.Update()` calls instead of React-style VDOM diffing. Less memory, faster in WASM.
-- **JSX-like Builder**: Strongly-typed Go functions (e.g. `dom.Div()`, `dom.Input()`) to construct the DOM tree.
+- **JSX-like Builder**: Strongly-typed Go functions (e.g. `dom.Div()`, `dom.Button()`) to construct the DOM tree.
 - **Zero StdLib**: Uses `github.com/tinywasm/fmt` instead of `fmt`, `strings`, `errors` to reduce WASM size.
 - **Slices over Maps**: Attributes and events use `[]fmt.KeyValue` instead of `map[string]string` because maps are extremely heavy in TinyGo.
 
@@ -21,19 +21,19 @@ Elements are constructed declaratively:
 ```go
 import "github.com/tinywasm/dom"
 
-dom.Form(
-    dom.Text("username", "Enter username").Required().ID("user-id"),
-    dom.Password("pwd"),
+dom.Div(
+    dom.H1("Welcome"),
+    dom.P("This is a minimalist UI."),
     dom.Div(
-        dom.Strong("Login"),
+        dom.Strong("Ready to start?"),
     ).Class("header-box"),
-    dom.Button("Submit").Attr("type", "submit"),
-).Action("/api/login").Method("POST").OnSubmit(func(e dom.Event) {
-    e.PreventDefault()
-})
+    dom.Button("Get Started").Class("primary").On("click", func(e dom.Event) {
+        dom.Log("Button clicked!")
+    }),
+).Class("container")
 ```
 - Content methods (`SetText`, `SetHTML`) accept variadic arguments, using `fmt.Sprint` for non-strings.
-- **Typing**: `dom.Input()`, `dom.Select()`, etc., return typed structs (`*InputEl`, `*SelectEl`) to allow specific builder methods (`.Required()`, `.Rows()`).
+- **Typing**: Some factories return specific types to allow chainable semantic methods, though most generic elements return `*Element`.
 
 ## 3. Creating Components
 
