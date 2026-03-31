@@ -32,10 +32,10 @@
 
 ### Code files
 
-- [ ] **Delete** input.go, form_el.go, select_el.go, textarea_el.go
-- [ ] **Delete** test/uc_form_api_test.go (tests removed functions)
-- [ ] **Update** test/uc_coverage_test.go — remove form-related test cases
-- [ ] **Update** web/client.go — remove form usage from demo app (or update to use tinywasm/form)
+- [x] **Delete** input.go, form_el.go, select_el.go, textarea_el.go
+- [x] **Delete** test/uc_form_api_test.go (tests removed functions)
+- [x] **Update** test/uc_coverage_test.go — remove form-related test cases
+- [x] **Update** web/client.go — remove form usage from demo app (or update to use tinywasm/form)
 
 ### External consumers
 
@@ -44,8 +44,8 @@
 
 ### Documentation
 
-- [ ] **Update** README.md — remove form examples, document that forms live in tinywasm/form
-- [ ] **Update** docs/ARCHITECTURE.md — remove FormEl, InputEl references
+- [x] **Update** README.md — remove form examples, document that forms live in tinywasm/form
+- [x] **Update** docs/ARCHITECTURE.md — remove FormEl, InputEl references
 
 ---
 
