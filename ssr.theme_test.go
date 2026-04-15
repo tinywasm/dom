@@ -30,7 +30,7 @@ func TestCssVars_Render(t *testing.T) {
 			"--controls-height: 3vh;",
 			"--mag-pri: 0.5rem;",
 			"--mag-sec: 0.2rem;",
-			"--mag-qua: 0.2rem;",
+			"--mag-cua: 0.2rem;",
 			"}",
 		}
 
@@ -82,8 +82,8 @@ func TestThemeCSS_Embedded(t *testing.T) {
 	if !strings.Contains(ThemeCSS, "@media (prefers-color-scheme: dark)") {
 		t.Error("ThemeCSS should contain dark mode media query")
 	}
-	if !strings.Contains(ThemeCSS, "--mag-qua") {
-		t.Error("ThemeCSS should contain --mag-qua token")
+	if !strings.Contains(ThemeCSS, "--mag-cua") {
+		t.Error("ThemeCSS should contain --mag-cua token")
 	}
 	if strings.Contains(ThemeCSS, ":root:not([data-theme=\"light\"])") {
 		t.Error("ThemeCSS should not use high-specificity selector in media query")

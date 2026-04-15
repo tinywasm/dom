@@ -4,7 +4,8 @@ package dom
 
 import (
 	_ "embed"
-	"strings"
+
+	"github.com/tinywasm/fmt"
 )
 
 //go:embed theme.css
@@ -30,7 +31,7 @@ type CssVars struct {
 	ControlsHeight     string `css:"--controls-height"`
 	SpacingPrimary     string `css:"--mag-pri"`
 	SpacingSecondary   string `css:"--mag-sec"`
-	SpacingQuaternary  string `css:"--mag-qua"`
+	SpacingQuaternary  string `css:"--mag-cua"`
 }
 
 // DefaultCssVars returns the default theme token set.
@@ -82,17 +83,13 @@ func (c CssVars) Render() string {
 		{"--controls-height", c.ControlsHeight},
 		{"--mag-pri", c.SpacingPrimary},
 		{"--mag-sec", c.SpacingSecondary},
-		{"--mag-qua", c.SpacingQuaternary},
+		{"--mag-cua", c.SpacingQuaternary},
 	}
-	var sb strings.Builder
+	sb := fmt.GetConv()
 	sb.WriteString(":root {\n")
 	for _, p := range pairs {
 		if p.v != "" {
-			sb.WriteString("  ")
-			sb.WriteString(p.k)
-			sb.WriteString(": ")
-			sb.WriteString(p.v)
-			sb.WriteString(";\n")
+			sb.WriteString("  " + p.k + ": " + p.v + ";\n")
 		}
 	}
 	sb.WriteString("}\n")
