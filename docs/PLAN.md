@@ -48,9 +48,11 @@ that already depends on `dom` gets the standard at zero extra cost.
 
 ## Files to create / modify
 
-### 1. `theme.go` (new, no build tag — pure string generation, no WASM dependency)
+### 1. `theme.go` (new, build tag `!wasm` — CSS string generation for SSR only)
 
 ```go
+//go:build !wasm
+
 package dom
 
 import "github.com/tinywasm/fmt"
@@ -211,7 +213,7 @@ pattern of avoiding reflect for runtime code (ormc uses it at code-gen time only
 
 ---
 
-### 3. `theme_ssr.go` (new, build tag `!wasm`)
+### 3. `theme_ssr.go` (new, build tag `!wasm` — embeds the CSS file)
 
 ```go
 //go:build !wasm
@@ -230,7 +232,7 @@ the base theme, injected once by the site builder, not by individual components.
 
 ---
 
-### 4. `theme_test.go` (new, no build tag)
+### 4. `theme_test.go` (new, build tag `!wasm`)
 
 Test that:
 - `DefaultCssVars().Render()` contains `:root {`
