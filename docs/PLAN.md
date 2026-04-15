@@ -90,18 +90,29 @@ type CssVars struct {
     SpacingQuaternary   string `css:"--mag-cua"`
 }
 
-// DefaultCssVars returns the default light-theme token set.
+// DefaultCssVars returns the default theme token set.
+// Colors are inspired by the official palettes of Go, WebAssembly, JavaScript and HTML5
+// — the four pillars of the tinywasm ecosystem.
+//
+//   - Secondary  (#00ADD8) → Go cyan
+//   - Selection  (#654FF0) → WebAssembly purple
+//   - Hover      (#F7DF1E) → JavaScript yellow
+//   - Error      (#E34F26) → HTML5 orange-red
+//
+// This is a FALLBACK theme. Apps override it by calling CssVars.Render() with their
+// own values and injecting the result into <head> before theme.css — CSS cascade
+// ensures the app values win.
 func DefaultCssVars() CssVars {
     return CssVars{
-        Primary:            "#ffffff",
-        Secondary:          "#7c3aed",
-        Tertiary:           "#94a3b8",
-        Quaternary:         "#1e293b",
-        Gray:               "#f8fafc",
-        Selection:          "#a78bfa",
-        Hover:              "#6d28d9",
-        Success:            "#10b981",
-        Error:              "#ef4444",
+        Primary:            "#E6EDF3", // light text on dark background
+        Secondary:          "#00ADD8", // Go cyan (brand accent)
+        Tertiary:           "#8B949E", // muted text / borders
+        Quaternary:         "#161B22", // deep background / panels
+        Gray:               "#0D1117", // neutral surface (dark)
+        Selection:          "#654FF0", // WebAssembly purple
+        Hover:              "#F7DF1E", // JavaScript yellow
+        Success:            "#3FB950", // Go gopher green
+        Error:              "#E34F26", // HTML5 orange-red
         MenuWidthCollapsed: "64px",
         MenuWidthExpanded:  "250px",
         TitleHeight:        "8vh",
@@ -155,23 +166,52 @@ pattern of avoiding reflect for runtime code (ormc uses it at code-gen time only
 
 ### 2. `theme.css` (new, embedded in `ssr.theme.go`)
 
+This file is the **default fallback theme** injected once by the site builder into
+`<head>`. It is NOT a global app reset — it only defines `:root` CSS custom properties.
+
+Apps that need custom colors call `CssVars.Render()` with their own values and inject
+the result **before** this file, or simply after it with higher specificity. CSS cascade
+guarantees the app values win.
+
+Default palette is inspired by the official colors of the four pillars of tinywasm:
+
+| Token              | Color   | Origin                  |
+|--------------------|---------|-------------------------|
+| --color-secondary  | #00ADD8 | Go (cyan)               |
+| --color-selection  | #654FF0 | WebAssembly (purple)    |
+| --color-hover      | #F7DF1E | JavaScript (yellow)     |
+| --color-error      | #E34F26 | HTML5 (orange-red)      |
+| --color-success    | #3FB950 | Go gopher green         |
+| --color-primary    | #E6EDF3 | Light text (dark base)  |
+| --color-gray       | #0D1117 | Dark surface            |
+| --color-quaternary | #161B22 | Deeper dark panel       |
+| --color-tertiary   | #8B949E | Muted / borders         |
+
 ```css
 /*
  * tinywasm/dom — canonical design tokens
- * Light theme (default). Dark via prefers-color-scheme. Manual via [data-theme].
+ *
+ * FALLBACK THEME — injected once by the site builder into <head>.
+ * Only defines CSS custom properties on :root — no resets, no global styles.
+ *
+ * Colors are inspired by Go, WebAssembly, JavaScript and HTML5 official palettes.
+ *
+ * Apps override by injecting their own CssVars.Render() output into <head>.
+ * Dark mode works without JS: automatic via prefers-color-scheme,
+ * manual override via [data-theme="dark"|"light"] on <html>.
  */
 
-/* ── Light (default) ─────────────────────────────────────────── */
+/* ── Default (dark base, Go/WASM inspired) ───────────────────── */
 :root {
-  --color-primary:    #ffffff;
-  --color-secondary:  #7c3aed;
-  --color-tertiary:   #94a3b8;
-  --color-quaternary: #1e293b;
-  --color-gray:       #f8fafc;
-  --color-selection:  #a78bfa;
-  --color-hover:      #6d28d9;
-  --color-success:    #10b981;
-  --color-error:      #ef4444;
+  --color-primary:    #E6EDF3; /* light text on dark bg            */
+  --color-secondary:  #00ADD8; /* Go cyan — brand accent            */
+  --color-tertiary:   #8B949E; /* muted text / borders             */
+  --color-quaternary: #161B22; /* deep background / panels         */
+  --color-gray:       #0D1117; /* neutral dark surface             */
+  --color-selection:  #654FF0; /* WebAssembly purple               */
+  --color-hover:      #F7DF1E; /* JavaScript yellow                */
+  --color-success:    #3FB950; /* Go gopher green                  */
+  --color-error:      #E34F26; /* HTML5 orange-red                 */
 
   --menu-width-collapsed: 64px;
   --menu-width-expanded:  250px;
@@ -185,39 +225,39 @@ pattern of avoiding reflect for runtime code (ormc uses it at code-gen time only
   --mag-cua: 0.2rem;
 }
 
-/* ── Automatic dark (OS preference, no JS required) ──────────── */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --color-primary:    #e2e8f0;
-    --color-secondary:  #7c3aed;
-    --color-tertiary:   #475569;
-    --color-quaternary: #f1f5f9;
-    --color-gray:       #0f172a;
-    --color-selection:  #6d28d9;
-    --color-hover:      #a78bfa;
+/* ── Automatic light (OS preference, no JS required) ─────────── */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --color-primary:    #1C1C1E; /* dark text on light bg           */
+    --color-secondary:  #00ADD8; /* Go cyan stays                   */
+    --color-tertiary:   #6E6E73; /* muted                           */
+    --color-quaternary: #F2F2F7; /* light panel                     */
+    --color-gray:       #FFFFFF; /* white surface                   */
+    --color-selection:  #654FF0; /* WASM purple stays               */
+    --color-hover:      #B8860B; /* darker JS yellow (readable)     */
   }
 }
 
 /* ── Manual dark override ([data-theme="dark"] on <html>) ────── */
 [data-theme="dark"] {
-  --color-primary:    #e2e8f0;
-  --color-secondary:  #7c3aed;
-  --color-tertiary:   #475569;
-  --color-quaternary: #f1f5f9;
-  --color-gray:       #0f172a;
-  --color-selection:  #6d28d9;
-  --color-hover:      #a78bfa;
+  --color-primary:    #E6EDF3;
+  --color-secondary:  #00ADD8;
+  --color-tertiary:   #8B949E;
+  --color-quaternary: #161B22;
+  --color-gray:       #0D1117;
+  --color-selection:  #654FF0;
+  --color-hover:      #F7DF1E;
 }
 
-/* ── Manual light override ───────────────────────────────────── */
+/* ── Manual light override ([data-theme="light"] on <html>) ───── */
 [data-theme="light"] {
-  --color-primary:    #ffffff;
-  --color-secondary:  #7c3aed;
-  --color-tertiary:   #94a3b8;
-  --color-quaternary: #1e293b;
-  --color-gray:       #f8fafc;
-  --color-selection:  #a78bfa;
-  --color-hover:      #6d28d9;
+  --color-primary:    #1C1C1E;
+  --color-secondary:  #00ADD8;
+  --color-tertiary:   #6E6E73;
+  --color-quaternary: #F2F2F7;
+  --color-gray:       #FFFFFF;
+  --color-selection:  #654FF0;
+  --color-hover:      #B8860B;
 }
 ```
 
