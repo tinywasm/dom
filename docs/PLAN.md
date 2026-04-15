@@ -53,7 +53,7 @@ that already depends on `dom` gets the standard at zero extra cost.
 ```go
 package dom
 
-import "strings"
+import "github.com/tinywasm/fmt"
 
 // CssVars defines the design token set for a tinywasm project.
 // Each field maps to a CSS custom property via the `css` struct tag.
@@ -124,7 +124,7 @@ func (c CssVars) Render() string {
         {"--mag-sec", c.SpacingSecondary},
         {"--mag-cua", c.SpacingQuaternary},
     }
-    var sb strings.Builder
+    sb := fmt.GetConv()
     sb.WriteString(":root {\n")
     for _, p := range pairs {
         if p.v != "" {
@@ -242,11 +242,12 @@ Test that:
 
 ## Dependencies
 
-No new external dependencies. `theme.go` uses only `strings` (stdlib).
+`theme.go` uses `github.com/tinywasm/fmt` (already a dependency of `tinywasm/dom`).
+No new external dependencies.
 
 ## go.mod changes
 
-None required.
+None required — `tinywasm/fmt` is already in `go.mod`.
 
 ## Execution order
 
