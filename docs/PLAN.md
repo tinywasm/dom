@@ -48,14 +48,24 @@ that already depends on `dom` gets the standard at zero extra cost.
 
 ## Files to create / modify
 
-### 1. `theme.go` (new, build tag `!wasm` — CSS string generation for SSR only)
+### 1. `ssr.theme.go` (new, build tag `!wasm` — CssVars + CSS embed, SSR only)
+
+Both the `CssVars` type and the embedded `theme.css` live in the same file since both
+are `!wasm` and belong to the same responsibility: providing theme tokens for SSR.
 
 ```go
 //go:build !wasm
 
 package dom
 
-import "github.com/tinywasm/fmt"
+import (
+    _ "embed"
+
+    "github.com/tinywasm/fmt"
+)
+
+//go:embed theme.css
+var ThemeCSS string
 
 // CssVars defines the design token set for a tinywasm project.
 // Each field maps to a CSS custom property via the `css` struct tag.
@@ -143,7 +153,7 @@ pattern of avoiding reflect for runtime code (ormc uses it at code-gen time only
 
 ---
 
-### 2. `theme.css` (new, embedded in `theme_ssr.go`)
+### 2. `theme.css` (new, embedded in `ssr.theme.go`)
 
 ```css
 /*
@@ -213,26 +223,7 @@ pattern of avoiding reflect for runtime code (ormc uses it at code-gen time only
 
 ---
 
-### 3. `theme_ssr.go` (new, build tag `!wasm` — embeds the CSS file)
-
-```go
-//go:build !wasm
-
-package dom
-
-import _ "embed"
-
-//go:embed theme.css
-var ThemeCSS string
-```
-
-`ThemeCSS` is a package-level string that `tinywasm/site` (or any SSR host) can inject
-into the HTML `<head>` as a `<style>` block. It is NOT a `CSSProvider` itself — it is
-the base theme, injected once by the site builder, not by individual components.
-
----
-
-### 4. `theme_test.go` (new, build tag `!wasm`)
+### 3. `ssr.theme_test.go` (new, build tag `!wasm`)
 
 Test that:
 - `DefaultCssVars().Render()` contains `:root {`
@@ -244,7 +235,7 @@ Test that:
 
 ## Dependencies
 
-`theme.go` uses `github.com/tinywasm/fmt` (already a dependency of `tinywasm/dom`).
+`ssr.theme.go` uses `github.com/tinywasm/fmt` (already a dependency of `tinywasm/dom`).
 No new external dependencies.
 
 ## go.mod changes
@@ -253,16 +244,15 @@ None required — `tinywasm/fmt` is already in `go.mod`.
 
 ## Execution order
 
-1. Create `theme.go`
+1. Create `ssr.theme.go` (includes CssVars + ThemeCSS embed)
 2. Create `theme.css`
-3. Create `theme_ssr.go`
-4. Create `theme_test.go`
+3. Create `ssr.theme_test.go`
 5. Run `go test ./...` — must pass
 6. Commit: `feat: add CssVars and theme.css design token standard`
 
 ## Notes for Jules
 
-- Do NOT use `reflect` in `theme.go`. The explicit pairs slice is intentional.
+- Do NOT use `reflect` in `ssr.theme.go`. The explicit pairs slice is intentional.
 - `ThemeCSS` is a `string`, not a `CSSProvider`. The site builder injects it once.
 - The `CssVars.Render()` output is used when a project wants to override tokens
   programmatically (e.g. per-tenant theming). The `theme.css` file is the static default.
