@@ -22,7 +22,7 @@ func (a *App) Init() {
 		nav { background: #333; padding: 1rem; display: flex; gap: 1rem; }
 		nav a { color: white; text-decoration: none; cursor: pointer; padding: 0.2rem 0.5rem; border-radius: 4px; }
 		nav a:hover { background: #555; }
-		nav a.active { background: #007bff; }
+		nav a.active { background: #0037ff; }
 		.container { padding: 2rem; max-width: 800px; margin: 0 auto; }
 		.card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
 		.btn-group { display: flex; gap: 0.5rem; align-items: center; margin-top: 1rem; }
