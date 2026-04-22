@@ -34,6 +34,13 @@ type DOM interface {
 
 // Component is the minimal interface for components.
 // All components must implement this for both SSR (backend) and WASM (frontend).
+//
+// NOTE: If your struct embeds Element, embed it as a VALUE, not a pointer:
+//   type MyComponent struct {
+//     Element       // ✅ Correct — never nil
+//     // NOT: *Element // ❌ Wrong — nil pointer causes panic in renderToHTML
+//   }
+// This is because renderToHTML calls GetID() on every Component child before checking ViewRenderer.
 type Component interface {
 	GetID() string
 	SetID(id string)

@@ -339,9 +339,11 @@ func (d *domWasm) renderToHTML(el *Element, comps *[]Component) string {
 			s += d.renderToHTML(v.AsElement(), comps)
 		case Component:
 			*comps = append(*comps, v)
-			// Ensure ID
-			if v.GetID() == "" {
-				v.SetID(generateID())
+			// Ensure ID — guard against nil Component (e.g. embedded *Element = nil)
+			if v != nil {
+				if v.GetID() == "" {
+					v.SetID(generateID())
+				}
 			}
 
 			if vr, ok := v.(ViewRenderer); ok {
