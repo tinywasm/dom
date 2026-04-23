@@ -13,7 +13,7 @@ var ThemeCSS string
 
 // CssVars defines the design token set for a tinywasm project.
 // Each field maps to a CSS custom property via the `css` struct tag.
-// Use Render() to generate the :root { } block for SSR injection.
+// Use RenderCSS() to generate the :root { } block for SSR injection.
 type CssVars struct {
 	Primary            string `css:"--color-primary"`
 	Secondary          string `css:"--color-secondary"`
@@ -62,9 +62,9 @@ func DefaultCssVars() CssVars {
 	}
 }
 
-// Render returns the CSS :root { } block with all non-empty tokens.
+// RenderCSS returns the CSS :root { } block with all non-empty tokens.
 // Safe to call from SSR. Does NOT use reflect — iterates fields explicitly.
-func (c CssVars) Render() string {
+func (c CssVars) RenderCSS() string {
 	type kv struct{ k, v string }
 	pairs := []kv{
 		{"--color-primary", c.Primary},

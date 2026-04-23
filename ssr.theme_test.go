@@ -10,7 +10,7 @@ import (
 func TestCssVars_Render(t *testing.T) {
 	t.Run("DefaultCssVars renders all tokens", func(t *testing.T) {
 		vars := DefaultCssVars()
-		got := vars.Render()
+		got := vars.RenderCSS()
 
 		expectations := []string{
 			":root {",
@@ -45,7 +45,7 @@ func TestCssVars_Render(t *testing.T) {
 		vars := CssVars{
 			Primary: "#000",
 		}
-		got := vars.Render()
+		got := vars.RenderCSS()
 
 		if !strings.Contains(got, "--color-primary: #000;") {
 			t.Errorf("expected output to contain primary color, got %q", got)
@@ -59,7 +59,7 @@ func TestCssVars_Render(t *testing.T) {
 	t.Run("Custom values override defaults", func(t *testing.T) {
 		vars := DefaultCssVars()
 		vars.Primary = "#FF0000"
-		got := vars.Render()
+		got := vars.RenderCSS()
 
 		if !strings.Contains(got, "--color-primary: #FF0000;") {
 			t.Errorf("expected output to contain custom primary color #FF0000, got %q", got)
