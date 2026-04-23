@@ -32,8 +32,8 @@ func Append(parentID string, component Component) error {
 }
 
 // Update re-renders a component.
-func Update(component Component) error {
-	return instance.Update(component)
+func Update(component Component) {
+	instance.Update(component)
 }
 
 // Log provides logging functionality.

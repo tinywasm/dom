@@ -65,8 +65,8 @@ func (b *Element) Render(parentID string) error {
 }
 
 // Update triggers a re-render of the component.
-func (b *Element) Update() error {
-	return Update(b)
+func (b *Element) Update() {
+	Update(b)
 }
 
 // --- Component Interface Implementation ---
@@ -202,6 +202,10 @@ func Img(src, alt string) *Element {
 }
 func Br() *Element { return &Element{tag: "br", void: true} }
 func Hr() *Element { return &Element{tag: "hr", void: true} }
+func Input(typ string) *Element {
+	return &Element{tag: "input", void: true,
+		attrs: []fmt.KeyValue{{Key: "type", Value: typ}}}
+}
 
 // Option helpers
 func Option(value, text string) *Element {

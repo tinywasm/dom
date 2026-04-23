@@ -33,10 +33,7 @@ func TestCoverageDOMLogic(t *testing.T) {
 
 	t.Run("Update non-existent component", func(t *testing.T) {
 		c := dom.Div().ID("non-existent")
-		err := dom.Update(c)
-		if err == nil {
-			t.Error("Expected error when updating non-existent component")
-		}
+		dom.Update(c)
 	})
 
 	t.Run("Render to non-existent parent", func(t *testing.T) {
@@ -268,10 +265,7 @@ func TestCoverageCleanup(t *testing.T) {
 		child := &MockComponent{Element: dom.Div().ID("embedded")}
 		dom.Render("root", child)
 		// Update using the embedded element
-		err := dom.Update(child.Element)
-		if err != nil {
-			t.Errorf("Update embedded failed: %v", err)
-		}
+		dom.Update(child.Element)
 	})
 
 	t.Run("Complex cleanup branches", func(t *testing.T) {

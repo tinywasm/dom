@@ -74,10 +74,18 @@ To bundle styles/icons, implement these interfaces (must use `//go:build !wasm` 
 ## 4. Events
 The `dom.Event` interface provides safe access to the JS Event without `syscall/js`:
 - `PreventDefault()`, `StopPropagation()`
-- `TargetValue() string` (Extremely useful for `<input>` and `<select>`)
+- `TargetValue() string` (Extremely useful for `dom.Input("text")` and `<select>`)
 - `TargetID() string`
 
-## 5. Build Split Strategy
+> [!IMPORTANT]
+> `dom.Input` should be used only for basic layout elements (like a toggle checkbox or a simple search box). For any input that requires validation, labels, or form state management, you MUST use `github.com/tinywasm/form/input`.
+
+## 5. Void Elements
+The library handles self-closing tags correctly for:
+- `Input(type)`, `Img(src, alt)`, `Br()`, `Hr()`.
+These return elements with the `void` flag set, preventing the rendering of a closing tag.
+
+## 6. Build Split Strategy
 - `dom_wasm.go` & `element_wasm.go`: Implementation using `syscall/js`.
 - `dom_backend.go` & `dom_stub.go` (`!wasm`): No-op / server-side logic for compilation safety.
 - **WASM Memory Safety**: `Unmount` automatically releases all saved `js.FuncOf` event listeners.

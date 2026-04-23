@@ -160,15 +160,14 @@ func (d *domWasm) Render(parentID string, component Component) error {
 }
 
 // Update re-renders the component and replaces it in the DOM.
-func (d *domWasm) Update(component Component) error {
+func (d *domWasm) Update(component Component) {
 	if d.document.IsNull() || d.document.IsUndefined() {
-		return fmt.Errf("document not found")
+		d.Log("tinywasm/dom: document not found in Update")
+		return
 	}
 	id := component.GetID()
 
 	// Resolve the full outer component from tracked references.
-	// This fixes Go embedding: Element.Update() passes *Element,
-	// but mountedComponents stores the original *Counter/*Header pointer.
 	for _, item := range d.mountedComponents {
 		if item.id == id {
 			component = item.comp
@@ -178,11 +177,6 @@ func (d *domWasm) Update(component Component) error {
 
 	// Clean up old children listeners/lifecycle
 	d.cleanupChildren(id)
-
-	// Clean up listeners for the component itself (will be re-bound if OnUpdate adds them, or if DSL adds them)
-	// Note: DSL events are wired via wirePendingEvents.
-	// Manual events in OnUpdate need currentComponentID.
-	// Existing listeners on old element are gone from DOM, but need to be removed from Go map.
 	d.cleanupListeners(id)
 
 	var children []Component
@@ -203,7 +197,8 @@ func (d *domWasm) Update(component Component) error {
 	// Replace the element in the DOM
 	elRaw := d.document.Call("getElementById", id)
 	if elRaw.IsNull() || elRaw.IsUndefined() {
-		return fmt.Errf("component element not found: %s", id)
+		d.Log("tinywasm/dom: component element not found during Update:", id)
+		return
 	}
 	elRaw.Set("outerHTML", html)
 
@@ -229,8 +224,6 @@ func (d *domWasm) Update(component Component) error {
 	for _, child := range children {
 		d.mountRecursive(child)
 	}
-
-	return nil
 }
 
 // Append injects the component's content after the last child of the parent element.

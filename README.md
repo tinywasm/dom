@@ -47,11 +47,11 @@ Div(
 
 **Available builders**:
 - **Containers**: `Div`, `Span`, `P`, `H1`-`H6`, `Ul`, `Ol`, `Li`, `Section`, `Main`, `Article`, `Header`, `Footer`, `Nav`, `Aside`, `Table`, `Thead`, `Tbody`, `Tr`, `Td`, etc.
-- **Specialized**: `Button`, `A`, `Option`, `SelectedOption`, `Fieldset`, `Legend`, `Label`.
+- **Specialized**: `Button`, `A`, `Input`, `Option`, `SelectedOption`, `Fieldset`, `Legend`, `Label`.
 - **SVG**: `Svg`, `Use`.
 
-> **Note**: Form elements with validation live in `github.com/tinywasm/form`. `dom` provides basic layout and generic elements.
-- **Void Elements**: `Img`, `Br`, `Hr`.
+> **Note**: Form elements with validation live in `github.com/tinywasm/form`. `dom.Input` is intended ONLY for basic layout or search boxes where full validation/form state is not required.
+- **Void Elements**: `Input`, `Img`, `Br`, `Hr`.
 
 ## 🔄 Lifecycle Hooks
 

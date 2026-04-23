@@ -23,7 +23,7 @@ type DOM interface {
 	SetHash(hash string)
 
 	// Update re-renderiza el componente en su posición actual en el DOM.
-	Update(component Component) error
+	Update(component Component)
 
 	// Get retrieves an element by ID.
 	Get(id string) (Reference, bool)

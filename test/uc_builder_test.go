@@ -58,10 +58,7 @@ func TestBuilderAndUpdate(t *testing.T) {
 		dom.Render("root", c)
 
 		c.count = 5
-		err := dom.Update(c)
-		if err != nil {
-			t.Fatalf("Update failed: %v", err)
-		}
+		dom.Update(c)
 
 		_, ok := GetRef("counter2-val")
 		if !ok {

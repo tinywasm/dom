@@ -32,8 +32,7 @@ func (d *domBackend) Append(parentID string, component Component) error {
 }
 
 // Update is not implemented for backend.
-func (d *domBackend) Update(component Component) error {
-	return fmt.Errf("Update is not implemented for backend")
+func (d *domBackend) Update(component Component) {
 }
 
 // unmount is not implemented for backend.
