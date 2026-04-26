@@ -32,20 +32,22 @@ dom.Div(
     }),
 ).Class("container")
 ```
-- Content methods (`SetText`, `SetHTML`) accept variadic arguments, using `fmt.Sprint` for non-strings.
+- Element factories accept `...any` children — strings, numbers, and `*Element` values. Non-string values are converted via `tinywasm/fmt.Sprint`.
 - **Typing**: Some factories return specific types to allow chainable semantic methods, though most generic elements return `*Element`.
 
 ## 3. Creating Components
 
-A component is a Go struct that embeds `*dom.Element` (for identity/lifecycle) and implements `Render() *dom.Element`.
+A component is a Go struct that embeds `dom.Element` **as a value** (never as a pointer) and implements `Render() *dom.Element`.
 
 ```go
+// ✅ CORRECT — value embed: 1 allocation, no nil-panic risk, better GC in TinyGo.
 type Counter struct {
-	*dom.Element
+	dom.Element
 	count int
 }
 
-func NewCounter() *Counter { return &Counter{Element: dom.Div()} }
+// ❌ WRONG — pointer embed: 2 allocations, nil-panic risk, heavier GC pressure.
+// type Counter struct { *dom.Element; count int }
 
 func (c *Counter) Render() *dom.Element {
 	return dom.Div(
@@ -57,6 +59,8 @@ func (c *Counter) Render() *dom.Element {
 	).Class("counter")
 }
 ```
+
+**Why value embed?** TinyGo has a simple GC — fewer heap objects means fewer pauses. Value embedding keeps the struct and its `Element` identity in a single allocation with better cache locality.
 
 ### Component Lifecycle (WASM only)
 If a component implements `Mountable`, `OnMount()` is called after injection.
