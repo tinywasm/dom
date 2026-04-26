@@ -28,6 +28,7 @@ type domWasm struct {
 	currentComponentID string // Tracks the component being mounted
 	pendingEvents      []struct {
 		id      string
+		ownerID string
 		name    string
 		handler func(Event)
 	}
@@ -54,8 +55,15 @@ func newDom(td *tinyDOM) DOM {
 // Get retrieves an element by ID from the cache or the DOM.
 func (d *domWasm) Get(id string) (Reference, bool) {
 	// Linear search in cache
-	for _, item := range d.elementCache {
+	for i, item := range d.elementCache {
 		if item.id == id {
+			// Invalidate stale cache if element was removed/replaced
+			if !item.val.Get("isConnected").Bool() {
+				lastIdx := len(d.elementCache) - 1
+				d.elementCache[i] = d.elementCache[lastIdx]
+				d.elementCache = d.elementCache[:lastIdx]
+				break
+			}
 			return &elementWasm{
 				val: item.val,
 				dom: d,
@@ -121,11 +129,11 @@ func (d *domWasm) Render(parentID string, component Component) error {
 	if vr, ok := component.(ViewRenderer); ok {
 		root := vr.Render()
 		injectComponentID(root, component.GetID())
-		html = d.renderToHTML(root, &children)
+		html = d.renderToHTML(root, &children, component.GetID())
 	} else if en, ok := component.(elementNode); ok {
-		html = d.renderToHTML(en.AsElement(), &children)
+		html = d.renderToHTML(en.AsElement(), &children, component.GetID())
 	} else if el, ok := component.(*Element); ok {
-		html = d.renderToHTML(el, &children)
+		html = d.renderToHTML(el, &children, component.GetID())
 	} else {
 		html = component.RenderHTML()
 	}
@@ -185,11 +193,11 @@ func (d *domWasm) Update(component Component) {
 	if vr, ok := component.(ViewRenderer); ok {
 		root := vr.Render()
 		injectComponentID(root, id)
-		html = d.renderToHTML(root, &children)
+		html = d.renderToHTML(root, &children, id)
 	} else if en, ok := component.(elementNode); ok {
-		html = d.renderToHTML(en.AsElement(), &children)
+		html = d.renderToHTML(en.AsElement(), &children, id)
 	} else if el, ok := component.(*Element); ok {
-		html = d.renderToHTML(el, &children)
+		html = d.renderToHTML(el, &children, id)
 	} else {
 		html = component.RenderHTML()
 	}
@@ -237,11 +245,11 @@ func (d *domWasm) Append(parentID string, component Component) error {
 	if vr, ok := component.(ViewRenderer); ok {
 		root := vr.Render()
 		injectComponentID(root, component.GetID())
-		html = d.renderToHTML(root, &children)
+		html = d.renderToHTML(root, &children, component.GetID())
 	} else if en, ok := component.(elementNode); ok {
-		html = d.renderToHTML(en.AsElement(), &children)
+		html = d.renderToHTML(en.AsElement(), &children, component.GetID())
 	} else if el, ok := component.(*Element); ok {
-		html = d.renderToHTML(el, &children)
+		html = d.renderToHTML(el, &children, component.GetID())
 	} else {
 		html = component.RenderHTML()
 	}
@@ -282,7 +290,7 @@ func (d *domWasm) unmount(component Component) {
 	d.untrackComponent(id)
 }
 
-func (d *domWasm) renderToHTML(el *Element, comps *[]Component) string {
+func (d *domWasm) renderToHTML(el *Element, comps *[]Component, ownerID string) string {
 	// If the element has events but no ID, generate one
 	if len(el.events) > 0 && el.id == "" {
 		el.id = generateID()
@@ -291,9 +299,10 @@ func (d *domWasm) renderToHTML(el *Element, comps *[]Component) string {
 	for _, ev := range el.events {
 		d.pendingEvents = append(d.pendingEvents, struct {
 			id      string
+			ownerID string
 			name    string
 			handler func(Event)
-		}{el.id, ev.Name, ev.Handler})
+		}{el.id, ownerID, ev.Name, ev.Handler})
 	}
 
 	s := "<" + el.tag
@@ -321,30 +330,26 @@ func (d *domWasm) renderToHTML(el *Element, comps *[]Component) string {
 	for _, child := range el.children {
 		switch v := child.(type) {
 		case *Element:
-			s += d.renderToHTML(v, comps)
+			s += d.renderToHTML(v, comps, ownerID)
 		case string:
 			s += v
-		case elementNode: // NEW: before Component
-			*comps = append(*comps, v)
-			if v.GetID() == "" {
-				v.SetID(generateID())
-			}
-			s += d.renderToHTML(v.AsElement(), comps)
 		case Component:
 			*comps = append(*comps, v)
 			// Ensure ID — guard against nil Component (e.g. embedded *Element = nil)
+			var childID string
 			if v != nil {
 				if v.GetID() == "" {
 					v.SetID(generateID())
 				}
+				childID = v.GetID()
 			}
 
 			if vr, ok := v.(ViewRenderer); ok {
-				s += d.renderToHTML(vr.Render(), comps)
+				s += d.renderToHTML(vr.Render(), comps, childID)
 			} else if en, ok := v.(elementNode); ok {
-				s += d.renderToHTML(en.AsElement(), comps)
+				s += d.renderToHTML(en.AsElement(), comps, childID)
 			} else if el, ok := v.(*Element); ok {
-				s += d.renderToHTML(el, comps)
+				s += d.renderToHTML(el, comps, childID)
 			} else {
 				s += v.RenderHTML()
 			}
@@ -525,7 +530,7 @@ func (d *domWasm) wirePendingEvents() {
 		if el, ok := d.Get(pe.id); ok {
 			// Track listener for the component that owns the element
 			prev := d.currentComponentID
-			d.currentComponentID = pe.id
+			d.currentComponentID = pe.ownerID
 			el.On(pe.name, pe.handler)
 			d.currentComponentID = prev
 		}
