@@ -226,6 +226,12 @@ func (d *domWasm) Update(component Component) {
 		updatable.OnUpdate()
 	}
 
+	// Re-wire OnMount listeners on the updated component itself.
+	// The DOM was replaced, so listeners registered in OnMount must be re-registered.
+	if mountable, ok := component.(Mountable); ok {
+		mountable.OnMount()
+	}
+
 	d.currentComponentID = prevID
 
 	// Mount new children
