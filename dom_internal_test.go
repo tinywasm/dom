@@ -120,6 +120,25 @@ func TestInternalWasm(t *testing.T) {
 		parent := Div(childComp, "text")
 		var comps []Component
 		_ = d.renderToHTML(parent, &comps, "parent-id")
+
+		// Verify child component root has ID injected
+		// The comp.RenderHTML returns "<div></div>", but we are using factory Div which returns *Element
+		// Wait, comp doesn't implement ViewRenderer or elementNode, it just has RenderHTML.
+		// Let's use a better mock.
+		if len(comps) != 1 {
+			t.Errorf("expected 1 child component, got %d", len(comps))
+		}
+
+		// Test with ViewRenderer
+		vr := &viewRendererComp{id: "vr-1"}
+		parent2 := Div(vr)
+		var comps2 []Component
+		html2 := d.renderToHTML(parent2, &comps2, "parent-id")
+
+		expected := "<div><div id='vr-1'></div></div>"
+		if html2 != expected {
+			t.Errorf("expected %q, got %q", expected, html2)
+		}
 	})
 
 	t.Run("Factories", func(t *testing.T) {
@@ -153,3 +172,13 @@ type unmountableComp struct {
 }
 
 func (c *unmountableComp) OnUnmount() { c.unmounted = true }
+
+type viewRendererComp struct {
+	id string
+}
+
+func (c *viewRendererComp) GetID() string         { return c.id }
+func (c *viewRendererComp) SetID(id string)       { c.id = id }
+func (c *viewRendererComp) RenderHTML() string    { return "<div></div>" }
+func (c *viewRendererComp) Children() []Component { return nil }
+func (c *viewRendererComp) Render() *Element      { return Div() }
