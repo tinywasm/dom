@@ -205,7 +205,7 @@ func (d *domWasm) Update(component Component) {
 	// Replace the element in the DOM
 	elRaw := d.document.Call("getElementById", id)
 	if elRaw.IsNull() || elRaw.IsUndefined() {
-		d.Log("tinywasm/dom: component element not found during Update:", id)
+		d.Log("tinywasm/dom: component element not found during Update:", id, "(this usually means the component root element has no ID)")
 		return
 	}
 	elRaw.Set("outerHTML", html)
@@ -351,10 +351,15 @@ func (d *domWasm) renderToHTML(el *Element, comps *[]Component, ownerID string) 
 			}
 
 			if vr, ok := v.(ViewRenderer); ok {
-				s += d.renderToHTML(vr.Render(), comps, childID)
+				root := vr.Render()
+				injectComponentID(root, childID)
+				s += d.renderToHTML(root, comps, childID)
 			} else if en, ok := v.(elementNode); ok {
-				s += d.renderToHTML(en.AsElement(), comps, childID)
+				root := en.AsElement()
+				injectComponentID(root, childID)
+				s += d.renderToHTML(root, comps, childID)
 			} else if el, ok := v.(*Element); ok {
+				injectComponentID(el, childID)
 				s += d.renderToHTML(el, comps, childID)
 			} else {
 				s += v.RenderHTML()
