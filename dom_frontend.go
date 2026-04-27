@@ -550,7 +550,6 @@ func (d *domWasm) cleanupListeners(id string) {
 	}
 
 	if compIndex != -1 {
-		d.Log("Cleaning up listeners for ", id, " count: ", len(keysToRemove))
 		for _, key := range keysToRemove {
 			// Find and remove from eventFuncs
 			for i := 0; i < len(d.eventFuncs); i++ {
