@@ -10,7 +10,7 @@ import (
 // --- App State & Components ---
 
 type App struct {
-	*Element
+	Element
 	currentRoute string
 	counter      int
 }
@@ -101,7 +101,7 @@ func renderStyle(css string) {
 }
 
 func main() {
-	app := &App{Element: &Element{}, counter: 0}
+	app := &App{}
 	app.Init()
 
 	Render("body", app)

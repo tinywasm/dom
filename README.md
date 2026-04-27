@@ -59,7 +59,7 @@ Components can implement optional lifecycle interfaces:
 
 ```go
 type MyComponent struct {
-	*dom.Element
+	dom.Element
 	data []string
 }
 
@@ -116,7 +116,7 @@ Components can contain child components:
 
 ```go
 type MyList struct {
-	*dom.Element
+	dom.Element
 	items []dom.Component
 }
 
@@ -164,11 +164,11 @@ dom.SetHash(hash)                // Set hash
 
 ### Element Helpers
 
-Embedding `*dom.Element` provides these methods automatically:
+Embedding `dom.Element` provides these methods automatically:
 
 ```go
 type Counter struct {
-	*dom.Element
+	dom.Element
 	count int
 }
 
