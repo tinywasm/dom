@@ -1,6 +1,6 @@
 # PLAN: Child Component Element Lost in DOM After Parent+Self Update
 
-> **Status:** Pending  
+> **Status:** Done  
 > **Priority:** P1  
 > **Affects:** `dom_frontend.go` — `renderToHTML()` (Component case) and `Update()`  
 > **Supersedes:** previous self-update fix (which was necessary but not sufficient).
@@ -205,9 +205,9 @@ gotest
 
 ## Acceptance Criteria
 
-- [ ] `TestParentThenSelfUpdate` passes (no `component element not found` log).
-- [ ] `TestSelfUpdateRewiresOnMountListeners` still passes.
-- [ ] `TestChildListenersAfterParentUpdate` still passes.
+- [x] `TestParentThenSelfUpdate` passes (no `component element not found` log).
+- [x] `TestSelfUpdateRewiresOnMountListeners` still passes.
+- [x] `TestChildListenersAfterParentUpdate` still passes.
 - [ ] Live SelectSearch demo: select multiple options consecutively + search
       filtering works after every selection.
-- [ ] No regression in `gotest` (full suite passes including `wasm`).
+- [x] No regression in `gotest` (full suite passes including `wasm`).
