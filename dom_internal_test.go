@@ -119,7 +119,7 @@ func TestInternalWasm(t *testing.T) {
 		childComp := &comp{id: "child-comp"}
 		parent := Div(childComp, "text")
 		var comps []Component
-		_ = d.renderToHTML(parent, &comps)
+		_ = d.renderToHTML(parent, &comps, "parent-id")
 	})
 
 	t.Run("Factories", func(t *testing.T) {

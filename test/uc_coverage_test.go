@@ -32,8 +32,10 @@ func TestCoverageDOMLogic(t *testing.T) {
 	_ = SetupDOM(t)
 
 	t.Run("Update non-existent component", func(t *testing.T) {
+		dom.SetLog(nil)
 		c := dom.Div().ID("non-existent")
 		dom.Update(c)
+		dom.SetLog(func(v ...any) { t.Log(v...) })
 	})
 
 	t.Run("Render to non-existent parent", func(t *testing.T) {
@@ -45,6 +47,7 @@ func TestCoverageDOMLogic(t *testing.T) {
 
 	t.Run("Logging", func(t *testing.T) {
 		// No crash without log handler
+		dom.SetLog(nil)
 		dom.Log("test message")
 
 		logged := false

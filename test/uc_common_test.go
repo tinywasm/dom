@@ -53,9 +53,9 @@ func SetupDOM(t *testing.T) js.Value {
 		root.Set("innerHTML", "")
 	}
 
-	// SetLog(func(v ...any) {
-	// 	t.Log(v...)
-	// })
+	dom.SetLog(func(v ...any) {
+		t.Log(v...)
+	})
 
 	return doc
 }
