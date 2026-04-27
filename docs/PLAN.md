@@ -72,33 +72,24 @@ subsequent `mountRecursive(child)` calls use the correct child IDs (not the pare
 
 ## Testing
 
-Install `gotest` (required — standard `go test` cannot run `//go:build wasm` code):
+`gotest` compila y ejecuta los tests WASM automáticamente — el agente no necesita
+manejar TinyGo, `wasm_exec.js`, ni ningún toolchain de browser. Basta con instalarlo
+una vez y ejecutarlo:
 
 ```bash
-go install github.com/tinywasm/gotest@latest
+go install github.com/tinywasm/devflow/cmd/gotest@latest
 ```
 
-Run the reproducer:
-
-```bash
-gotest ./test/... -run TestSelfUpdateRewiresOnMountListeners -v
-```
-
-Expected output before fix:
-```
-FAIL: TestSelfUpdateRewiresOnMountListeners
-    after first Update: expected InputFired=1, got 0 — search listener lost after self-update
-```
-
-Expected output after fix:
-```
-PASS
-```
-
-Run all tests to check for regressions:
+Reproducir el bug (fast path — solo el test específico):
 
 ```bash
-gotest ./test/...
+gotest -run TestSelfUpdateRewiresOnMountListeners
+```
+
+Verificar sin regresiones (full suite — vet + race + stdlib + wasm):
+
+```bash
+gotest
 ```
 
 ## Acceptance Criteria
