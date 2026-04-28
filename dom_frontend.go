@@ -209,11 +209,20 @@ func (d *domWasm) Update(component Component) {
 		return
 	}
 
-	// Snapshot active element ID before outerHTML destroys it.
+	// Snapshot active element and cursor before outerHTML destroys them.
 	activeEl := d.document.Get("activeElement")
 	activeID := ""
+	cursorStart, cursorEnd := 0, 0
 	if !activeEl.IsNull() && !activeEl.IsUndefined() {
 		activeID = activeEl.Get("id").String()
+		cs := activeEl.Get("selectionStart")
+		ce := activeEl.Get("selectionEnd")
+		if !cs.IsNull() && !cs.IsUndefined() {
+			cursorStart = cs.Int()
+		}
+		if !ce.IsNull() && !ce.IsUndefined() {
+			cursorEnd = ce.Int()
+		}
 	}
 
 	elRaw.Set("outerHTML", html)
@@ -247,11 +256,21 @@ func (d *domWasm) Update(component Component) {
 		d.mountRecursive(child)
 	}
 
-	// Restore focus to the element that was active before outerHTML replacement.
+	// Restore focus and cursor to the element that was active before outerHTML replacement.
+	// Skip focus() if the element is already active (e.g. component called Focus() in OnMount).
 	if activeID != "" {
 		restored := d.document.Call("getElementById", activeID)
 		if !restored.IsNull() && !restored.IsUndefined() {
-			restored.Call("focus")
+			currentActive := d.document.Get("activeElement")
+			alreadyActive := !currentActive.IsNull() && !currentActive.IsUndefined() &&
+				currentActive.Get("id").String() == activeID
+			if !alreadyActive {
+				restored.Call("focus")
+			}
+			cs := restored.Get("selectionStart")
+			if !cs.IsNull() && !cs.IsUndefined() {
+				restored.Call("setSelectionRange", cursorStart, cursorEnd)
+			}
 		}
 	}
 }
