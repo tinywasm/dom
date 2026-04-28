@@ -208,6 +208,14 @@ func (d *domWasm) Update(component Component) {
 		d.Log("tinywasm/dom: component element not found during Update:", id, "(this usually means the component root element has no ID)")
 		return
 	}
+
+	// Snapshot active element ID before outerHTML destroys it.
+	activeEl := d.document.Get("activeElement")
+	activeID := ""
+	if !activeEl.IsNull() && !activeEl.IsUndefined() {
+		activeID = activeEl.Get("id").String()
+	}
+
 	elRaw.Set("outerHTML", html)
 
 	// Clear element from cache as it was replaced
@@ -237,6 +245,14 @@ func (d *domWasm) Update(component Component) {
 	// Mount new children
 	for _, child := range children {
 		d.mountRecursive(child)
+	}
+
+	// Restore focus to the element that was active before outerHTML replacement.
+	if activeID != "" {
+		restored := d.document.Call("getElementById", activeID)
+		if !restored.IsNull() && !restored.IsUndefined() {
+			restored.Call("focus")
+		}
 	}
 }
 
