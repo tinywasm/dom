@@ -20,7 +20,7 @@ func TestCssVars_Render(t *testing.T) {
 			"--color-quaternary: #F2F2F7;",
 			"--color-gray: #FFFFFF;",
 			"--color-selection: #654FF0;",
-			"--color-hover: #B8860B;",
+			"--color-hover: #F7DF1E",
 			"--color-success: #3FB950;",
 			"--color-error: #E34F26;",
 			"--menu-width-collapsed: 64px;",

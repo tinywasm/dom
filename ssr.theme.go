@@ -48,7 +48,7 @@ func DefaultCssVars() CssVars {
 		Quaternary:         "#F2F2F7", // light panel
 		Gray:               "#FFFFFF", // white surface
 		Selection:          "#654FF0", // WebAssembly purple
-		Hover:              "#B8860B", // darker JS yellow (readable)
+		Hover:              "#F7DF1E", // darker JS yellow (readable)
 		Success:            "#3FB950", // Go gopher green
 		Error:              "#E34F26", // HTML5 orange-red
 		MenuWidthCollapsed: "64px",
@@ -64,7 +64,7 @@ func DefaultCssVars() CssVars {
 
 // RenderCSS returns the CSS :root { } block with all non-empty tokens.
 // Safe to call from SSR. Does NOT use reflect — iterates fields explicitly.
-func (c CssVars) RenderCSS() string {
+func (c CssVars) renderCSS() string {
 	type kv struct{ k, v string }
 	pairs := []kv{
 		{"--color-primary", c.Primary},

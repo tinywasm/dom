@@ -104,7 +104,7 @@ func main() {
 	app := &App{}
 	app.Init()
 
-	Render("body", app)
+	Render("app", app)
 
 	fmt.Println("Showcase App running on:", app.currentRoute)
 	select {}

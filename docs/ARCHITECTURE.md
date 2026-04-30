@@ -16,6 +16,23 @@ There are three primary layers/interfaces:
 - **`Component` Interface**: `GetID()`, `SetID(id)`, `RenderHTML()`, `Children()`.
 - **`Reference` Interface**: Represents a live DOM node (Read: `GetAttr`, `Value`, `Checked`; Interaction: `On`, `Focus`).
 
+### Mount point: always use `"app"`, never `"body"`
+
+`Render(parentID, comp)` sets `parent.innerHTML = html`, replacing ALL existing children of the
+target element. Using `"body"` as the mount point **destroys the SVG sprite** injected inline by
+`tinywasm/assetmin`, breaking all `<use href="#icon-id">` references.
+
+The `tinywasm/assetmin` HTML template already injects `<div id="app"></div>` before the `<script>`
+tag. Always mount the root component there:
+
+```go
+// ✅ CORRECT — sprite SVG stays intact in <body> alongside <div id="app">
+Render("app", &App{})
+
+// ❌ WRONG — overwrites body.innerHTML, removes the SVG sprite
+Render("body", &App{})
+```
+
 ### The Builder (JSX-like UI construction)
 Elements are constructed declaratively:
 ```go
