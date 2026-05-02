@@ -1,296 +1,204 @@
-# PLAN: Refactor de Gestión de IDs en SelectSearch (Breaking Change)
+# PLAN: Componentes Declarativos y Tipados — Eliminar IDs Internos (Breaking Change)
 
-## 1. Diagnóstico del Problema Actual
+> Reemplaza el plan anterior basado en `c.Sub("slot")`. Aquel cambio solo embellecía
+> la sintaxis del puente entre `Render()` y `OnMount()`. Este plan elimina el puente.
 
-El componente `SelectSearch` construye los IDs de sus sub-elementos mediante concatenación
-manual de strings en cada punto de uso:
+---
+
+## 0. Reformulación del Problema
+
+El plan anterior proponía sustituir `id + "-toggle"` por `c.Sub("toggle")`. Tras revisión,
+**ese cambio NO ataca la raíz del problema**, solo lo disfraza:
+
+- `c.Sub("toggle")` sigue siendo un **string** que vive en dos lugares (Render y OnMount).
+- Sigue habiendo dos fases: una declarativa (Render) y otra imperativa (OnMount + `dom.Get`).
+- Los IDs siguen siendo el **puente** entre fases. El puente es la fuente del caos.
+
+La pregunta correcta no es _"¿cómo nombramos mejor los sub-IDs?"_ sino:
+
+> **¿Por qué un componente necesita IDs internos para su propio cableado de eventos?**
+
+La respuesta honesta: **no los necesita**. Los IDs internos solo existen porque el
+componente está partido en dos fases. Si los eventos se cablean **durante** `Render()`
+mediante closures, los sub-IDs son ruido.
+
+---
+
+## 1. Insight Central
+
+El framework **ya soporta eventos declarativos**: `*Element.On(eventType, handler)`
+existe en `element.go:43` y los registra en el árbol antes del mount. Cuando el
+elemento se materializa en el DOM, el framework cablea el listener real
+(ver `dom_frontend.go:248-250`, `mountRecursive`).
+
+`SelectSearch` (y los componentes de tests `SearchChild`, `SSChild`, `SelfUpdater`,
+`CounterComp`) **no usan** este mecanismo. Usan `OnMount() + dom.Get(idString)`
+imperativo. Esa decisión es la fuente de:
+
+- Sub-IDs concatenados a mano (`id + "-search"`, `id + "-opt-" + opt.ID`)
+- Duplicación de literales entre `Render()` y `OnMount()`
+- Variables locales `id := c.GetID()` que no cruzan métodos
+- Acoplamiento posicional silencioso (typo en `"-sarch"` compila, falla en runtime)
+- Imposibilidad de Go de detectar enlaces rotos en compile-time
+
+Eliminamos todo esto si los eventos se atan junto al elemento que los emite.
+
+---
+
+## 2. Diseño Propuesto
+
+### 2.1 Principio rector
+
+> Un componente se describe en una sola función `Render()`. Cada elemento lleva
+> sus eventos pegados. Los IDs solo aparecen donde la **semántica HTML** los exige
+> (`<label for>`, `aria-*`, integración externa explícita) — y siempre vía
+> referencia tipada, nunca por string.
+
+### 2.2 Eventos como closures en `Render()`
+
+**Antes** (patrón actual en SelectSearch):
 
 ```go
-// En Render():
-id := c.GetID()
-toggle  := dom.Input("checkbox").ID(id + "-toggle")
-search  := dom.Input("search").ID(id + "-search")
-optList := dom.Div().ID(id + "-options")
-item    := dom.Div().ID(id + "-opt-" + opt.ID)
+// Render():
+dom.Input("search").ID(id+"-search").Attr("value", c.filterTerm)
 
-// En OnMount() (implícito — mismo patrón requerido para recuperar refs):
-if el, ok := dom.Get(c.GetID() + "-search"); ok { ... }
-if el, ok := dom.Get(c.GetID() + "-options"); ok { ... }
+// OnMount() (en otra parte del archivo):
+if el, ok := dom.Get(c.GetID() + "-search"); ok {
+    el.On("input", func(e dom.Event) {
+        c.filterTerm = e.TargetValue()
+        c.Update()
+    })
+}
 ```
 
-### Síntomas concretos
+**Después**:
 
-| Síntoma | Descripción |
-|---------|-------------|
-| **Duplicación silenciosa** | El string `"-search"` vive en `Render()` y en `OnMount()`. Un refactor que cambie uno y olvide el otro compila sin error pero falla en runtime. |
-| **Variable local innecesaria** | `id := c.GetID()` se declara para evitar llamadas repetidas, pero en `OnMount()` hay que llamar `c.GetID()` de nuevo — la variable no se puede compartir entre métodos. |
-| **Namespace de opciones sin control** | `id + "-opt-" + opt.ID` usa un `opt.ID` controlado por el usuario. Si `opt.ID` contiene `-` puede colisionar con otros slots (ej. `opt.ID = "toggle"` → `id-opt-toggle`). |
-| **API no fluida** | El framework tiene `.ID(string)` como método fluido en `*Element`, pero los sub-IDs se construyen fuera del árbol declarativo, rompiendo el flujo. |
-| **Magia en los strings** | `"-toggle"`, `"-search"`, `"-options"`, `"-opt-"` son literales dispersos. No hay punto único de verdad para renombrarlos. |
-
----
-
-## 2. Preguntas Abiertas
-
-Estas preguntas deben responderse antes de implementar para acotar el alcance exacto.
-
-### 2.1 ¿Alcance del refactor: solo IDs o también estado y eventos?
-
-El componente tiene tres problemas ortogonales:
-- (A) Gestión de IDs de sub-elementos ← **este plan**
-- (B) Estado interno (`isOpen`, `filterTerm`) gestionado manualmente
-- (C) Eventos registrados en `OnMount()` de forma imperativa
-
-**¿Este breaking change toca solo (A), o también (B) y (C)?**
-
-Si solo (A): el plan es pequeño, enfocado, bajo riesgo de regresión.  
-Si también (B)+(C): el alcance crece significativamente (requiere diseñar API de estado reactivo).
-
-> **Recomendación:** Limitar este plan a (A). Los puntos (B) y (C) merecen sus propios issues.
-
----
-
-### 2.2 ¿`Sub()` debe ser parte de la interfaz `Component` o solo un método de `Element`?
-
-**Opción "solo Element":** `Sub()` se añade a `*Element`. Todos los structs que embedan
-`dom.Element` lo heredan automáticamente (caso SelectSearch). Los componentes que no
-embedan Element no lo tienen, pero tampoco lo necesitan.
-
-**Opción "en Component interface":** Se añade `Sub(name string) string` a la interfaz
-`Component`. Esto rompe todos los `Component` implementados manualmente (fuera de los que
-embedan `dom.Element`).
-
-> **Recomendación:** Añadir solo a `*Element`. Los consumers que embedan `dom.Element`
-> lo obtienen gratis. No tiene sentido en la interfaz porque `Component` es minimal por
-> diseño (ver `interface.dom.go:44`).
-
----
-
-### 2.3 ¿La firma debe ser `Sub(name string) string` o `Sub(parts ...string) string`?
-
-El caso de opciones dinámicas (`id + "-opt-" + opt.ID`) requiere combinar un scope fijo
-(`"opt"`) con una clave variable (`opt.ID`).
-
-**`Sub(name string) string`** — Simple, legible, solo cubre slots estáticos:
 ```go
-c.Sub("search")           // → "1-search"
-c.Sub("opt-" + opt.ID)    // sigue siendo concatenación manual
+// Render() — todo junto:
+dom.Input("search").
+    Class("ss-search").
+    Attr("value", c.filterTerm).
+    On("input", c.onSearchInput)
 ```
 
-**`Sub(parts ...string) string`** — Variadic, cubre ambos casos:
+Donde `c.onSearchInput` es un método del componente:
+
 ```go
-c.Sub("search")           // → "1-search"
-c.Sub("opt", opt.ID)      // → "1-opt-42"
+func (c *SelectSearch) onSearchInput(e dom.Event) {
+    c.filterTerm = e.TargetValue()
+    c.Update()
+}
 ```
 
-> **Recomendación:** Variadic. Resuelve el namespace de opciones dinámicas sin añadir
-> métodos extra como `SubOf()` o `SubN()`.
+**Por qué esto es mejor:**
 
----
+- El handler vive **junto** al elemento que lo dispara — leer `Render()` es leer la lógica completa.
+- Refactor del DOM no invalida cableado: si renombras `search` a `query`, el `.On()` se mueve con el elemento porque está atado a él.
+- El método `c.onSearchInput` es un valor de Go normal: testeable, debuggeable, refactorable con IDE.
+- Sin `dom.Get()`, sin strings, sin sub-IDs.
 
-### 2.4 ¿Debe `Sub()` sanitizar el `opt.ID` del usuario?
+### 2.3 Pareo `<label for>` tipado: `.For(*Element)`
 
-Si `opt.ID = "toggle"` y se llama `c.Sub("opt", "toggle")` → `"1-opt-toggle"`.  
-Si `opt.ID = "opt-x"` y se llama `c.Sub("opt", "opt-x")` → `"1-opt-opt-x"`.
+El único caso legítimo de IDs internos en SelectSearch es el pareo `<label for="">` con
+`<input id="">`. Hoy se hace con dos strings idénticas:
 
-Estas colisiones son raras pero posibles. ¿El framework debe validar o sanitizar?
-
-**Opción "no sanitizar":** Responsabilidad del caller garantizar IDs de opciones únicos.
-Tiene precedente en la web estándar (el DOM no valida unicidad de IDs).
-
-**Opción "sanitizar":** Reemplazar caracteres problemáticos (ej. `.` `/`) pero no `-`.
-Añade complejidad innecesaria para un caso raro.
-
-> **Recomendación:** No sanitizar. Documentar que `opt.ID` debe ser un identificador
-> simple (sin `-` al inicio ni fin). El contrato ya existe implícitamente hoy.
-
----
-
-### 2.5 ¿Los constants de slot deben definirse en el componente o el framework los ignora?
-
-Los slots (`"toggle"`, `"search"`, `"options"`, `"opt"`) son propios de `SelectSearch`,
-no del framework. ¿Se definen como `const` dentro del componente o se usan como literales?
-
-**Constantes explícitas:**
 ```go
-const (
-    slotToggle  = "toggle"
-    slotSearch  = "search"
-    slotOptions = "options"
-    slotOpt     = "opt"
+toggle := dom.Input("checkbox").ID(id + "-toggle")        // ID emitido
+header := dom.Label().Attr("for", id + "-toggle")         // ID referenciado
+```
+
+**Propuesta**: nuevo método `For(other *Element)` que pasa la referencia Go, no el string:
+
+```go
+// element.go (nuevo):
+// For sets the for= attribute pointing to other's ID, auto-generating
+// other's ID if it has none. Use for label/input pairing and aria-* references.
+func (b *Element) For(other *Element) *Element {
+    return b.Attr("for", other.GetID())
+}
+```
+
+Uso:
+
+```go
+toggle := dom.Input("checkbox").Class("ss-toggle")
+header := dom.Label().For(toggle).Class("ss-header").Text(headerText)
+```
+
+**Beneficios**:
+
+- **Type-safe**: si renombras la variable Go `toggle` a `checkbox`, el compilador exige actualizar `For(checkbox)`. Imposible con strings.
+- **Sin coordinar literales**: el ID se auto-genera lazy en el primer `GetID()`.
+- **Orden de declaración explícito**: `toggle` debe construirse antes que `header`. Esto es Go natural y lectura top-down.
+
+### 2.4 Listas dinámicas con closures
+
+El caso `for _, opt := range c.Options` no necesita IDs. Cada item recibe sus eventos
+por closure que captura `opt`:
+
+```go
+list := dom.Div().Class("ss-options")
+for _, opt := range c.filteredOptions() {
+    opt := opt  // captura por valor (Go idiomático)
+    item := dom.Div().Class("ss-option").
+        Attr("data-id", opt.ID).
+        On("click", func(e dom.Event) { c.selectOption(opt) }).
+        Add(dom.Span().Class("ss-label").Text(opt.Label))
+    if opt.Description != "" {
+        item.Add(dom.Span().Class("ss-desc").Text(opt.Description))
+    }
+    list.Add(item)
+}
+```
+
+`data-id` es un atributo HTML (no un ID), así que `opt.ID` no contamina ningún namespace.
+Si necesitas el dato dentro del handler, ya lo tienes en `opt` por captura.
+
+### 2.5 Para los pocos casos donde un ID externo SÍ es necesario
+
+Algunas integraciones requieren un ID estable accesible desde fuera (JS externo, tests
+end-to-end, hooks de instrumentación). Para esos, exponer un opt-in explícito:
+
+```go
+// Uso (raro y deliberado):
+dom.Form().WithStableID("login-form")  // ID humano-legible, garantizado estable
+```
+
+Esto **no se usa internamente** por el componente. Es una salida de emergencia documentada
+para integración externa. La regla del framework: _si un componente usa `WithStableID`,
+declara públicamente que ese sub-elemento es parte de su contrato externo._
+
+---
+
+## 3. SelectSearch refactorizado completo
+
+```go
+package selectsearch
+
+import (
+    "github.com/tinywasm/dom"
+    "github.com/tinywasm/fmt"
 )
 
-toggle := dom.Input("checkbox").ID(c.Sub(slotToggle))
-```
-
-**Literales directos:**
-```go
-toggle := dom.Input("checkbox").ID(c.Sub("toggle"))
-```
-
-> **Recomendación:** Literales para ahora. `c.Sub("toggle")` ya centraliza el
-> string en un solo punto si se usa consistentemente. Las constantes añaden
-> ceremonia sin beneficio real en un componente de ~100 líneas. Si `SelectSearch`
-> crece, pueden introducirse en un refactor posterior no-breaking.
-
----
-
-### 2.6 ¿`isOpen` debe persistir via CSS class o via `checked` attr?
-
-Hoy `isOpen` se usa para emitir `Attr("checked", "")` en el checkbox. El mecanismo
-actual funciona, pero ¿es el problema de IDs independiente de cómo se persiste el estado?
-
-> **Respuesta:** Sí, son independientes. Este plan no toca la lógica de `isOpen`.
-
----
-
-## 3. Opciones de Diseño
-
-### Opción A — `c.Sub(parts ...string) string` en `Element` (RECOMENDADA)
-
-Añadir un método a `*Element`:
-
-```go
-// element.go
-func (b *Element) Sub(parts ...string) string {
-    return b.GetID() + "-" + strings.Join(parts, "-")
-}
-```
-
-**Uso en SelectSearch:**
-
-```go
-func (c *SelectSearch) Render() *dom.Element {
-    toggle := dom.Input("checkbox").
-        ID(c.Sub("toggle")).
-        Class("ss-toggle")
-
-    searchInput := dom.Input("search").
-        ID(c.Sub("search")).
-        Class("ss-search")
-
-    optList := dom.Div().Class("ss-options").ID(c.Sub("options"))
-
-    for _, opt := range c.Options {
-        item := dom.Div().
-            ID(c.Sub("opt", opt.ID)).
-            Class("ss-option")
-        optList.Add(item)
-    }
-    // ...
+type Option struct {
+    ID          string
+    Label       string
+    Description string
 }
 
-func (c *SelectSearch) OnMount() {
-    if el, ok := dom.Get(c.Sub("search")); ok {
-        el.On("input", ...)
-    }
-    if el, ok := dom.Get(c.Sub("options")); ok {
-        el.On("click", ...)
-    }
+type SelectSearch struct {
+    dom.Element // value embed (TinyGo heap constraint)
+
+    Placeholder string
+    Options     []Option
+    OnSelect    func(id, description string)
+    OnSearch    func(term string) []Option
+
+    selectedLabel string
+    filterTerm    string
+    isOpen        bool
 }
-```
 
-| | |
-|---|---|
-| **Pros** | Mínimo (1 método), fluido, elimina la variable local `id`, centraliza el patrón en todo el framework, `Sub("opt", opt.ID)` resuelve dinámicos |
-| **Contras** | Sigue siendo string — typos en `"sarch"` son runtime, no compile-time |
-
----
-
-### Opción B — Typed Slots como constantes de paquete
-
-Definir un tipo `Slot` y constantes en el componente:
-
-```go
-type slot string
-
-const (
-    slotToggle  slot = "toggle"
-    slotSearch  slot = "search"
-    slotOptions slot = "options"
-)
-
-func (b *Element) Sub(s slot) string {
-    return b.GetID() + "-" + string(s)
-}
-```
-
-| | |
-|---|---|
-| **Pros** | El compilador detecta `c.Sub("toogle")` como error de tipo; refactorizable con IDE |
-| **Contras** | Requiere declarar un tipo `slot` (o que cada componente declare el suyo); no resuelve IDs dinámicos de opciones sin un escape hatch; más ceremonia |
-
----
-
-### Opción C — `Ref()` que devuelve un `*Element` pre-wired
-
-El framework gestiona un registry de sub-elementos:
-
-```go
-toggle := c.Ref("toggle", dom.Input("checkbox").Class("ss-toggle"))
-```
-
-`Ref()` asigna el ID automáticamente y registra el element para recuperación posterior
-sin llamar a `dom.Get()`.
-
-| | |
-|---|---|
-| **Pros** | Elimina `dom.Get()` en `OnMount()`; API verdaderamente declarativa |
-| **Contras** | Cambio de arquitectura significativo; requiere un registry interno en `Element`; sale del scope de este plan; posibles problemas en re-renders con TinyGo heap |
-
----
-
-### Opción D — Sin cambio en framework, solo constantes locales
-
-No añadir nada al framework. Definir constantes en `SelectSearch`:
-
-```go
-var (
-    ssToggle  = func(id string) string { return id + "-toggle" }
-    ssSearch  = func(id string) string { return id + "-search" }
-    ssOptions = func(id string) string { return id + "-options" }
-)
-
-toggle := dom.Input("checkbox").ID(ssToggle(c.GetID()))
-```
-
-| | |
-|---|---|
-| **Pros** | Zero cambios en `dom` package; no breaking change en el framework |
-| **Contras** | No resuelve el problema en otros componentes; patrón ad-hoc por componente; más verboso |
-
----
-
-## 4. Propuesta Recomendada
-
-**Implementar Opción A:** añadir `Sub(parts ...string) string` a `*Element`.
-
-Justificación:
-- Es el cambio mínimo que resuelve el problema de raíz en *todos* los componentes
-  del framework (no solo SelectSearch).
-- No modifica la interfaz `Component` → no rompe implementaciones externas.
-- Los structs con `dom.Element` embebido obtienen el método sin cambios.
-- Variadic `parts` cubre tanto slots estáticos como IDs dinámicos de opciones.
-- Consistente con la filosofía fluida del API existente.
-
----
-
-## 5. API Propuesta
-
-### Nuevo método en `element.go`
-
-```go
-// Sub returns a namespaced sub-element ID derived from this component's ID.
-// Calling c.Sub("search") returns "<parentID>-search".
-// Calling c.Sub("opt", optID) returns "<parentID>-opt-<optID>".
-func (b *Element) Sub(parts ...string) string {
-    return b.GetID() + "-" + strings.Join(parts, "-")
-}
-```
-
-### SelectSearch refactorizado
-
-```go
 func (c *SelectSearch) Render() *dom.Element {
     headerText := c.Placeholder
     if c.selectedLabel != "" {
@@ -300,142 +208,227 @@ func (c *SelectSearch) Render() *dom.Element {
         headerText = "Select..."
     }
 
-    toggle := dom.Input("checkbox").
-        ID(c.Sub("toggle")).
-        Class("ss-toggle")
+    toggle := dom.Input("checkbox").Class("ss-toggle")
     if c.isOpen {
         toggle.Attr("checked", "")
     }
 
     header := dom.Label().
-        Attr("for", c.Sub("toggle")).
+        For(toggle).                           // typed pairing — sin strings
         Class("ss-header").
         Text(headerText).
         Add(dom.Svg(dom.Use().Attr("href", "#ss-arrow-down")).Class("ss-icon"))
 
-    searchInput := dom.Input("search").
-        ID(c.Sub("search")).
+    search := dom.Input("search").
         Class("ss-search").
         Attr("placeholder", "Search...").
-        Attr("value", c.filterTerm)
+        Attr("value", c.filterTerm).
+        On("input", c.onSearchInput)            // handler junto al elemento
 
-    optList := dom.Div().Class("ss-options").ID(c.Sub("options"))
-
+    list := dom.Div().Class("ss-options")
     filterTerm := fmt.Convert(c.filterTerm).ToLower().String()
     for _, opt := range c.Options {
         if !c.matches(opt, filterTerm) {
             continue
         }
-        item := dom.Div().
-            ID(c.Sub("opt", opt.ID)).
-            Class("ss-option").
+        opt := opt
+        item := dom.Div().Class("ss-option").
             Attr("data-id", opt.ID).
-            Attr("data-description", opt.Description).
+            On("click", func(e dom.Event) { c.selectOption(opt) }).
             Add(dom.Span().Class("ss-label").Text(opt.Label))
-
         if opt.Description != "" {
             item.Add(dom.Span().Class("ss-desc").Text(opt.Description))
         }
-        optList.Add(item)
+        list.Add(item)
     }
 
-    dropdown := dom.Div().Class("ss-dropdown").
-        Add(searchInput).
-        Add(optList)
-
-    return dom.Div().
-        Class("ss-box").
+    return dom.Div().Class("ss-box").
         Add(toggle).
         Add(header).
-        Add(dropdown)
+        Add(dom.Div().Class("ss-dropdown").
+            Add(search).
+            Add(list))
+}
+
+func (c *SelectSearch) onSearchInput(e dom.Event) {
+    c.filterTerm = e.TargetValue()
+    if len(c.filteredOptions()) == 0 && c.OnSearch != nil {
+        c.Options = c.OnSearch(c.filterTerm)
+    }
+    c.Update()
+}
+
+func (c *SelectSearch) selectOption(opt Option) {
+    c.selectedLabel = opt.Label
+    c.isOpen = false
+    if c.OnSelect != nil {
+        c.OnSelect(opt.ID, opt.Description)
+    }
+    c.Update()
+}
+
+func (c *SelectSearch) matches(opt Option, term string) bool {
+    if term == "" {
+        return true
+    }
+    return fmt.Contains(fmt.Convert(opt.Label).ToLower().String(), term) ||
+        fmt.Contains(fmt.Convert(opt.Description).ToLower().String(), term)
+}
+
+func (c *SelectSearch) filteredOptions() []Option {
+    term := fmt.Convert(c.filterTerm).ToLower().String()
+    out := make([]Option, 0, len(c.Options))
+    for _, o := range c.Options {
+        if c.matches(o, term) {
+            out = append(out, o)
+        }
+    }
+    return out
 }
 ```
 
-### Antes vs. Después
+### Lo que desaparece
 
-| Antes | Después |
-|-------|---------|
-| `id := c.GetID()` + literal disperso | `c.Sub("toggle")` — sin variable local |
-| `id + "-toggle"` (2 lugares) | `c.Sub("toggle")` (1 definición por slot) |
-| `id + "-opt-" + opt.ID` (concatenación en cascada) | `c.Sub("opt", opt.ID)` |
-| Variable `id` solo útil en `Render()`, no en `OnMount()` | `c.Sub()` disponible en cualquier método |
+- ❌ Variable `id := c.GetID()` (ya no hace falta cruzar IDs entre métodos)
+- ❌ `id + "-toggle"`, `id + "-search"`, `id + "-options"`, `id + "-opt-" + opt.ID`
+- ❌ Todo el método `OnMount()` (los eventos se cablean en `Render()`)
+- ❌ Todas las llamadas `dom.Get(...)` internas
+- ❌ Atributo `ID(...)` en sub-elementos (excepto donde la semántica HTML lo exige)
 
----
+### Lo que aparece
 
-## 6. Plan de Implementación
-
-### Paso 1 — Añadir `Sub()` a `element.go`
-
-- Archivo: `element.go`
-- Cambio: añadir método `Sub(parts ...string) string`
-- Dependencia: `strings.Join` (agregar import si no existe en el build tag correspondiente)
-- Tests: añadir unit test en `dom_internal_test.go`
-
-### Paso 2 — Refactorizar `SelectSearch.Render()`
-
-- Eliminar `id := c.GetID()`
-- Reemplazar todas las ocurrencias de `id + "-<slot>"` con `c.Sub("<slot>")`
-- Reemplazar `id + "-opt-" + opt.ID` con `c.Sub("opt", opt.ID)`
-- Reemplazar `Attr("for", id+"-toggle")` con `Attr("for", c.Sub("toggle"))`
-
-### Paso 3 — Actualizar `OnMount()` de SelectSearch (si existe)
-
-- Reemplazar `dom.Get(c.GetID() + "-search")` con `dom.Get(c.Sub("search"))`
-- Patrón idéntico para todos los slots
-
-### Paso 4 — Actualizar tests existentes
-
-- `uc_child_listeners_test.go`: `SearchChild` usa `c.GetID()+"-search"` → `c.Sub("search")`
-- `uc_self_update_test.go`: `SSChild` usa `c.GetID()+"-search"`, `c.GetID()+"-options"`,
-  `c.GetID()+"-opt-a"` → `c.Sub("search")`, `c.Sub("options")`, `c.Sub("opt", "a")`
-- `uc_builder_test.go`: `CounterComp` usa `c.GetID()+"-val"`, `c.GetID()+"-btn"` → migrar
-
-### Paso 5 — Documentar en `ARCHITECTURE.md`
-
-Añadir sección sobre el patrón de sub-IDs recomendado.
+- ✅ Métodos privados (`onSearchInput`, `selectOption`) — testables aisladamente
+- ✅ `header.For(toggle)` — pareo tipado por referencia Go
+- ✅ Closures `func(e dom.Event) { c.selectOption(opt) }` — captura idiomática
+- ✅ Lectura top-down: el árbol DOM y su lógica viven juntos
 
 ---
 
-## 7. Análisis de Impacto (Breaking Change)
+## 4. Cambios requeridos en el framework
 
-### Lo que se rompe
+| # | Cambio | Archivo | Tipo |
+|---|--------|---------|------|
+| 1 | Añadir `(*Element).For(other *Element) *Element` | `element.go` | Adición |
+| 2 | Confirmar que `.On()` registrado en `Render()` se re-cablea en `Update()` | `dom_frontend.go` | Validación + tests |
+| 3 | (Opcional) `(*Element).WithStableID(name string) *Element` para opt-in de IDs públicos | `element.go` | Adición |
+| 4 | Documentar el patrón declarativo como canónico | `docs/ARCHITECTURE.md` | Doc |
 
-| Componente | Cambio requerido | Riesgo |
-|------------|------------------|--------|
-| `SelectSearch.Render()` | Reemplazar concatenaciones | Bajo — refactor mecánico |
-| `SelectSearch.OnMount()` | Reemplazar `c.GetID()+"-*"` | Bajo |
-| Tests `uc_child_listeners_test.go` | Reemplazar en `SearchChild` | Bajo |
-| Tests `uc_self_update_test.go` | Reemplazar en `SSChild`, `SelfUpdater` | Bajo |
-| Tests `uc_builder_test.go` | Reemplazar en `CounterComp` (opcional) | Ninguno — `CounterComp` es de test |
-| Consumidores externos del framework | **No rompe** — `Sub()` es adición pura | Ninguno |
-
-### Lo que NO se rompe
-
-- La interfaz `Component` no cambia → cero impacto en implementaciones externas.
-- `GetID()` y `SetID()` siguen existiendo sin cambios.
-- El comportamiento en runtime es idéntico — `c.Sub("search")` produce el mismo
-  string que `c.GetID()+"-search"`.
-
-### Riesgo de regresión
-
-Bajo. El cambio es puramente semántico (mismo output, mejor ergonomía). Los tests
-existentes validan el comportamiento; la migración puede hacerse test-a-test.
+**Lo que NO se toca:**
+- Interfaz `Component` (sigue minimal: `GetID`, `SetID`, `RenderHTML`, `Children`)
+- `dom_backend.go` / SSR (CSS estático sigue en `ssr.go`, correcto y deliberado)
+- `OnMount()` sigue existiendo para casos válidos (medir tamaños DOM, init de libs JS)
+- `dom.Get()` sigue existiendo para integración externa con IDs estables
 
 ---
 
-## 8. Preguntas que Quedan Abiertas para el Equipo
+## 5. Justificación de cada decisión
 
-1. **¿`Sub()` debe agregarse también a la interfaz `Component`?**  
-   Pros: disponible sin type assertion en código que trabaja con `Component` genérico.  
-   Contras: rompe todas las implementaciones manuales de `Component`.
+### ¿Por qué eventos en Render() y no en OnMount()?
 
-2. **¿Deben los tests de `uc_builder_test.go` (`CounterComp`) migrarse en este PR?**  
-   Es un componente de test, no producción, pero migrar establece el patrón canónico.
+- **Localidad**: leer un componente top-down te muestra elemento + lógica juntos. El cerebro no salta de método en método para reconstruir el cableado.
+- **El framework ya lo soporta**: `Element.On()` existe. `mountRecursive` ya cablea los listeners. Estamos infrautilizando lo que el framework ya ofrece.
+- **Cero overhead de IDs**: si el cableado vive con el elemento, no necesitas un nombre intermedio para encontrarlo después.
+- **Re-renders predecibles**: cada `Update()` reconstruye el árbol con sus listeners frescos. No hay listeners "huérfanos" apuntando a nodos viejos.
 
-3. **¿`strings.Join` está disponible en el build target TinyGo/WASM?**  
-   Si no, la implementación sería un loop manual o `fmt.Sprintf` con separadores.  
-   Alternativa: `b.GetID() + "-" + part[0]` para 1 part, acumulación manual para N.
+### ¿Por qué `.For(other *Element)` en lugar de `.For(name string)`?
 
-4. **¿El nombre `Sub` es suficientemente expresivo, o preferir `ChildID` / `SlotID` / `SubID`?**  
-   `Sub` es conciso y consistente con terminología de componentes web.  
-   `SlotID` es más explícito sobre qué retorna.
+- **Type-safe**: el compilador verifica la existencia del target. Renombrar variables Go propaga.
+- **No requiere acordar un nombre**: con strings, dos sitios deben coincidir; con referencia, hay un único valor.
+- **Side-effect aceptable**: `For()` puede invocar `other.GetID()` que auto-genera. Aceptable porque genera un ID **anónimo** que el componente no necesita conocer; solo el framework lo usa en runtime para el HTML emitido.
+
+### ¿Por qué no introducir `Slot[T]` u otra abstracción genérica?
+
+- **TinyGo y generics**: hay soporte parcial pero con costo en tamaño binario.
+- **Closures resuelven el problema sin nueva primitiva**: lo que `Slot[T]` haría (mantener referencia al elemento + sus eventos) ya lo hacen variables locales en `Render()`.
+- **Ockham**: añadir `Slot` para resolver lo que ya resuelven variables Go normales es complejidad innecesaria.
+
+### ¿Por qué no eliminar `OnMount()` del framework?
+
+- Hay casos legítimos: medir geometría real del DOM, inicializar libs JS de terceros, sincronizar con `requestAnimationFrame`. Estos requieren el DOM montado.
+- Pero **no es el lugar para cablear eventos del propio componente**. Esa es la regla nueva.
+
+---
+
+## 6. Lo que aporta al framework
+
+1. **Patrón canónico claro**: "un componente = una función Render con todo dentro". Reduce la matriz de decisiones del autor de componentes.
+2. **Type safety real en sub-elementos**: refactorizar el orden de elementos no rompe enlaces silenciosamente.
+3. **Mejor integración con CSS estático en SSR**: como los IDs internos desaparecen, el CSS no depende de strings de IDs generados — lo cual es exactamente la separación que el usuario ya validó como correcta. El CSS opera sobre **clases** (estables, manuales, semánticas), nunca sobre IDs auto-generados.
+4. **Componentes más pequeños y testables**: SelectSearch pasa de ~95 líneas con dos métodos a ~70 con métodos privados claros.
+5. **Mensaje de adopción simple**: para nuevos contributors, "atá tus eventos donde declaras tus elementos" es una regla de una línea.
+6. **Reducción de superficie de bug**: eliminamos toda una categoría de bugs (typos en concatenación, IDs duplicados entre componentes, opciones de usuario que colisionan con slots).
+
+---
+
+## 7. Trade-offs honestos
+
+### Costos
+
+| Costo | Mitigación |
+|-------|------------|
+| Closures por handler en cada Render() — presión sobre GC de TinyGo | Benchmark antes de mergear; si es problema, considerar handlers reusables como `func(c *SelectSearch, opt Option) func(dom.Event)` |
+| `.For(target)` exige declarar `target` antes — orden léxico forzado | Es Go idiomático; documentar como regla |
+| Migración de 4-5 componentes de test al patrón nuevo | Refactor mecánico, ~1 hora total |
+| Pérdida de IDs sub-namespaced para acceso externo | Opt-in vía `WithStableID(name)` cuando el contrato lo requiera |
+
+### Riesgos a validar antes de mergear
+
+- **R1**: ¿`.On()` en Render() captura state actualizado tras `Update()`?  
+  → Test: mutar campo, llamar Update(), disparar evento, verificar que el handler ve el valor nuevo.
+- **R2**: ¿TinyGo + closures con captura inflan binario?  
+  → Comparar tamaño WASM antes/después del refactor de SelectSearch.
+- **R3**: ¿Hay race conditions en re-cableado de listeners durante Update()?  
+  → Cubierto por `uc_self_update_test.go` actualmente; añadir asserts adicionales.
+
+---
+
+## 8. Plan de ejecución
+
+1. **Implementar `(*Element).For(other *Element)`** en `element.go` (con test unitario en `dom_internal_test.go`).
+2. **Refactorizar SelectSearch** según sección 3.
+3. **Migrar componentes de test** al patrón declarativo:
+   - `uc_child_listeners_test.go` → `SearchChild` con `.On("input", ...)` en Render
+   - `uc_self_update_test.go` → `SSChild`, `SelfUpdater`
+   - `uc_builder_test.go` → `CounterComp`
+4. **Tests nuevos** que validen los riesgos R1–R3.
+5. **Actualizar `docs/ARCHITECTURE.md`** con sección "Patrones de componentes":
+   - Regla 1: eventos en Render(), no en OnMount()
+   - Regla 2: para `for=` accesibilidad usar `.For(target)`
+   - Regla 3: IDs estables solo con `.WithStableID(name)` y solo para contrato externo
+6. **(Opcional) Implementar `WithStableID`** si algún consumer lo justifica.
+
+---
+
+## 9. Comparación con el plan anterior
+
+| | Plan anterior (`Sub()`) | Plan nuevo (declarativo) |
+|---|------------------------|--------------------------|
+| Filosofía | "Mejor sintaxis para sub-IDs" | "No tener sub-IDs" |
+| Cambio en SelectSearch | Cosmético (renombra concatenaciones) | Estructural (elimina OnMount) |
+| Type safety | string-based, runtime errors | reference-based, compile errors |
+| Sub-IDs en componente | `c.Sub("toggle")`, `c.Sub("opt", id)` | No existen |
+| Pareo label/input | `c.Sub("toggle")` en ambos lados (string) | `header.For(toggle)` por referencia Go |
+| Eventos | `OnMount() + dom.Get(c.Sub(...))` | `.On(event, c.handler)` en Render() |
+| Líneas en SelectSearch | ~95 (con OnMount externo) | ~70 |
+| Aporte al framework | 1 método cosmético | Patrón canónico + type safety |
+| Mensaje a nuevos contribuyentes | "Recuerda usar Sub() en ambos lados" | "Cablea eventos donde declaras elementos" |
+| Lo que pasa con IDs estáticos | Persisten en runtime, solo cambia cómo los escribes | Desaparecen del componente; opt-in si hace falta |
+
+---
+
+## 10. Preguntas para tu revisión
+
+1. **¿OK con eliminar el patrón `OnMount + dom.Get(idString)` para wiring de eventos en componentes oficiales?**  
+   `OnMount` sigue existiendo para casos legítimos (medir DOM, JS interop), pero deja de ser el lugar canónico para cablear eventos.
+
+2. **¿OK con `For(other *Element)` mutando `other` lazy (auto-asigna ID)?**  
+   La alternativa es exigir asignación manual previa, lo que reintroduce strings.
+
+3. **¿`.WithStableID(name)` se implementa ahora o se pospone hasta que un caso real lo justifique?**  
+   YAGNI dice esperar. Pero si hay integración con CSS o JS externo planeada, mejor adelantarlo.
+
+4. **¿El refactor incluye también los tests `CounterComp`, `SearchChild`, `SSChild`?**  
+   Migrarlos establece el patrón canónico; mantenerlos en el patrón viejo permite verificar compatibilidad backward del API legacy `dom.Get`.
+
+5. **¿Aceptable benchmarear tamaño WASM antes de mergear?**  
+   Closures en TinyGo pueden tener costo; necesitamos número real, no asunción.
