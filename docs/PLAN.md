@@ -157,16 +157,17 @@ Si necesitas el dato dentro del handler, ya lo tienes en `opt` por captura.
 ### 2.5 Para los pocos casos donde un ID externo SÍ es necesario
 
 Algunas integraciones requieren un ID estable accesible desde fuera (JS externo, tests
-end-to-end, hooks de instrumentación). Para esos, exponer un opt-in explícito:
+end-to-end, hooks de instrumentación). Para esos casos se reutiliza el `.ID(string)`
+existente — no hace falta una API nueva:
 
 ```go
 // Uso (raro y deliberado):
-dom.Form().WithStableID("login-form")  // ID humano-legible, garantizado estable
+dom.Form().ID("login-form")  // ID humano-legible, parte del contrato externo
 ```
 
-Esto **no se usa internamente** por el componente. Es una salida de emergencia documentada
-para integración externa. La regla del framework: _si un componente usa `WithStableID`,
-declara públicamente que ese sub-elemento es parte de su contrato externo._
+La regla del framework: _si un componente fija un `.ID(...)` literal, declara
+públicamente que ese sub-elemento es parte de su contrato externo._ Documentar la
+intención con un comentario adyacente cuando el ID exista para integración externa.
 
 ---
 
@@ -310,14 +311,13 @@ func (c *SelectSearch) filteredOptions() []Option {
 |---|--------|---------|------|
 | 1 | Añadir `(*Element).For(other *Element) *Element` | `element.go` | Adición |
 | 2 | Confirmar que `.On()` registrado en `Render()` se re-cablea en `Update()` | `dom_frontend.go` | Validación + tests |
-| 3 | (Opcional) `(*Element).WithStableID(name string) *Element` para opt-in de IDs públicos | `element.go` | Adición |
-| 4 | Documentar el patrón declarativo como canónico | `docs/ARCHITECTURE.md` | Doc |
+| 3 | Documentar el patrón declarativo como canónico | `docs/ARCHITECTURE.md` | Doc |
 
 **Lo que NO se toca:**
 - Interfaz `Component` (sigue minimal: `GetID`, `SetID`, `RenderHTML`, `Children`)
 - `dom_backend.go` / SSR (CSS estático sigue en `ssr.go`, correcto y deliberado)
 - `OnMount()` sigue existiendo para casos válidos (medir tamaños DOM, init de libs JS)
-- `dom.Get()` sigue existiendo para integración externa con IDs estables
+- `dom.Get()` y `.ID(string)` siguen existiendo para integración externa con IDs estables
 
 ---
 
@@ -369,7 +369,7 @@ func (c *SelectSearch) filteredOptions() []Option {
 | Closures por handler en cada Render() — presión sobre GC de TinyGo | Benchmark antes de mergear; si es problema, considerar handlers reusables como `func(c *SelectSearch, opt Option) func(dom.Event)` |
 | `.For(target)` exige declarar `target` antes — orden léxico forzado | Es Go idiomático; documentar como regla |
 | Migración de 4-5 componentes de test al patrón nuevo | Refactor mecánico, ~1 hora total |
-| Pérdida de IDs sub-namespaced para acceso externo | Opt-in vía `WithStableID(name)` cuando el contrato lo requiera |
+| Pérdida de IDs sub-namespaced para acceso externo | Usar el `.ID(name)` existente cuando el contrato externo lo requiera |
 
 ### Riesgos a validar antes de mergear
 
@@ -384,18 +384,30 @@ func (c *SelectSearch) filteredOptions() []Option {
 
 ## 8. Plan de ejecución
 
+### Prerequisito: instalar `gotest`
+
+El agente que ejecute este plan debe tener `gotest` instalado antes de correr cualquier test:
+
+```bash
+go install github.com/tinywasm/devflow/cmd/gotest@latest
+```
+
+Los tests se ejecutan con `gotest` en lugar de `go test` directamente.
+
+### Pasos
+
 1. **Implementar `(*Element).For(other *Element)`** en `element.go` (con test unitario en `dom_internal_test.go`).
 2. **Refactorizar SelectSearch** según sección 3.
-3. **Migrar componentes de test** al patrón declarativo:
+3. **Migrar TODOS los componentes de test al patrón declarativo** (sin retrocompatibilidad — el proyecto es nuevo):
    - `uc_child_listeners_test.go` → `SearchChild` con `.On("input", ...)` en Render
    - `uc_self_update_test.go` → `SSChild`, `SelfUpdater`
    - `uc_builder_test.go` → `CounterComp`
+   - El patrón viejo (`OnMount + dom.Get(idString)` para wiring interno) deja de soportarse y se elimina de los tests.
 4. **Tests nuevos** que validen los riesgos R1–R3.
 5. **Actualizar `docs/ARCHITECTURE.md`** con sección "Patrones de componentes":
    - Regla 1: eventos en Render(), no en OnMount()
    - Regla 2: para `for=` accesibilidad usar `.For(target)`
-   - Regla 3: IDs estables solo con `.WithStableID(name)` y solo para contrato externo
-6. **(Opcional) Implementar `WithStableID`** si algún consumer lo justifica.
+   - Regla 3: IDs literales con `.ID(name)` solo cuando son parte del contrato externo del componente
 
 ---
 
@@ -416,19 +428,13 @@ func (c *SelectSearch) filteredOptions() []Option {
 
 ---
 
-## 10. Preguntas para tu revisión
+## 10. Decisiones tomadas
 
-1. **¿OK con eliminar el patrón `OnMount + dom.Get(idString)` para wiring de eventos en componentes oficiales?**  
+1. **Eliminar el patrón `OnMount + dom.Get(idString)` para wiring de eventos en componentes oficiales.**  
    `OnMount` sigue existiendo para casos legítimos (medir DOM, JS interop), pero deja de ser el lugar canónico para cablear eventos.
 
-2. **¿OK con `For(other *Element)` mutando `other` lazy (auto-asigna ID)?**  
-   La alternativa es exigir asignación manual previa, lo que reintroduce strings.
+2. **`For(other *Element)` muta `other` lazy auto-asignando ID si no tiene.**  
+   Objetivo del refactor: minimizar strings y mantener el código tipado. La alternativa (exigir `.ID("literal")` previo en `other`) reintroduce strings literales en el componente y derrota el refactor. El side-effect es aceptable porque el ID auto-generado es anónimo — solo el framework lo usa en runtime para el HTML emitido.
 
-3. **¿`.WithStableID(name)` se implementa ahora o se pospone hasta que un caso real lo justifique?**  
-   YAGNI dice esperar. Pero si hay integración con CSS o JS externo planeada, mejor adelantarlo.
-
-4. **¿El refactor incluye también los tests `CounterComp`, `SearchChild`, `SSChild`?**  
-   Migrarlos establece el patrón canónico; mantenerlos en el patrón viejo permite verificar compatibilidad backward del API legacy `dom.Get`.
-
-5. **¿Aceptable benchmarear tamaño WASM antes de mergear?**  
-   Closures en TinyGo pueden tener costo; necesitamos número real, no asunción.
+3. **Migración completa de tests al patrón nuevo (`CounterComp`, `SearchChild`, `SSChild`).**  
+   El proyecto es nuevo y no requiere retrocompatibilidad. Todos los componentes y tests se migran al patrón declarativo; el API viejo (`OnMount + dom.Get(idString)` para wiring interno) deja de soportarse.
