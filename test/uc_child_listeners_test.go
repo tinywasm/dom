@@ -17,18 +17,15 @@ type SearchChild struct {
 
 func (c *SearchChild) Render() *dom.Element {
 	return dom.Div(
-		dom.Input("search").ID(c.GetID()+"-search").Attr("value", c.FilterTerm),
+		dom.Input("search").
+			ID(c.GetID()+"-search").
+			Attr("value", c.FilterTerm).
+			On("input", func(e dom.Event) {
+				c.FilterTerm = e.TargetValue()
+				c.InputEvents++
+				c.Update()
+			}),
 	)
-}
-
-func (c *SearchChild) OnMount() {
-	if el, ok := dom.Get(c.GetID() + "-search"); ok {
-		el.On("input", func(e dom.Event) {
-			c.FilterTerm = e.TargetValue()
-			c.InputEvents++
-			c.Update()
-		})
-	}
 }
 
 // ParentWithChild holds a SearchChild in state (not created inside Render).

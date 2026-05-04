@@ -25,7 +25,7 @@ func (c *CounterComp) Render() *dom.Element {
 			ID(c.GetID()+"-btn").
 			On("click", func(e dom.Event) {
 				c.count++
-				dom.Update(c)
+				c.Update()
 			}).
 			Text("Increment"),
 	)
