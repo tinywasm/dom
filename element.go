@@ -21,6 +21,15 @@ func (b *Element) ID(id string) *Element {
 	return b
 }
 
+// For sets the for= attribute pointing to other's ID, auto-generating
+// other's ID if it has none. Use for label/input pairing and aria-* references.
+func (b *Element) For(other *Element) *Element {
+	if other == nil {
+		return b
+	}
+	return b.Attr("for", other.GetID())
+}
+
 // Class adds a class to the element.
 func (b *Element) Class(class ...string) *Element {
 	b.classes = append(b.classes, class...)

@@ -147,6 +147,28 @@ func TestInternalWasm(t *testing.T) {
 		_ = Button("t1")
 		_ = P("t2", "p1")
 	})
+
+	t.Run("For Method", func(t *testing.T) {
+		input := Input("text")
+		label := Label().For(input)
+
+		id := input.GetID()
+		if id == "" {
+			t.Fatal("input ID should not be empty")
+		}
+
+		forAttr := ""
+		for _, attr := range label.attrs {
+			if attr.Key == "for" {
+				forAttr = attr.Value
+				break
+			}
+		}
+
+		if forAttr != id {
+			t.Errorf("expected for=%q, got %q", id, forAttr)
+		}
+	})
 }
 
 type comp struct {

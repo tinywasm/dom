@@ -77,6 +77,39 @@ func (c *Counter) Render() *dom.Element {
 }
 ```
 
+### Component Patterns: Declarative Wiring (The Canonical Way)
+
+The canonical way to build components is to describe the entire UI and its behavior inside `Render()`.
+
+1.  **Events in Render**: Attach event listeners directly to elements using `.On(eventType, handler)`. The framework handles re-wiring automatically during `Update()`.
+2.  **Type-safe Pairing**: Use `.For(other *Element)` for `<label for>` pairing instead of hardcoded strings. It auto-generates IDs lazily.
+3.  **Closures for Lists**: Use Go closures to capture state (like loop variables) for dynamic lists.
+
+```go
+func (c *MyComponent) Render() *dom.Element {
+    toggle := dom.Input("checkbox").Class("toggle")
+
+    // Declarative wiring:
+    header := dom.Label().
+        For(toggle).                      // Type-safe pairing
+        Text("Click me").
+        On("click", c.onHeaderClick)       // Method reference
+
+    list := dom.Div()
+    for _, item := range c.Items {
+        item := item // Capture for closure
+        list.Add(dom.Div(item.Name).On("click", func(e dom.Event) {
+            c.SelectItem(item) // Closure capture
+        }))
+    }
+
+    return dom.Div(toggle, header, list)
+}
+```
+
+Avoid using `OnMount()` for internal event wiring. `OnMount()` should be reserved for third-party JS integration or measuring DOM geometry.
+```
+
 **Why value embed?** TinyGo has a simple GC — fewer heap objects means fewer pauses. Value embedding keeps the struct and its `Element` identity in a single allocation with better cache locality.
 
 ### Component Lifecycle (WASM only)

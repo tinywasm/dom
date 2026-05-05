@@ -22,29 +22,24 @@ type SelfUpdater struct {
 
 func (c *SelfUpdater) Render() *dom.Element {
 	return dom.Div(
-		dom.Input("search").ID(c.GetID()+"-search").Attr("value", c.filterTerm),
-		dom.Div().ID(c.GetID()+"-options").
+		dom.Input("search").
+			ID(c.GetID()+"-search").
+			Attr("value", c.filterTerm).
+			On("input", func(e dom.Event) {
+				c.filterTerm = e.TargetValue()
+				c.InputFired++
+				c.Update()
+			}),
+		dom.Div().
+			ID(c.GetID()+"-options").
+			On("click", func(e dom.Event) {
+				c.selected = e.TargetID()
+				c.SelectFired++
+				c.Update()
+			}).
 			Add(dom.Div().ID(c.GetID()+"-opt-a").Attr("data-id", "a").Text("Option A")),
 		dom.P().ID(c.GetID()+"-result").Text(c.selected),
 	)
-}
-
-func (c *SelfUpdater) OnMount() {
-	id := c.GetID()
-	if searchEl, ok := dom.Get(id + "-search"); ok {
-		searchEl.On("input", func(e dom.Event) {
-			c.filterTerm = e.TargetValue()
-			c.InputFired++
-			c.Update()
-		})
-	}
-	if optEl, ok := dom.Get(id + "-options"); ok {
-		optEl.On("click", func(e dom.Event) {
-			c.selected = e.TargetID()
-			c.SelectFired++
-			c.Update()
-		})
-	}
 }
 
 // TestSelfUpdateRewiresOnMountListeners — single-component self-update path.
@@ -102,31 +97,26 @@ type SSChild struct {
 
 func (c *SSChild) Render() *dom.Element {
 	return dom.Div(
-		dom.Input("search").ID(c.GetID()+"-search"),
-		dom.Div().ID(c.GetID()+"-options").Add(
-			dom.Div().ID(c.GetID()+"-opt-a").Attr("data-id", "a").Text("Option A"),
-			dom.Div().ID(c.GetID()+"-opt-b").Attr("data-id", "b").Text("Option B"),
-		),
+		dom.Input("search").
+			ID(c.GetID()+"-search").
+			On("input", func(e dom.Event) {
+				c.InputFired++
+				c.Update()
+			}),
+		dom.Div().
+			ID(c.GetID()+"-options").
+			On("click", func(e dom.Event) {
+				c.SelectFired++
+				if c.OnSelect != nil {
+					c.OnSelect(e.TargetID()) // triggers parent.Update()
+				}
+				c.Update() // then self-update
+			}).
+			Add(
+				dom.Div().ID(c.GetID()+"-opt-a").Attr("data-id", "a").Text("Option A"),
+				dom.Div().ID(c.GetID()+"-opt-b").Attr("data-id", "b").Text("Option B"),
+			),
 	)
-}
-
-func (c *SSChild) OnMount() {
-	id := c.GetID()
-	if searchEl, ok := dom.Get(id + "-search"); ok {
-		searchEl.On("input", func(e dom.Event) {
-			c.InputFired++
-			c.Update()
-		})
-	}
-	if optEl, ok := dom.Get(id + "-options"); ok {
-		optEl.On("click", func(e dom.Event) {
-			c.SelectFired++
-			if c.OnSelect != nil {
-				c.OnSelect(e.TargetID()) // triggers parent.Update()
-			}
-			c.Update() // then self-update
-		})
-	}
 }
 
 // TestParentThenSelfUpdate reproduces the exact SelectSearch flow:
