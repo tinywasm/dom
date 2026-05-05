@@ -36,16 +36,16 @@ Render("body", &App{})
 ### The Builder (JSX-like UI construction)
 Elements are constructed declaratively:
 ```go
-import "github.com/tinywasm/dom"
+import . "github.com/tinywasm/dom"
 
-dom.Div(
-    dom.H1("Welcome"),
-    dom.P("This is a minimalist UI."),
-    dom.Div(
-        dom.Strong("Ready to start?"),
+Div(
+    H1("Welcome"),
+    P("This is a minimalist UI."),
+    Div(
+        Strong("Ready to start?"),
     ).Class("header-box"),
-    dom.Button("Get Started").Class("primary").On("click", func(e dom.Event) {
-        dom.Log("Button clicked!")
+    Button("Get Started").Class("primary").On("click", func(e Event) {
+        Log("Button clicked!")
     }),
 ).Class("container")
 ```
@@ -143,3 +143,35 @@ These return elements with the `void` flag set, preventing the rendering of a cl
 - `dom_wasm.go` & `element_wasm.go`: Implementation using `syscall/js`.
 - `dom_backend.go` & `dom_stub.go` (`!wasm`): No-op / server-side logic for compilation safety.
 - **WASM Memory Safety**: `Unmount` automatically releases all saved `js.FuncOf` event listeners.
+
+## 7. Default Theme (`RootCSS`)
+
+`dom/ssr.go` ships the default `:root { … }` theme of the framework via a single static function:
+
+```go
+//go:build !wasm
+
+package dom
+
+import _ "embed"
+
+//go:embed theme.css
+var rootCSS string
+
+func RootCSS() string { return rootCSS }
+```
+
+`theme.css` is the **single source of truth** for the default tokens — colors, spacing, layout heights, dark-mode media query. There is no `CssVars` struct, no `DefaultCssVars()` constructor, no programmatic builder; the theme is plain CSS.
+
+### Override
+
+`dom` does not import `assetmin`. The contract is the function name `RootCSS`. `tinywasm/assetmin` discovers it via AST extraction during `LoadSSRModules()` and routes the result to the `open` slot of `<head>`.
+
+Apps override the default by exposing their own `RootCSS()` from the project root's `ssr.go`. The single-override rule lives in `assetmin` (root project wins, dom is fallback, third-party modules are ignored with a warning). See [`assetmin/docs/SSR.md`](../../assetmin/docs/SSR.md).
+
+### Distinction from `CSSProvider`
+
+- `RootCSS()` (free function in `ssr.go`) → document-level `:root` tokens, single winner.
+- `CSSProvider.RenderCSS()` (component method) → per-component scoped styles, accumulate normally.
+
+These are intentionally separate: theme tokens are global and must not stack, while component styles are local and naturally compose.
