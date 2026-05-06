@@ -29,7 +29,7 @@ func RootCSS() string { return rootCSS }
 
 Everything else is removed.
 
-`dom` does not import `assetmin`. The contract is purely the function name `RootCSS`. assetmin discovers it by AST inspection (covered in `assetmin/docs/PLAN.md`).
+`dom` does not import `assetmin`. The contract is purely the function name `RootCSS`. The asset bundler in the broader project discovers it by AST inspection — it walks `ssr.go`, finds a `FuncDecl` named `RootCSS`, evaluates the return expression as a literal / `//go:embed` ident / concatenation, and uses the result as the document `:root` theme. None of that affects this plan; `dom`'s only obligation is to expose the function with an AST-extractable return.
 
 ## Changes
 
@@ -109,5 +109,5 @@ If a consumer is found that legitimately needs a programmatic theme builder, tha
 
 ## Out of scope
 
-- How assetmin discovers, extracts, and routes `RootCSS()` into the `<head>` — covered in `assetmin/docs/PLAN.md`.
+- How any external bundler discovers, extracts, and routes `RootCSS()` into the `<head>`. This plan only delivers the function and its AST-extractable shape. Any consumer (build tool, asset pipeline) is free to read it.
 - A programmatic theme-builder API. Apps that need one build it themselves with `text/template` over their own CSS file, then expose the result via their root project's `RootCSS()`.
