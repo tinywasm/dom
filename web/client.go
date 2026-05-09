@@ -16,6 +16,11 @@ type App struct {
 }
 
 func (a *App) Init() {
+	// 0. Restore theme from localStorage
+	if theme, _ := LocalStorageGet("theme"); theme != "" {
+		SetDocumentAttr("data-theme", theme)
+	}
+
 	// 1. Inject minimal CSS
 	css := `
 		body { font-family: sans-serif; margin: 0; background: #f4f4f9; color: #333; }
@@ -61,6 +66,17 @@ func (a *App) Render() *Element {
 	)
 }
 
+func (a *App) toggleTheme() {
+	current := GetDocumentAttr("data-theme")
+	next := "dark"
+	if current == "dark" {
+		next = "light"
+	}
+	SetDocumentAttr("data-theme", next)
+	LocalStorageSet("theme", next)
+	a.Update()
+}
+
 func (a *App) renderRoute() *Element {
 	switch a.currentRoute {
 	case "#about":
@@ -77,6 +93,12 @@ func (a *App) renderRoute() *Element {
 				Button("-").On("click", func(e Event) { a.counter--; a.Update() }),
 				Span(fmt.Sprint(a.counter)).Class("count"),
 				Button("+").On("click", func(e Event) { a.counter++; a.Update() }),
+			).Class("btn-group"),
+
+			H2("Persistence & Attributes"),
+			P("The theme is persisted in localStorage and applied to <html>."),
+			Div(
+				Button("Toggle Theme").On("click", func(e Event) { a.toggleTheme() }),
 			).Class("btn-group"),
 		).Class("card")
 	}
