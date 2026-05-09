@@ -144,7 +144,29 @@ These return elements with the `void` flag set, preventing the rendering of a cl
 - `dom_backend.go` & `dom_stub.go` (`!wasm`): No-op / server-side logic for compilation safety.
 - **WASM Memory Safety**: `Unmount` automatically releases all saved `js.FuncOf` event listeners.
 
-## 7. Default Theme (`RootCSS`)
+## 7. LocalStorage API (WASM only)
+
+The `dom` package provides a type-safe wrapper for the browser's `localStorage` with built-in quota management.
+
+- `LocalStorageAvailable() bool`: Checks if storage is accessible (handles iframe sandboxes and private modes).
+- `LocalStorageGet(key) (string, error)`: Retrieves a value. Returns `("", nil)` if the key is absent.
+- `LocalStorageSet(key, value) error`: Persists a value. Enforces a 64KB per-value limit and a 4MB total budget to prevent crashes.
+- `LocalStorageDel(key) error`: Removes a specific key.
+- `LocalStorageClear() error`: Wipes all storage for the origin.
+
+> [!NOTE]
+> Quota tracking is done in-memory for performance. It assumes `dom` is the only writer for the origin during the session.
+
+## 8. DocumentAttr API
+
+Used to manipulate attributes on `document.documentElement` (the `<html>` tag), which is typically used for theme switching or language settings.
+
+- `SetDocumentAttr(attr, value string)`: Sets an attribute. Passing `""` as value removes the attribute.
+- `GetDocumentAttr(attr string) string`: Reads an attribute. Returns `""` if absent.
+
+On the backend (`!wasm`), these are no-ops and return `""`, ensuring SSR safety and consistency with `GetHash()`.
+
+## 9. Default Theme (`RootCSS`)
 
 `dom/ssr.go` ships the default `:root { … }` theme of the framework via a single static function:
 

@@ -12,6 +12,9 @@ import (
 type domWasm struct {
 	*tinyDOM
 	document     js.Value // Cached document object
+	localStorage js.Value // Cached localStorage object
+	lsUsedBytes  int      // Current localStorage budget usage in bytes (UTF-16)
+
 	elementCache []struct {
 		id  string
 		val js.Value
@@ -46,11 +49,28 @@ type domWasm struct {
 
 // newDom returns a new instance of the domWasm.
 func newDom(td *tinyDOM) DOM {
+	ls := js.Global().Get("localStorage")
+	used := 0
+	if ls.Truthy() {
+		// Initial O(n) scan — occurs once at startup to initialize budget counter.
+		length := ls.Get("length").Int()
+		for i := 0; i < length; i++ {
+			key := ls.Call("key", i).String()
+			if val := ls.Call("getItem", key); !val.IsNull() && !val.IsUndefined() {
+				used += lsEntrySize(key, val.String())
+			}
+		}
+	}
 	return &domWasm{
-		tinyDOM:  td,
-		document: js.Global().Get("document"),
+		tinyDOM:      td,
+		document:     js.Global().Get("document"),
+		localStorage: ls,
+		lsUsedBytes:  used,
 	}
 }
+
+// lsEntrySize estimates the UTF-16 byte size of a localStorage entry.
+func lsEntrySize(key, value string) int { return (len(key) + len(value)) * 2 }
 
 // Get retrieves an element by ID from the cache or the DOM.
 func (d *domWasm) Get(id string) (Reference, bool) {
