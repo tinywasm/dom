@@ -18,21 +18,41 @@ type App struct {
 func (a *App) Init() {
 	// 1. Inject minimal CSS
 	css := `
-		body { font-family: sans-serif; margin: 0; background: #f4f4f9; color: #333; }
-		nav { background: #333; padding: 1rem; display: flex; gap: 1rem; }
+		:root {
+			--bg: #f4f4f9;
+			--color: #333;
+			--card-bg: white;
+		}
+		[data-theme="dark"] {
+			--bg: #1a1a1a;
+			--color: #f4f4f9;
+			--card-bg: #2d2d2d;
+		}
+		body { font-family: sans-serif; margin: 0; background: var(--bg); color: var(--color); transition: background 0.3s, color 0.3s; }
+		nav { background: #333; padding: 1rem; display: flex; gap: 1rem; align-items: center; }
 		nav a { color: white; text-decoration: none; cursor: pointer; padding: 0.2rem 0.5rem; border-radius: 4px; }
 		nav a:hover { background: #555; }
 		nav a.active { background: #0037ff; }
 		.container { padding: 2rem; max-width: 800px; margin: 0 auto; }
-		.card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+		.card { background: var(--card-bg); padding: 2rem; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
 		.btn-group { display: flex; gap: 0.5rem; align-items: center; margin-top: 1rem; }
 		button { padding: 0.5rem 1rem; cursor: pointer; border: none; border-radius: 4px; background: #007bff; color: white; }
 		button:hover { background: #0056b3; }
 		.count { font-size: 1.5rem; font-weight: bold; min-width: 3rem; text-align: center; }
+		.spacer { flex: 1; }
 	`
 	renderStyle(css)
 
-	// 2. Setup Routing
+	// 2. Restore state from LocalStorage
+	savedCount := LocalStorageGet("counter")
+	if savedCount != "" {
+		// Simple way to parse int since we want to avoid strconv
+		var c int
+		fmt.Sscanf(savedCount, "%d", &c)
+		a.counter = c
+	}
+
+	// 3. Setup Routing
 	OnHashChange(func(hash string) {
 		a.currentRoute = hash
 		a.Update()
@@ -52,6 +72,18 @@ func (a *App) Render() *Element {
 		Nav(
 			NavLink("Home", "#home", a.currentRoute == "#home"),
 			NavLink("About", "#about", a.currentRoute == "#about"),
+			Span().Class("spacer"),
+			Button("Theme: "+string(GetTheme())).On("click", func(e Event) {
+				current := GetTheme()
+				next := ThemeDark
+				if current == ThemeDark {
+					next = ThemeLight
+				} else if current == ThemeLight {
+					next = ThemeAuto
+				}
+				SetTheme(next)
+				a.Update()
+			}),
 		),
 
 		// Content Area
@@ -72,11 +104,19 @@ func (a *App) renderRoute() *Element {
 	default: // "#home"
 		return Div(
 			H1("Counter Example"),
-			P("This demonstrates local state updates and hash routing."),
+			P("This demonstrates local state updates, hash routing, and persistent LocalStorage."),
 			Div(
-				Button("-").On("click", func(e Event) { a.counter--; a.Update() }),
+				Button("-").On("click", func(e Event) {
+					a.counter--
+					LocalStorageSet("counter", fmt.Sprint(a.counter))
+					a.Update()
+				}),
 				Span(fmt.Sprint(a.counter)).Class("count"),
-				Button("+").On("click", func(e Event) { a.counter++; a.Update() }),
+				Button("+").On("click", func(e Event) {
+					a.counter++
+					LocalStorageSet("counter", fmt.Sprint(a.counter))
+					a.Update()
+				}),
 			).Class("btn-group"),
 		).Class("card")
 	}

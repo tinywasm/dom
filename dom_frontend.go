@@ -12,6 +12,7 @@ import (
 type domWasm struct {
 	*tinyDOM
 	document     js.Value // Cached document object
+	localStorage js.Value // Cached localStorage object
 	elementCache []struct {
 		id  string
 		val js.Value
@@ -47,8 +48,9 @@ type domWasm struct {
 // newDom returns a new instance of the domWasm.
 func newDom(td *tinyDOM) DOM {
 	return &domWasm{
-		tinyDOM:  td,
-		document: js.Global().Get("document"),
+		tinyDOM:      td,
+		document:     js.Global().Get("document"),
+		localStorage: js.Global().Get("localStorage"),
 	}
 }
 

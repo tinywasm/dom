@@ -144,7 +144,39 @@ These return elements with the `void` flag set, preventing the rendering of a cl
 - `dom_backend.go` & `dom_stub.go` (`!wasm`): No-op / server-side logic for compilation safety.
 - **WASM Memory Safety**: `Unmount` automatically releases all saved `js.FuncOf` event listeners.
 
-## 7. Default Theme (`RootCSS`)
+## 7. Theme API
+
+`tinywasm/dom` provides a bridge to manage the application's visual theme via the `data-theme` attribute on the `<html>` element.
+
+```go
+type Theme string
+
+const (
+    ThemeAuto  Theme = "auto"  // Removes override, follows OS preference
+    ThemeDark  Theme = "dark"  // Sets data-theme="dark"
+    ThemeLight Theme = "light" // Sets data-theme="light"
+)
+
+func SetTheme(theme Theme)
+func GetTheme() Theme
+```
+
+The canonical `theme.css` uses these values to apply color tokens.
+
+## 8. LocalStorage API
+
+Since only `tinywasm/dom` is allowed to import `syscall/js`, it provides a type-safe wrapper for the browser's `localStorage`.
+
+```go
+func LocalStorageGet(key string) string
+func LocalStorageSet(key, value string)
+func LocalStorageDel(key string)
+func LocalStorageClear()
+```
+
+**Note**: `LocalStorageGet` returns an empty string `""` if the key does not exist or if storage is unavailable.
+
+## 9. Default Theme (`RootCSS`)
 
 `dom/ssr.go` ships the default `:root { … }` theme of the framework via a single static function:
 
