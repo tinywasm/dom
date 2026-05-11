@@ -76,20 +76,29 @@ Optionally promote `css.Class.Attr()` as a convenience that returns `dom.Attr` d
 - `dom/dom.go` — add `Class()` and `Classes()` attribute constructors.
 - `dom/dom_backend.go` — wherever HTML rendering collects CSS from children, switch from string concatenation to `*css.Stylesheet` aggregation (or to `.String()` at the boundary).
 - `dom/ssr_decoupling_test.go` — update against the new interface.
-- `dom/README.md`, `dom/AGENTS.md` — document the new contract.
+- `dom/README.md`, `dom/AGENTS.md`, `dom/docs/ARCHITECTURE.md` — document the new contract.
 
 ## Files added
 
 - None.
 
+## Dependency
+
+This plan builds on the typed CSS DSL foundation already published in `tinywasm/css` (`*Stylesheet`, `.String()`, `Class`, tokens). That dependency is satisfied — no further changes to `tinywasm/css` are required for this plan.
+
+> The keyframes-only PLAN currently sitting at `tinywasm/css/docs/PLAN.md` is **not** a dependency of this plan — `dom` neither constructs nor inspects `@keyframes`.
+
 ## Steps
 
-1. Land `tinywasm/css/docs/PLAN_typed_css.md` (this plan depends on it).
-2. Update `interface.dom.go` to the new signatures.
-3. Add `dom.Class()` / `dom.Classes()` attribute constructors and update `Render*` paths that previously embedded class strings.
-4. Update `dom_backend*.go` to aggregate `*css.Stylesheet` from children rather than concatenating strings. The final `.String()` happens at the outermost SSR boundary (in assetmin or in the page composer).
-5. Update tests under `dom/tests/` and `ssr_decoupling_test.go`.
-6. Update docs: `README.md`, `AGENTS.md`, and `docs/ARCHITECTURE.md`.
+1. Update `interface.dom.go` to the new signatures.
+2. Add `dom.Class()` / `dom.Classes()` attribute constructors and update `Render*` paths that previously embedded class strings.
+3. Update `dom_backend*.go` to collect children's CSS. **Implementation note:** the published `tinywasm/css` API does not expose a public way to merge `*css.Stylesheet` values structurally (`New(items ...item)` takes an unexported `item` type). Two options:
+   - **(A) Stringify at the dom boundary:** dom calls `child.RenderCSS().String()` and concatenates. Simple; loses no information because assetmin only needs the final string.
+   - **(B) Add `css.Compose(sheets ...*Stylesheet) *Stylesheet`** to `tinywasm/css` as a prerequisite, then dom aggregates structurally and assetmin calls `.String()` at the outermost boundary.
+
+   **Decision for this plan: (A).** Rationale: assetmin already calls `.String()` on the final result; pushing the stringify one level earlier costs nothing and avoids a cross-package API change. Option (B) is a follow-up only if some consumer needs structural inspection of the merged sheet.
+4. Update tests under `dom/tests/` and `ssr_decoupling_test.go`.
+5. Update docs: `README.md`, `AGENTS.md`, and `docs/ARCHITECTURE.md`.
 
 ## Acceptance
 
