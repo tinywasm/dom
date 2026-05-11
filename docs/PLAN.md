@@ -98,6 +98,19 @@ This plan builds on the typed CSS DSL foundation already published in `tinywasm/
 
    **Decision for this plan: (A).** Rationale: assetmin already calls `.String()` on the final result; pushing the stringify one level earlier costs nothing and avoids a cross-package API change. Option (B) is a follow-up only if some consumer needs structural inspection of the merged sheet.
 4. Update tests under `dom/tests/` and `ssr_decoupling_test.go`.
+
+   **Running tests:** all tests — browser and backend — run through `gotest`, the tinywasm test runner. Do not use raw `go test`.
+
+   Install once:
+   ```bash
+   go install github.com/tinywasm/devflow/cmd/gotest@latest
+   ```
+
+   Run tests:
+   ```bash
+   gotest
+   ```
+
 5. Update docs: `README.md`, `AGENTS.md`, and `docs/ARCHITECTURE.md`.
 
 ## Acceptance
