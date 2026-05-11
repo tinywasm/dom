@@ -210,7 +210,7 @@ Los consumidores que deben migrar **después** de esta tarea:
 
 ## Checklist de implementación
 
-- [ ] Reemplazar `theme.css` con el nuevo contenido especificado arriba
-- [ ] Verificar que `dom` compila sin errores (`go build ./...`)
-- [ ] Verificar que los tests de `dom` pasan (`go test ./...`)
-- [ ] `gopush 'feat(dom)!: migrate CSS tokens to Material/Bootstrap convention (two-layer variables)'`
+- [x] Reemplazar `theme.css` con el nuevo contenido especificado arriba
+- [x] Verificar que `dom` compila sin errores (`go build ./...`)
+- [x] Verificar que los tests de `dom` pasan (`go test ./...`)
+- [x] `gopush 'feat(dom)!: migrate CSS tokens to Material/Bootstrap convention (two-layer variables)'`
