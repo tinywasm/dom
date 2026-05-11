@@ -121,8 +121,8 @@ func (c *Counter) OnMount() { dom.Log("Mounted ID:", c.GetID()) }
 **Recursive Lifecycle**: If a component has child components, it MUST implement `Children() []dom.Component` so the framework knows to trigger the child's `OnMount`.
 
 ### Component Assets (Backend only)
-To bundle styles/icons, implement these interfaces (must use `//go:build !wasm` tag):
-- `CSSProvider`: `RenderCSS() string`
+To bundle styles/icons, implement these interfaces:
+- `CSSProvider`: `RenderCSS() any` (Expected to return `*css.Stylesheet` for SSR)
 - `IconSvgProvider`: `IconSvg() map[string]string`
 
 ## 4. Events
@@ -175,25 +175,28 @@ On the backend (`!wasm`), these are no-ops and return `""`, ensuring SSR safety 
 
 package dom
 
-import _ "embed"
+import (
+	"github.com/tinywasm/css"
+	_ "embed"
+)
 
 //go:embed theme.css
 var rootCSS string
 
-func RootCSS() string { return rootCSS }
+func RootCSS() *css.Stylesheet { return css.New(css.Raw(rootCSS)) }
 ```
 
 `theme.css` is the **single source of truth** for the default tokens — colors, spacing, layout heights, dark-mode media query. There is no `CssVars` struct, no `DefaultCssVars()` constructor, no programmatic builder; the theme is plain CSS.
 
 ### Override
 
-`dom` does not import `assetmin`. The contract is the function name `RootCSS`. `tinywasm/assetmin` discovers it via AST extraction during `LoadSSRModules()` and routes the result to the `open` slot of `<head>`.
+`dom` does not import `assetmin`. The contract is the `RootCSSProvider` interface and the free function `RootCSS`. `tinywasm/assetmin` discovers it via AST extraction during `LoadSSRModules()` and routes the result to the `open` slot of `<head>`.
 
 Apps override the default by exposing their own `RootCSS()` from the project root's `ssr.go`. The single-override rule lives in `assetmin` (root project wins, dom is fallback, third-party modules are ignored with a warning). See [`assetmin/docs/SSR.md`](../../assetmin/docs/SSR.md).
 
 ### Distinction from `CSSProvider`
 
-- `RootCSS()` (free function in `ssr.go`) → document-level `:root` tokens, single winner.
-- `CSSProvider.RenderCSS()` (component method) → per-component scoped styles, accumulate normally.
+- `RootCSS()` (free function in `ssr.go`) → document-level `:root` tokens, single winner. Returns `any` (expected `*css.Stylesheet`).
+- `CSSProvider.RenderCSS()` (component method) → per-component scoped styles, accumulate normally. Returns `any` (expected `*css.Stylesheet`).
 
 These are intentionally separate: theme tokens are global and must not stack, while component styles are local and naturally compose.

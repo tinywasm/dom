@@ -77,7 +77,12 @@ type Unmountable interface {
 // CSSProvider is an optional capability: components that provide raw CSS
 // for SSR asset collection (collected by tinywasm/site during static build).
 type CSSProvider interface {
-	RenderCSS() string
+	RenderCSS() any
+}
+
+// RootCSSProvider is the framework-default root CSS provider.
+type RootCSSProvider interface {
+	RootCSS() any
 }
 
 // JSProvider is an optional capability: components that provide raw JS
