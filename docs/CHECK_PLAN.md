@@ -43,26 +43,25 @@ import (
     "github.com/tinywasm/fmt"
 )
 
-// Attr is the existing attribute type used by Element/Node builders.
-// Add a constructor that accepts a css.Class so call sites read naturally:
+// Class returns a KeyValue for a single CSS class.
 //     dom.Button(dom.Class(css.ClsPrimary), "Save")
-func Class(c css.Class) Attr { return Attr{Key: "class", Val: string(c)} }
+func Class(c css.Class) fmt.KeyValue { return fmt.KeyValue{Key: "class", Value: string(c)} }
 
 // For multiple classes — uses tinywasm/fmt.Builder, never stdlib "strings".
 // The stdlib strings package is banned across tinywasm/*: tinywasm/fmt is the
 // binary-optimized replacement and must be used everywhere, including in
 // SSR-only code.
-func Classes(cs ...css.Class) Attr {
+func Classes(cs ...css.Class) fmt.KeyValue {
     b := &fmt.Builder{}
     for i, c := range cs {
         if i > 0 { b.WriteString(" ") }
         b.WriteString(string(c))
     }
-    return Attr{Key: "class", Val: b.String()}
+    return fmt.KeyValue{Key: "class", Value: b.String()}
 }
 ```
 
-Optionally promote `css.Class.Attr()` as a convenience that returns `dom.Attr` directly — but doing so would force `tinywasm/css` to import `tinywasm/dom`, inverting the dependency. Instead, keep the adapter in `dom` only.
+Optionally promote `css.Class.Attr()` as a convenience that returns `fmt.KeyValue` directly — but doing so would force `tinywasm/css` to import `tinywasm/dom`, inverting the dependency. Instead, keep the adapter in `dom` only.
 
 ## Cyclic-dependency check
 

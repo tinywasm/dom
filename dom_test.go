@@ -2,6 +2,8 @@ package dom
 
 import (
 	"testing"
+
+	"github.com/tinywasm/fmt"
 )
 
 func TestClass(t *testing.T) {
@@ -19,7 +21,7 @@ func TestClasses(t *testing.T) {
 }
 
 func TestElementAddAttr(t *testing.T) {
-	el := Div(Class("my-class"), Attr{Key: "data-test", Value: "val"})
+	el := Div(Class("my-class"), fmt.KeyValue{Key: "data-test", Value: "val"})
 	html := elementToHTML(el)
 	expected := "<div class='my-class' data-test='val'></div>"
 	if html != expected {
@@ -28,10 +30,7 @@ func TestElementAddAttr(t *testing.T) {
 }
 
 type mockCSSProvider struct{}
+
 func (m *mockCSSProvider) RenderCSS() any {
 	return nil
-}
-
-func TestCSSProviderInterface(t *testing.T) {
-	var _ CSSProvider = &mockCSSProvider{}
 }

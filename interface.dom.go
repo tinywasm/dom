@@ -36,10 +36,12 @@ type DOM interface {
 // All components must implement this for both SSR (backend) and WASM (frontend).
 //
 // NOTE: If your struct embeds Element, embed it as a VALUE, not a pointer:
-//   type MyComponent struct {
-//     Element       // ✅ Correct — never nil
-//     // NOT: *Element // ❌ Wrong — nil pointer causes panic in renderToHTML
-//   }
+//
+//	type MyComponent struct {
+//	  Element       // ✅ Correct — never nil
+//	  // NOT: *Element // ❌ Wrong — nil pointer causes panic in renderToHTML
+//	}
+//
 // This is because renderToHTML calls GetID() on every Component child before checking ViewRenderer.
 type Component interface {
 	GetID() string
@@ -72,17 +74,6 @@ type Updatable interface {
 // Unmountable is an optional interface for components that need cleanup logic.
 type Unmountable interface {
 	OnUnmount()
-}
-
-// CSSProvider is an optional capability: components that provide raw CSS
-// for SSR asset collection (collected by tinywasm/site during static build).
-type CSSProvider interface {
-	RenderCSS() any
-}
-
-// RootCSSProvider is the framework-default root CSS provider.
-type RootCSSProvider interface {
-	RootCSS() any
 }
 
 // JSProvider is an optional capability: components that provide raw JS

@@ -55,7 +55,7 @@ func (b *Element) On(t string, h func(Event)) *Element {
 }
 
 // Add adds one or more children or attributes to the element.
-// Children can be *Element, Component, string, or Attr (fmt.KeyValue).
+// Children can be *Element, Component, string, or fmt.KeyValue.
 func (b *Element) Add(children ...any) *Element {
 	for _, child := range children {
 		if attr, ok := child.(fmt.KeyValue); ok {

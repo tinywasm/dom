@@ -81,16 +81,13 @@ func (t *tinyDOM) Log(v ...any) {
 	}
 }
 
-// Attr is an alias for fmt.KeyValue used by the Element/Node builders.
-type Attr = fmt.KeyValue
-
 // Class returns an attribute for a single CSS class.
-func Class(c css.Class) Attr {
-	return Attr{Key: "class", Value: string(c)}
+func Class(c css.Class) fmt.KeyValue {
+	return fmt.KeyValue{Key: "class", Value: string(c)}
 }
 
 // Classes returns an attribute for multiple CSS classes.
-func Classes(cs ...css.Class) Attr {
+func Classes(cs ...css.Class) fmt.KeyValue {
 	b := &fmt.Builder{}
 	for i, c := range cs {
 		if i > 0 {
@@ -98,5 +95,5 @@ func Classes(cs ...css.Class) Attr {
 		}
 		b.WriteString(string(c))
 	}
-	return Attr{Key: "class", Value: b.String()}
+	return fmt.KeyValue{Key: "class", Value: b.String()}
 }
