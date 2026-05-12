@@ -35,6 +35,8 @@ The API allows concise nesting and typed chaining:
 ```go
 import . "github.com/tinywasm/dom"
 
+import "github.com/tinywasm/css"
+
 Div(
 	H1("Welcome"),
 	P("Select an option below:"),
@@ -42,7 +44,8 @@ Div(
 		Li(Button("Action 1").On("click", handleAction1)),
 		Li(Button("Action 2").On("click", handleAction2)),
 	),
-).Class("container")
+	Class(css.ClsContainer), // Using typed CSS constants
+)
 ```
 
 **Available builders**:

@@ -1,6 +1,7 @@
 package dom
 
 import (
+	"github.com/tinywasm/css"
 	"github.com/tinywasm/fmt"
 )
 
@@ -78,4 +79,21 @@ func (t *tinyDOM) Log(v ...any) {
 	if t.log != nil {
 		t.log(v...)
 	}
+}
+
+// Class returns an attribute for a single CSS class.
+func Class(c css.Class) fmt.KeyValue {
+	return fmt.KeyValue{Key: "class", Value: string(c)}
+}
+
+// Classes returns an attribute for multiple CSS classes.
+func Classes(cs ...css.Class) fmt.KeyValue {
+	b := &fmt.Builder{}
+	for i, c := range cs {
+		if i > 0 {
+			b.WriteString(" ")
+		}
+		b.WriteString(string(c))
+	}
+	return fmt.KeyValue{Key: "class", Value: b.String()}
 }
