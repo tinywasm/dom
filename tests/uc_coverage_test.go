@@ -15,7 +15,7 @@ func TestCoverageElementFactories(t *testing.T) {
 			dom.Span(), dom.P(), dom.H1(), dom.H2(), dom.H3(), dom.H4(), dom.H5(), dom.H6(),
 			dom.Ul(), dom.Ol(), dom.Li(), dom.Nav(), dom.Section(), dom.Main(), dom.Article(),
 			dom.Header(), dom.Footer(), dom.Aside(), dom.Details(), dom.Summary(), dom.Dialog(),
-			dom.Figure(), dom.Figcaption(), dom.Pre(), dom.Code(), dom.Strong(), dom.Em(),
+			dom.Figure(), dom.Figcaption(), dom.Pre(), dom.Code(), dom.Strong(),
 			dom.Small(), dom.Mark(), dom.Table(), dom.Thead(), dom.Tbody(), dom.Tfoot(),
 			dom.Tr(), dom.Th(), dom.Td(), dom.Fieldset(), dom.Legend(), dom.Label(),
 			dom.Canvas(), dom.Style(), dom.Script(), dom.A("href"), dom.Button(),

@@ -193,7 +193,6 @@ func Figcaption(children ...any) *Element { return (&Element{tag: "figcaption"})
 func Pre(children ...any) *Element        { return (&Element{tag: "pre"}).Add(children...) }
 func Code(children ...any) *Element       { return (&Element{tag: "code"}).Add(children...) }
 func Strong(children ...any) *Element     { return (&Element{tag: "strong"}).Add(children...) }
-func Em(children ...any) *Element         { return (&Element{tag: "em"}).Add(children...) }
 func Small(children ...any) *Element      { return (&Element{tag: "small"}).Add(children...) }
 func Mark(children ...any) *Element       { return (&Element{tag: "mark"}).Add(children...) }
 func Table(children ...any) *Element      { return (&Element{tag: "table"}).Add(children...) }
