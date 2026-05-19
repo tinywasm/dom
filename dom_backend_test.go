@@ -12,8 +12,8 @@ func TestBackendStubs(t *testing.T) {
 
 	if _, ok := d.(interface {
 		Get(string) (Reference, bool)
-	}).Get("test"); ok {
-		t.Error("get should return false on backend")
+	}).Get("test"); !ok {
+		t.Error("get should return true (stub) on backend")
 	}
 
 	if err := d.Render("p", nil); err == nil {

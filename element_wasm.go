@@ -23,6 +23,26 @@ func (e *elementWasm) Value() string {
 	return e.val.Get("value").String()
 }
 
+// SetValue sets element.value.
+func (e *elementWasm) SetValue(value string) {
+	e.val.Set("value", value)
+}
+
+// SetAttr calls element.setAttribute.
+func (e *elementWasm) SetAttr(key, value string) {
+	e.val.Call("setAttribute", key, value)
+}
+
+// RemoveAttr calls element.removeAttribute.
+func (e *elementWasm) RemoveAttr(key string) {
+	e.val.Call("removeAttribute", key)
+}
+
+// SetText sets element.textContent.
+func (e *elementWasm) SetText(text string) {
+	e.val.Set("textContent", text)
+}
+
 // Checked returns current checked state.
 func (e *elementWasm) Checked() bool {
 	return e.val.Get("checked").Bool()

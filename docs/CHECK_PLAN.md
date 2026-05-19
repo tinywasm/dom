@@ -1,5 +1,7 @@
 # PLAN: tinywasm/dom — Reference interface mutation methods
 
+> **✅ COMPLETADO** — `gotest` verde: `vet ✅, race ✅, tests ✅, wasm ✅, coverage: 78.7%`
+
 ## Contexto
 
 `tinywasm/form` necesita actualizar el estado del DOM de forma quirúrgica (resetear valores
@@ -189,7 +191,16 @@ FAIL: TestBug_RenderDestroysListeners_NoSetAttr
 FAIL: TestBug_RenderNestsSpans_NoSetText
 ```
 
-Tras el fix, los tres deben pasar. Ejecutar `gotest` para confirmar.
+Tras el fix, los tres deben pasar. Los `TestBug_*` fueron eliminados (eran probes de reproducción);
+los `TestReference_*` de validación cubren el comportamiento correcto.
+
+### Estado actual ✅
+
+```
+vet ✅, race ✅, tests ✅, wasm ✅, coverage: 78.7%
+```
+
+Pendiente: paso 6 — actualizar `tinywasm/form` para usar `SetValue`, `SetAttr`, `RemoveAttr`, `SetText`.
 
 ---
 
