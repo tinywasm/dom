@@ -64,6 +64,10 @@ func SetupDOM(t *testing.T) js.Value {
 type TestReferenceInterface interface {
 	GetAttr(key string) string
 	Value() string
+	SetValue(value string)
+	SetAttr(key, value string)
+	RemoveAttr(key string)
+	SetText(text string)
 	Checked() bool
 	On(eventType string, handler func(event dom.Event))
 	Focus()
@@ -84,6 +88,22 @@ func (r *TestReference) GetAttr(key string) string {
 
 func (r *TestReference) Value() string {
 	return r.val.Get("value").String()
+}
+
+func (r *TestReference) SetValue(value string) {
+	r.val.Set("value", value)
+}
+
+func (r *TestReference) SetAttr(key, value string) {
+	r.val.Call("setAttribute", key, value)
+}
+
+func (r *TestReference) RemoveAttr(key string) {
+	r.val.Call("removeAttribute", key)
+}
+
+func (r *TestReference) SetText(text string) {
+	r.val.Set("textContent", text)
 }
 
 func (r *TestReference) Checked() bool {

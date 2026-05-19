@@ -12,6 +12,20 @@ type Reference interface {
 	// Value returns the current value of an input/textarea/select.
 	Value() string
 
+	// SetValue sets element.value (inputs, textarea, select).
+	SetValue(value string)
+
+	// SetAttr calls element.setAttribute(key, value).
+	// Use empty string for boolean attributes (e.g., SetAttr("disabled", "")).
+	SetAttr(key, value string)
+
+	// RemoveAttr calls element.removeAttribute(key).
+	RemoveAttr(key string)
+
+	// SetText sets element.textContent.
+	// Safe for plain text — does not parse HTML.
+	SetText(text string)
+
 	// --- Checkboxes ---
 
 	// Checked returns the current checked state of a checkbox or radio button.
