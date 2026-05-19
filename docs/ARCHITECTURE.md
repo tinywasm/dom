@@ -14,7 +14,7 @@
 There are three primary layers/interfaces:
 - **Global `dom` API**: `Render(parentID, comp)`, `Append(parentID, comp)`, `Update(comp)`.
 - **`Component` Interface**: `GetID()`, `SetID(id)`, `RenderHTML()`, `Children()`.
-- **`Reference` Interface**: Represents a live DOM node (Read: `GetAttr`, `Value`, `Checked`; Interaction: `On`, `Focus`).
+- **`Reference` Interface**: Represents a live DOM node. Read: `GetAttr`, `Value`, `Checked`. Mutation: `SetValue`, `SetAttr`, `RemoveAttr`, `SetText`. Interaction: `On`, `Focus`.
 
 ### Mount point: always use `"app"`, never `"body"`
 
@@ -200,3 +200,40 @@ Apps override the default by exposing their own `RootCSS()` from the project roo
 - `CSSProvider.RenderCSS()` (component method) → per-component scoped styles, accumulate normally. Returns `any` (expected `*css.Stylesheet`).
 
 These are intentionally separate: theme tokens are global and must not stack, while component styles are local and naturally compose.
+
+## 10. Reference Mutation API
+
+`dom.Get(id)` returns a `Reference` — a live handle to a DOM node. Use its mutation methods to update the element **in-place** without re-rendering.
+
+> [!IMPORTANT]
+> `dom.Render(parentID, comp)` calls `cleanupChildren()` before writing new `innerHTML`, which **destroys all event listeners** registered via `ref.On()`. Always prefer in-place mutation over re-rendering when you only need to change a value, attribute, or text.
+
+| Method | JS equivalent | Use case |
+|--------|---------------|----------|
+| `ref.SetValue(v string)` | `element.value = v` | Reset input / textarea / select |
+| `ref.SetAttr(key, value string)` | `element.setAttribute(key, value)` | Add/set attribute. Pass `""` for boolean attrs (`"disabled"`) |
+| `ref.RemoveAttr(key string)` | `element.removeAttribute(key)` | Remove attribute |
+| `ref.SetText(text string)` | `element.textContent = text` | Update visible text safely (no HTML parsing — XSS-safe) |
+
+### Example: form loading state
+
+```go
+ref, _ := dom.Get("submit-btn")
+
+// Show loading (in-place — listener survives)
+ref.SetAttr("disabled", "")
+ref.SetText("Enviando…")
+
+// Restore (in-place — listener still alive)
+ref.RemoveAttr("disabled")
+ref.SetText("Enviar")
+```
+
+### Why not `SetInnerHTML`?
+
+`SetText` maps to `element.textContent`, which treats the string as **plain text** — safe for user-supplied content. `innerHTML` interprets HTML and would require the caller to sanitize input. If controlled HTML injection is ever needed, a separate `SetInnerHTML` should be added with explicit XSS risk documentation.
+
+### Backend behavior
+
+On `!wasm` builds, all mutation methods are **no-ops** in `elementStub`. This is intentional — SSR never holds live DOM handles.
+
