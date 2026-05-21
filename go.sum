@@ -1,4 +1,4 @@
-github.com/tinywasm/css v0.1.0 h1:uS31axx8wO/AzZ020vY5FkyEkEdfZtp0JmDbP7tWvbU=
-github.com/tinywasm/css v0.1.0/go.mod h1:CDphLEExw72fAXQjVFOmjA2+cRnTty3ejdAbP9D+i9U=
+github.com/tinywasm/css v0.1.1 h1:KlroB8leRBjDxAZYJ1hR4GNvYE7y1o7e+j48RnW7tO0=
+github.com/tinywasm/css v0.1.1/go.mod h1:8Vio+yx+M8T+cjMUszJeaU1jB+icFrenoa3iGML/G+o=
 github.com/tinywasm/fmt v0.23.9 h1:ske2WHTRUJ6igkY8T9cI/zky1XcTRrOYSlbbHNp0UQw=
 github.com/tinywasm/fmt v0.23.9/go.mod h1:L2GCAi6asgytPV6TVvGrRq5Ml+DkUt1Ijo5i/2J1jOY=
