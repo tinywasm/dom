@@ -163,8 +163,17 @@ func (d *domWasm) Render(parentID string, component Component) error {
 		return fmt.Errf("parent element not found: %s", parentID)
 	}
 
-	// Clean up any existing components in this parent before wiping content
+	// Clean up any existing components in this parent before wiping content.
+	// If the same component is already mounted, notify it before its DOM node is destroyed.
 	d.cleanupChildren(parentID)
+	if unmountable, ok := component.(Unmountable); ok {
+		for _, item := range d.mountedComponents {
+			if item.id == component.GetID() {
+				unmountable.OnUnmount()
+				break
+			}
+		}
+	}
 
 	parent.Set("innerHTML", html)
 
@@ -243,6 +252,11 @@ func (d *domWasm) Update(component Component) {
 		if !ce.IsNull() && !ce.IsUndefined() {
 			cursorEnd = ce.Int()
 		}
+	}
+
+	// Notify the component before its DOM node is destroyed so it can reset internal state.
+	if unmountable, ok := component.(Unmountable); ok {
+		unmountable.OnUnmount()
 	}
 
 	elRaw.Set("outerHTML", html)
