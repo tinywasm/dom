@@ -188,7 +188,9 @@ func (d *domWasm) Render(parentID string, component Component) error {
 	d.currentComponentID = prevID
 
 	// Mount logic
-	d.mountRecursive(component)
+	if mountable, ok := component.(Mountable); ok {
+		mountable.OnMount()
+	}
 	for _, child := range children {
 		d.mountRecursive(child)
 	}
@@ -343,7 +345,9 @@ func (d *domWasm) Append(parentID string, component Component) error {
 	d.wirePendingEvents()
 	d.currentComponentID = prevID
 
-	d.mountRecursive(component)
+	if mountable, ok := component.(Mountable); ok {
+		mountable.OnMount()
+	}
 	for _, child := range children {
 		d.mountRecursive(child)
 	}
