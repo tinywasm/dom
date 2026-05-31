@@ -76,13 +76,6 @@ type Unmountable interface {
 	OnUnmount()
 }
 
-// JSProvider is an optional capability: components that provide raw JS
-// for SSR asset collection.
-type JSProvider interface {
-	RenderJS() string
-}
-
-
 // eventHandler represents a DOM event handler in the declarative builder.
 type eventHandler struct {
 	Name    string

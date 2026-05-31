@@ -22,11 +22,11 @@ go get github.com/tinywasm/dom
 
 ## ⚡ Quick Start
 
-For a complete example including Elm architecture (Dynamic Components) and Static Components, check the following file:
+For a complete example including Elm architecture (Dynamic Components) and Static Components, see:
 
-👉 **[web/client.go](web/client.go)**
+👉 **[tinywasm/html — web/client.go](https://github.com/tinywasm/html/blob/main/web/client.go)**
 
-This file contains the reference implementation used for testing and demonstrations.
+That file uses `tinywasm/html` for element builders and `tinywasm/dom` for lifecycle (Render, Update, Append).
 
 ## 📦 Related Packages
 

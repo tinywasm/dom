@@ -1,3 +1,36 @@
+## Tests Movidos a tinywasm/html/tests/
+
+Los siguientes tests fueron movidos de `dom/tests/` a `html/tests/` porque usan builders HTML (Div, Span, etc.) que ya no existen en dom:
+
+- uc_builder_test.go
+- uc_child_listeners_test.go
+- uc_common_test.go (helpers: SetupDOM, TriggerEvent, GetRef, MockComponent)
+- uc_coverage_test.go
+- uc_declarative_wiring_test.go
+- uc_double_mount_test.go
+- uc_element_test.go
+- uc_elm_pattern_test.go
+- uc_event_test.go
+- uc_fluent_test.go
+- uc_focus_preserve_test.go
+- uc_hybrid_render_test.go
+- uc_lifecycle_test.go
+- uc_reference_mutation_test.go
+- uc_render_body_test.go
+- uc_selectsearch_test.go
+- uc_self_update_test.go
+- uc_update_lifecycle_test.go
+
+**Razón:** `tinywasm/dom` no puede importar `tinywasm/html` (html→dom, no al revés). Los tests de DOM lifecycle que usan builders deben vivir en `html/tests/` donde pueden importar ambos paquetes.
+
+**Estado:** Los tests en html/tests/ NO compilan hasta que el plan de tinywasm/html sea ejecutado (los builders Div, Span, etc. no existen aún). Son correctos semánticamente — el agente de html los reparará al implementar los builders.
+
+Los únicos tests que quedan en `dom/tests/`:
+- uc_documentattr_test.go
+- uc_localstorage_test.go
+
+---
+
 # PLAN: tinywasm/dom — Separación de Responsabilidades + Rename String()
 
 ## Repositorio
