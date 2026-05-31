@@ -12,7 +12,18 @@ type Element struct {
 	attrs    []fmt.KeyValue
 	events   []eventHandler
 	children []any
-	void     bool // NEW: self-closing element, no children/closing tag
+	void     bool
+}
+
+// NewElement creates an Element with the given HTML tag.
+// Used by tinywasm/html, tinywasm/svg, tinywasm/image to build elements.
+func NewElement(tag string) *Element { return &Element{tag: tag} }
+
+// NoCloseTag marks the element as self-closing (no closing tag rendered).
+// Use for void HTML elements: br, hr, img, input, link, meta, etc.
+func (b *Element) NoCloseTag() *Element {
+	b.void = true
+	return b
 }
 
 // ID sets the ID of the element.
