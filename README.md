@@ -7,7 +7,7 @@ tinywasm/dom provides a minimalist, WASM-optimized way to interact with the brow
 
 ## 🚀 Features
 
-*   **JSX-like Declarative View**: Concise nesting with `Div(H1("Title"), P("..."))`
+*   **Lifecycle & DOM API**: `Render`, `Append`, `Update`, `Get`, `OnHashChange`
 *   **Void Element Fix**: Correctly renders `<br>`, `<img>`, `<hr>` without closing tags
 *   **TinyGo Optimized**: Avoids heavy standard library packages to keep WASM binaries <500KB
 *   **Direct DOM Manipulation**: No Virtual DOM overhead. You control the updates.
@@ -28,33 +28,13 @@ For a complete example including Elm architecture (Dynamic Components) and Stati
 
 This file contains the reference implementation used for testing and demonstrations.
 
-## 🎨 JSX-like Builder API
+## 📦 Related Packages
 
-The API allows concise nesting and typed chaining:
+`tinywasm/dom` focuses on DOM manipulation and component lifecycles. HTML element builders have been moved to their own packages:
 
-```go
-import . "github.com/tinywasm/dom"
-
-import "github.com/tinywasm/css"
-
-Div(
-	H1("Welcome"),
-	P("Select an option below:"),
-	Ul(
-		Li(Button("Action 1").On("click", handleAction1)),
-		Li(Button("Action 2").On("click", handleAction2)),
-	),
-	Class(css.ClsContainer), // Using typed CSS constants
-)
-```
-
-**Available builders**:
-- **Containers**: `Div`, `Span`, `P`, `H1`-`H6`, `Ul`, `Ol`, `Li`, `Section`, `Main`, `Article`, `Header`, `Footer`, `Nav`, `Aside`, `Table`, `Thead`, `Tbody`, `Tr`, `Td`, etc.
-- **Specialized**: `Button`, `A`, `Input`, `Option`, `SelectedOption`, `Fieldset`, `Legend`, `Label`.
-- **SVG**: `Svg`, `Use`.
-
-> **Note**: Form elements with validation live in `github.com/tinywasm/form`. `dom.Input` is intended ONLY for basic layout or search boxes where full validation/form state is not required.
-- **Void Elements**: `Input`, `Img`, `Br`, `Hr`.
+- [tinywasm/html](https://github.com/tinywasm/html) — HTML element builders (Div, Span, Nav...)
+- [tinywasm/svg](https://github.com/tinywasm/svg) — SVG builders + icon sprite system
+- [tinywasm/image](https://github.com/tinywasm/image) — Image element builders
 
 ## 🔄 Lifecycle Hooks
 
@@ -91,16 +71,16 @@ All components must implement:
 type Component interface {
 	GetID() string
 	SetID(string)
-	RenderHTML() string  // OR Render() *Element
+	String() string  // OR Render() *Element
 	Children() []Component
 }
 ```
 
 **Two rendering options**:
-1. **`RenderHTML() string`** - For static components (smaller binary)
+1. **`String() string`** - For static components (smaller binary)
 2. **`Render() *dom.Element`** - For dynamic components (type-safe, composable)
 
-Components can implement **either or both**. DOM checks `Render()` first, falls back to `RenderHTML()`.
+Components can implement **either or both**. DOM checks `Render()` first, falls back to `String()`.
 
 ## 🎯 Hybrid Rendering Strategy
 
@@ -108,7 +88,7 @@ Choose the right rendering method for each component:
 
 | Component Type | Method | Benefit |
 |---------------|--------|---------|
-| **Static** (no interactivity) | `RenderHTML() string` | Smaller binary, less overhead |
+| **Static** (no interactivity) | `String() string` | Smaller binary, less overhead |
 | **Dynamic** (interactive, state) | `Render() *dom.Element` | Type-safe, composable, fluent API |
 
 See the implementation examples in **[web/client.go](web/client.go)** to see both approaches in action.
@@ -128,7 +108,7 @@ func (c *MyList) Children() []dom.Component {
 }
 
 func (c *MyList) Render() *dom.Element {
-	list := dom.Div()
+	list := html.Div()
 	for _, item := range c.items {
 		list.Add(item) // Components can be children
 	}
@@ -189,14 +169,14 @@ For more detailed information, please refer to the documentation in the `docs/` 
 2.  **[Agent Guide](AGENTS.md)**: Constraints and rules for agents (and humans) adding or modifying functionality — build split, error handling, naming, testing, and DOM boundary decisions.
 ## 🆕 What's New in v0.5.0
 
-- ✅ **Major API Redesign** - JSX-like factories (`Div(H1("Title"))`)
+- ✅ **Major API Redesign** - Builders moved to separate packages
+- ✅ **Interface Standardized** - `RenderHTML() string` → `String() string` (`fmt.Stringer`)
 - ✅ **Internal Privatization** - Cleaned up public API (privatized `EventHandler`, etc.)
 - ✅ **Void Element Rendering** - Correct HTML for `<br>`, `<img>`, `<hr>`
 - ✅ **Auto-ID Generation** - Simplified IDs without `auto-` prefix
 
-- ✅ **JSX-like factories** - Concise nesting (`Div(H1("Title"), P("..."))`)
 - ✅ **Void Element Rendering** - Correct HTML for `<br>`, `<img>`, `<hr>`
-- ✅ **Fluent Builder API** - Chainable methods (`dom.Div().ID("x").Class("y")`)
+- ✅ **Fluent Builder API** - Chainable methods (`html.Div().ID("x").Class("y")`)
 - ✅ **Hybrid rendering** - Choose DSL or string HTML per component
 - ✅ **Lifecycle hooks** - `OnMount`, `OnUpdate`, `OnUnmount`
 - ✅ **Auto-ID generation** - All components get unique IDs automatically

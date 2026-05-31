@@ -106,8 +106,8 @@ func (b *Element) SetID(id string) {
 	b.id = id
 }
 
-// RenderHTML renders the element to HTML string.
-func (b *Element) RenderHTML() string {
+// String serializes the element tree to its string representation.
+func (b *Element) String() string {
 	return elementToHTML(b)
 }
 
@@ -152,7 +152,7 @@ func elementToHTML(el *Element) string {
 		case string:
 			s += v
 		case Component:
-			s += v.RenderHTML()
+			s += v.String()
 		default:
 			s += fmt.Sprint(v)
 		}
@@ -161,74 +161,3 @@ func elementToHTML(el *Element) string {
 	return s
 }
 
-// Factory functions
-
-func Svg(children ...any) *Element { return (&Element{tag: "svg"}).Add(children...) }
-func Use(children ...any) *Element { return (&Element{tag: "use"}).Add(children...) }
-
-func Div(children ...any) *Element        { return (&Element{tag: "div"}).Add(children...) }
-func Span(children ...any) *Element       { return (&Element{tag: "span"}).Add(children...) }
-func P(children ...any) *Element          { return (&Element{tag: "p"}).Add(children...) }
-func H1(children ...any) *Element         { return (&Element{tag: "h1"}).Add(children...) }
-func H2(children ...any) *Element         { return (&Element{tag: "h2"}).Add(children...) }
-func H3(children ...any) *Element         { return (&Element{tag: "h3"}).Add(children...) }
-func H4(children ...any) *Element         { return (&Element{tag: "h4"}).Add(children...) }
-func H5(children ...any) *Element         { return (&Element{tag: "h5"}).Add(children...) }
-func H6(children ...any) *Element         { return (&Element{tag: "h6"}).Add(children...) }
-func Ul(children ...any) *Element         { return (&Element{tag: "ul"}).Add(children...) }
-func Ol(children ...any) *Element         { return (&Element{tag: "ol"}).Add(children...) }
-func Li(children ...any) *Element         { return (&Element{tag: "li"}).Add(children...) }
-func Nav(children ...any) *Element        { return (&Element{tag: "nav"}).Add(children...) }
-func Section(children ...any) *Element    { return (&Element{tag: "section"}).Add(children...) }
-func Main(children ...any) *Element       { return (&Element{tag: "main"}).Add(children...) }
-func Article(children ...any) *Element    { return (&Element{tag: "article"}).Add(children...) }
-func Header(children ...any) *Element     { return (&Element{tag: "header"}).Add(children...) }
-func Footer(children ...any) *Element     { return (&Element{tag: "footer"}).Add(children...) }
-func Aside(children ...any) *Element      { return (&Element{tag: "aside"}).Add(children...) }
-func Details(children ...any) *Element    { return (&Element{tag: "details"}).Add(children...) }
-func Summary(children ...any) *Element    { return (&Element{tag: "summary"}).Add(children...) }
-func Dialog(children ...any) *Element     { return (&Element{tag: "dialog"}).Add(children...) }
-func Figure(children ...any) *Element     { return (&Element{tag: "figure"}).Add(children...) }
-func Figcaption(children ...any) *Element { return (&Element{tag: "figcaption"}).Add(children...) }
-func Pre(children ...any) *Element        { return (&Element{tag: "pre"}).Add(children...) }
-func Code(children ...any) *Element       { return (&Element{tag: "code"}).Add(children...) }
-func Strong(children ...any) *Element     { return (&Element{tag: "strong"}).Add(children...) }
-func Small(children ...any) *Element      { return (&Element{tag: "small"}).Add(children...) }
-func Mark(children ...any) *Element       { return (&Element{tag: "mark"}).Add(children...) }
-func Table(children ...any) *Element      { return (&Element{tag: "table"}).Add(children...) }
-func Thead(children ...any) *Element      { return (&Element{tag: "thead"}).Add(children...) }
-func Tbody(children ...any) *Element      { return (&Element{tag: "tbody"}).Add(children...) }
-func Tfoot(children ...any) *Element      { return (&Element{tag: "tfoot"}).Add(children...) }
-func Tr(children ...any) *Element         { return (&Element{tag: "tr"}).Add(children...) }
-func Th(children ...any) *Element         { return (&Element{tag: "th"}).Add(children...) }
-func Td(children ...any) *Element         { return (&Element{tag: "td"}).Add(children...) }
-func Fieldset(children ...any) *Element   { return (&Element{tag: "fieldset"}).Add(children...) }
-func Legend(children ...any) *Element     { return (&Element{tag: "legend"}).Add(children...) }
-func Label(children ...any) *Element      { return (&Element{tag: "label"}).Add(children...) }
-func Canvas(children ...any) *Element     { return (&Element{tag: "canvas"}).Add(children...) }
-func Style(children ...any) *Element      { return (&Element{tag: "style"}).Add(children...) }
-func Script(children ...any) *Element     { return (&Element{tag: "script"}).Add(children...) }
-
-// Enhanced factories with key attrs as args
-func A(href string, children ...any) *Element {
-	return (&Element{tag: "a"}).Attr("href", href).Add(children...)
-}
-func Button(children ...any) *Element { return (&Element{tag: "button"}).Add(children...) }
-
-// Void element factories (void: true, no children)
-func Img(src, alt string) *Element {
-	return (&Element{tag: "img", void: true}).Attr("src", src).Attr("alt", alt)
-}
-func Br() *Element { return &Element{tag: "br", void: true} }
-func Hr() *Element { return &Element{tag: "hr", void: true} }
-func Input(typ string) *Element {
-	return (&Element{tag: "input", void: true}).Attr("type", typ)
-}
-
-// Option helpers
-func Option(value, text string) *Element {
-	return (&Element{tag: "option"}).Attr("value", value).Add(text)
-}
-func SelectedOption(value, text string) *Element {
-	return (&Element{tag: "option"}).Attr("value", value).Attr("selected", "").Add(text)
-}

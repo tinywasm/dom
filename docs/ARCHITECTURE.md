@@ -5,7 +5,7 @@
 ## 1. Core Principles & Philosophy
 - **Isomorphic Core**: Same structs compile for server (`!wasm`) and client (`wasm`).
 - **No Virtual DOM**: Uses direct `.Update()` calls instead of React-style VDOM diffing. Less memory, faster in WASM.
-- **JSX-like Builder**: Strongly-typed Go functions (e.g. `dom.Div()`, `dom.Button()`) to construct the DOM tree.
+- **DOM-Only Layer**: Provides the `Element` struct, lifecycle interfaces, and direct DOM manipulation. HTML element builders live in `tinywasm/html`, SVGs in `tinywasm/svg`, and images in `tinywasm/image`.
 - **Zero StdLib**: Uses `github.com/tinywasm/fmt` instead of `fmt`, `strings`, `errors` to reduce WASM size.
 - **Slices over Maps**: Attributes and events use `[]fmt.KeyValue` instead of `map[string]string` because maps are extremely heavy in TinyGo.
 
@@ -13,7 +13,7 @@
 
 There are three primary layers/interfaces:
 - **Global `dom` API**: `Render(parentID, comp)`, `Append(parentID, comp)`, `Update(comp)`.
-- **`Component` Interface**: `GetID()`, `SetID(id)`, `RenderHTML()`, `Children()`.
+- **`Component` Interface**: `GetID()`, `SetID(id)`, `String()`, `Children()`.
 - **`Reference` Interface**: Represents a live DOM node. Read: `GetAttr`, `Value`, `Checked`. Mutation: `SetValue`, `SetAttr`, `RemoveAttr`, `SetText`. Interaction: `On`, `Focus`.
 
 ### Mount point: always use `"app"`, never `"body"`
@@ -33,10 +33,20 @@ Render("app", &App{})
 Render("body", &App{})
 ```
 
-### The Builder (JSX-like UI construction)
-Elements are constructed declaratively:
+### Package Boundaries
+| Concern | Package |
+|---|---|
+| HTML element builders | `tinywasm/html` |
+| SVG builders + sprite | `tinywasm/svg` |
+| Image builders | `tinywasm/image` |
+| DOM manipulation, Element type, interfaces | `tinywasm/dom` (this package) |
+
+Elements are constructed declaratively using builders from sibling packages:
 ```go
-import . "github.com/tinywasm/dom"
+import (
+    . "github.com/tinywasm/html"
+    . "github.com/tinywasm/dom"
+)
 
 Div(
     H1("Welcome"),
@@ -49,8 +59,6 @@ Div(
     }),
 ).Class("container")
 ```
-- Element factories accept `...any` children — strings, numbers, and `*Element` values. Non-string values are converted via `tinywasm/fmt.Sprint`.
-- **Typing**: Some factories return specific types to allow chainable semantic methods, though most generic elements return `*Element`.
 
 ## 3. Creating Components
 
@@ -67,9 +75,9 @@ type Counter struct {
 // type Counter struct { *dom.Element; count int }
 
 func (c *Counter) Render() *dom.Element {
-	return dom.Div(
-		dom.Span("Count: ", c.count).Class("count"),
-		dom.Button("Increment").On("click", func(e dom.Event) {
+	return html.Div(
+		html.Span("Count: ", c.count).Class("count"),
+		html.Button("Increment").On("click", func(e dom.Event) {
 			c.count++
 			c.Update() // Triggers direct DOM replacement for this component only
 		}),
@@ -87,23 +95,23 @@ The canonical way to build components is to describe the entire UI and its behav
 
 ```go
 func (c *MyComponent) Render() *dom.Element {
-    toggle := dom.Input("checkbox").Class("toggle")
+    toggle := html.Input("checkbox").Class("toggle")
 
     // Declarative wiring:
-    header := dom.Label().
+    header := html.Label().
         For(toggle).                      // Type-safe pairing
         Text("Click me").
         On("click", c.onHeaderClick)       // Method reference
 
-    list := dom.Div()
+    list := html.Div()
     for _, item := range c.Items {
         item := item // Capture for closure
-        list.Add(dom.Div(item.Name).On("click", func(e dom.Event) {
+        list.Add(html.Div(item.Name).On("click", func(e dom.Event) {
             c.SelectItem(item) // Closure capture
         }))
     }
 
-    return dom.Div(toggle, header, list)
+    return html.Div(toggle, header, list)
 }
 ```
 
@@ -123,7 +131,6 @@ func (c *Counter) OnMount() { dom.Log("Mounted ID:", c.GetID()) }
 ### Component Assets (Backend only)
 To bundle styles/icons, implement these interfaces:
 - `CSSProvider`: `RenderCSS() any` (Expected to return `*css.Stylesheet` for SSR)
-- `IconSvgProvider`: `IconSvg() map[string]string`
 
 ## 4. Events
 The `dom.Event` interface provides safe access to the JS Event without `syscall/js`:
@@ -136,7 +143,7 @@ The `dom.Event` interface provides safe access to the JS Event without `syscall/
 
 ## 5. Void Elements
 The library handles self-closing tags correctly for:
-- `Input(type)`, `Img(src, alt)`, `Br()`, `Hr()`.
+- `Input(type)`, `Img(src, alt)`, `Br()`, `Hr()` (when using builders from `tinywasm/html` or `tinywasm/image`).
 These return elements with the `void` flag set, preventing the rendering of a closing tag.
 
 ## 6. Build Split Strategy

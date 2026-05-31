@@ -46,7 +46,7 @@ type DOM interface {
 type Component interface {
 	GetID() string
 	SetID(id string)
-	RenderHTML() string
+	String() string
 	Children() []Component
 }
 
@@ -82,11 +82,6 @@ type JSProvider interface {
 	RenderJS() string
 }
 
-// IconSvgProvider is an optional capability: components that expose SVG icons
-// for the global sprite sheet injected during SSR build.
-type IconSvgProvider interface {
-	IconSvg() map[string]string
-}
 
 // eventHandler represents a DOM event handler in the declarative builder.
 type eventHandler struct {
