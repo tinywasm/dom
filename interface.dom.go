@@ -46,7 +46,7 @@ type DOM interface {
 type Component interface {
 	GetID() string
 	SetID(id string)
-	RenderHTML() string
+	String() string
 	Children() []Component
 }
 
@@ -74,18 +74,6 @@ type Updatable interface {
 // Unmountable is an optional interface for components that need cleanup logic.
 type Unmountable interface {
 	OnUnmount()
-}
-
-// JSProvider is an optional capability: components that provide raw JS
-// for SSR asset collection.
-type JSProvider interface {
-	RenderJS() string
-}
-
-// IconSvgProvider is an optional capability: components that expose SVG icons
-// for the global sprite sheet injected during SSR build.
-type IconSvgProvider interface {
-	IconSvg() map[string]string
 }
 
 // eventHandler represents a DOM event handler in the declarative builder.

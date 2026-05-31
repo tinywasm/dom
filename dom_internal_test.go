@@ -117,7 +117,7 @@ func TestInternalWasm(t *testing.T) {
 
 	t.Run("renderToHTML", func(t *testing.T) {
 		childComp := &comp{id: "child-comp"}
-		parent := Div(childComp, "text")
+		parent := (&Element{tag: "div"}).Add(childComp, "text")
 		var comps []Component
 		_ = d.renderToHTML(parent, &comps, "parent-id")
 
@@ -131,7 +131,7 @@ func TestInternalWasm(t *testing.T) {
 
 		// Test with ViewRenderer
 		vr := &viewRendererComp{id: "vr-1"}
-		parent2 := Div(vr)
+		parent2 := (&Element{tag: "div"}).Add(vr)
 		var comps2 []Component
 		html2 := d.renderToHTML(parent2, &comps2, "parent-id")
 
@@ -142,15 +142,15 @@ func TestInternalWasm(t *testing.T) {
 	})
 
 	t.Run("Factories", func(t *testing.T) {
-		_ = Div("e1")
-		_ = Span("e2", "p1")
-		_ = Button("t1")
-		_ = P("t2", "p1")
+		_ = (&Element{tag: "div"}).Add("e1")
+		_ = (&Element{tag: "span"}).Add("e2", "p1")
+		_ = (&Element{tag: "button"}).Add("t1")
+		_ = (&Element{tag: "p"}).Add("t2", "p1")
 	})
 
 	t.Run("For Method", func(t *testing.T) {
-		input := Input("text")
-		label := Label().For(input)
+		input := (&Element{tag: "input", void: true}).Attr("type", "text")
+		label := (&Element{tag: "label"}).For(input)
 
 		id := input.GetID()
 		if id == "" {
@@ -178,7 +178,7 @@ type comp struct {
 
 func (c *comp) GetID() string         { return c.id }
 func (c *comp) SetID(id string)       { c.id = id }
-func (c *comp) RenderHTML() string    { return "<div></div>" }
+func (c *comp) String() string        { return "<div></div>" }
 func (c *comp) Children() []Component { return c.kids }
 
 type mountableComp struct {
@@ -201,6 +201,6 @@ type viewRendererComp struct {
 
 func (c *viewRendererComp) GetID() string         { return c.id }
 func (c *viewRendererComp) SetID(id string)       { c.id = id }
-func (c *viewRendererComp) RenderHTML() string    { return "<div></div>" }
+func (c *viewRendererComp) String() string        { return "<div></div>" }
 func (c *viewRendererComp) Children() []Component { return nil }
-func (c *viewRendererComp) Render() *Element      { return Div() }
+func (c *viewRendererComp) Render() *Element      { return &Element{tag: "div"} }

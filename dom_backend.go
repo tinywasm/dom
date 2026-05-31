@@ -23,7 +23,7 @@ func (d *domBackend) Get(id string) (Reference, bool) {
 
 // Render is not implemented for backend.
 func (d *domBackend) Render(parentID string, component Component) error {
-	return fmt.Errf("Render to parent is not supported on backend. Use RenderHTML() directly on component.")
+	return fmt.Errf("Render to parent is not supported on backend. Use String() directly on component.")
 }
 
 // Append is not implemented for backend.

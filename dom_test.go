@@ -9,7 +9,7 @@ import (
 
 func TestElementAddAttr(t *testing.T) {
 	cls := css.Class("my-class")
-	el := Div(cls.AsAttr(), fmt.KeyValue{Key: "data-test", Value: "val"})
+	el := (&Element{tag: "div"}).Add(cls.AsAttr(), fmt.KeyValue{Key: "data-test", Value: "val"})
 	html := elementToHTML(el)
 	expected := "<div class='my-class' data-test='val'></div>"
 	if html != expected {

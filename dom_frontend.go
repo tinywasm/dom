@@ -155,7 +155,7 @@ func (d *domWasm) Render(parentID string, component Component) error {
 	} else if el, ok := component.(*Element); ok {
 		html = d.renderToHTML(el, &children, component.GetID())
 	} else {
-		html = component.RenderHTML()
+		html = component.String()
 	}
 
 	parent := d.getElement(parentID)
@@ -230,7 +230,7 @@ func (d *domWasm) Update(component Component) {
 	} else if el, ok := component.(*Element); ok {
 		html = d.renderToHTML(el, &children, id)
 	} else {
-		html = component.RenderHTML()
+		html = component.String()
 	}
 
 	// Replace the element in the DOM
@@ -328,7 +328,7 @@ func (d *domWasm) Append(parentID string, component Component) error {
 	} else if el, ok := component.(*Element); ok {
 		html = d.renderToHTML(el, &children, component.GetID())
 	} else {
-		html = component.RenderHTML()
+		html = component.String()
 	}
 
 	parent := d.getElement(parentID)
@@ -435,7 +435,7 @@ func (d *domWasm) renderToHTML(el *Element, comps *[]Component, ownerID string) 
 				injectComponentID(el, childID)
 				s += d.renderToHTML(el, comps, childID)
 			} else {
-				s += v.RenderHTML()
+				s += v.String()
 			}
 		default:
 			s += fmt.Sprint(v)
