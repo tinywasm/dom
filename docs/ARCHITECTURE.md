@@ -4,7 +4,7 @@
 
 ## 1. Core Principles & Philosophy
 - **Isomorphic Core**: Same structs compile for server (`!wasm`) and client (`wasm`).
-- **No Virtual DOM**: Uses direct `.Update()` calls instead of React-style VDOM diffing. Less memory, faster in WASM.
+- **No Virtual DOM**: Fine-grained reactivity via typed Signals (`SignalString`/`SignalBool`/`SignalNodes`). Signal changes patch only the bound DOM node — O(1), no diffing, no manual `Update()` calls.
 - **DOM-Only Layer**: Provides the `Element` struct, lifecycle interfaces, and direct DOM manipulation. HTML element builders live in `tinywasm/html`, SVGs in `tinywasm/svg`, and images in `tinywasm/image`.
 - **Zero StdLib**: Uses `github.com/tinywasm/fmt` instead of `fmt`, `strings`, `errors` to reduce WASM size.
 - **Slices over Maps**: Attributes and events use `[]fmt.KeyValue` instead of `map[string]string` because maps are extremely heavy in TinyGo.
@@ -12,7 +12,7 @@
 ## 2. API Overview
 
 There are three primary layers/interfaces:
-- **Global `dom` API**: `Render(parentID, comp)`, `Append(parentID, comp)`, `Update(comp)`.
+- **Global `dom` API**: `Render(parentID, comp)`, `Append(parentID, comp)`, `SetDevMode(bool)`. (`update` is unexported — authors never call it; signals patch the DOM directly.)
 - **`Component` Interface**: `GetID()`, `SetID(id)`, `String()`, `Children()`.
 - **`Reference` Interface**: Represents a live DOM node. Read: `GetAttr`, `Value`, `Checked`. Mutation: `SetValue`, `SetAttr`, `RemoveAttr`, `SetText`. Interaction: `On`, `Focus`.
 
