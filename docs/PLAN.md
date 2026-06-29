@@ -65,7 +65,7 @@ stays unexported, using two Go techniques so the API is not polluted with engine
 | `Ctx` (+ `OnCleanup`) | `initable` interface (the `Init` hook) |
 | `Element`: `BindText(Func)`,`BindAttr(Func)`,`BindClass(Func)`,`BindAttrBool(Func)`,`Bind`,`BindChildren`,`Key`,`Autofocus` | `binding` struct, keyed-reconcile internals |
 | `Show`; `SetDevMode` | `update`, `updating`, `componentByID`, `ctxFor`, cleanup registry, auto-tracking, `devMode` field |
-| `Element`: `Text`, `Child`, `Attr`, `Class` (typed builder; **no `Add(...any)`**) | builder internals |
+| `Element`: `Text`, `Child`, `Attr`, `Class`, `Set(...fmt.KeyValue)` (typed; **no `Add(...any)`**) | builder internals, `children` storage |
 
 Two enabling rules:
 
@@ -190,34 +190,35 @@ for each binding, resolve the node by id, apply the **current** value, then
   the node is `document.activeElement`** (user is typing) to avoid cursor jumps; otherwise set
   `value` only if different. This preserves IME composition because the node is never replaced.
 
-### Specific methods over a generic `Add(...any)` — make the silent-failure bug unrepresentable
+### Typed builder — remove `Add(...any)` (consistent with `tinywasm/json`)
 
-The silent failure ("state in a plain field, mutated, UI never updates") is best prevented at the
-**type level**, not with an external linter (Go already ships `go vet`/`staticcheck`; we use those).
-The lever is the builder API: today `Add(children ...any)` (element.go:70) is a catch-all `any`
-slot where a snapshot like `Add("Hola, " + name.Get())` looks dynamic but is frozen static — no
-error.
+The ecosystem's house pattern is **typed methods per primitive, zero `any` in the data path** —
+`tinywasm/json`'s writer is exactly this (`w.String`, `w.Int`, `w.Bool`, `w.Object`, `w.Array`; `any`
+only at the I/O boundary). The DOM builder follows the same shape: **remove the generic
+`Add(children ...any)`** (element.go:70) and compose through typed methods. **No new types** — reuse
+`fmt.KeyValue` for attributes and `*Element` for children (avoid duplicate type declarations).
 
-**Rule:** dynamic content has exactly **one** path, and it is **typed to require a signal**:
-
-| Intent | Method | Argument type |
+| Intent | Method | Type (reused, no new types) |
 |---|---|---|
-| Static text (never changes) | `Text(s string)` | `string` |
-| Dynamic text | `BindText(s *SignalString)` / `BindTextFunc(fn)` | signal / closure |
-| Nest elements | `Child(...*Element)` | `*Element` |
-| Attribute / class | `Attr`/`Class` (static), `BindAttr*`/`BindClass*` (dynamic) | typed |
+| Static text | `Text(s string)` *(exists)* | `string` |
+| Nested element(s) | `Child(c ...*Element)` | `*Element` |
+| Attribute | `Attr(key, val string)` *(exists)* | `string` |
+| Class | `Class(c ...string)` *(exists)* | `string` |
+| Pre-built attrs | `Set(kv ...fmt.KeyValue)` | `fmt.KeyValue` *(reused from `fmt`)* |
+| Reactive (anything that changes) | `BindText`/`Bind`/`BindClass*`/`BindAttr*`/`BindChildren` | `*Signal*` |
 
-- **Remove `any` from the builder.** Split `Add(...any)` into typed methods (`Text`, `Child`,
-  `Attr`/`Class`). There is **no** generic slot, so "I want this to change" cannot be expressed with
-  a plain `string` — the compiler funnels the author to a `*SignalString` binding. The buggy version
-  stops compiling instead of silently doing nothing.
-- **Why this over a linter:** it is *make illegal states unrepresentable* — the Go compiler is the
-  enforcement (zero tooling to build/maintain, no false positives), and it also removes an `any` from
-  the public API, aligning with the ecosystem's "cero any" rule. Existing Go linters still cover the
-  rest.
-- **Cost (acknowledged):** `Add(...any)` is terse and used across current call sites; splitting it is
-  a breaking builder change and slightly more verbose per call (`.Text(...).Child(...)` vs one
-  `.Add(...)`). Accepted: the verbosity is the *point* — each call states its intent.
+- **Remove `Element.Add(...any)`.** Its three behaviors split into the typed methods above: `Set`
+  absorbs the current `fmt.KeyValue` handling (class/id/attr), `Text`/`Child` cover content.
+- **`tinywasm/html` migrates** its 46 variadic `Tag(children ...any)` constructors to **no-arg**
+  (`Span()`, `Div()`, `Button()`…), composing via the typed methods; constructors with semantic args
+  stay (`Input(type)`, `Option(value,text)`, `SelectedOption`, `Br`, `Hr`). See
+  tinywasm/html/docs/PLAN.md.
+- **Why now & why consistent:** matches `json`/`fmt`'s "cero any" exactly, so it is the *house* style,
+  not a new one; and the breaking churn coincides with the signals migration (same call sites) so it
+  is amortized — the master plan accepts breaking changes during active development.
+- **Honest caveat:** typing the builder does **not** by itself stop a snapshot like
+  `Text("Hola "+name.Get())`; reactivity is still guaranteed only by `BindText` requiring a signal.
+  The internal `children` storage stays an implementation detail — the harness is the public API.
 
 ---
 
@@ -410,8 +411,9 @@ with no author `Update()`.
 - `SignalString`/`SignalBool`/`SignalNodes`, `Get`/`Set`/`Toggle`/`Update`, `DeriveString`/`DeriveBool`,
   `BindText`/`BindClass`/`BindAttr`/`BindAttrBool`/`Bind`/`BindChildren`, `Show`,
   `Init`/`Ctx`/`OnCleanup`, `.Autofocus()` exist and are documented — **no generics**.
-- Builder is typed (`Text`/`Child`/`Attr`/`Class`); the generic `Add(...any)` is removed so dynamic
-  content can only be expressed through a signal binding (silent-failure bug becomes uncompilable).
+- Builder is typed (`Text`/`Child`/`Attr`/`Class`/`Set`), reusing `fmt.KeyValue` (no new types);
+  `Add(...any)` is removed and `tinywasm/html` constructors migrated to no-arg (see its plan).
+  Reactive content only via `Bind*`, which requires a signal.
 - `SetDevMode` exists; when on, `BindChildren` warns on duplicate/empty keys, the engine logs the
   reactive trace, and the harness-gap warnings fire (nil signal/bind, pointer-embedded `Element`,
   `Bind` on non-input). Signal methods are nil-safe. Off by default (production no-op).

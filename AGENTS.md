@@ -10,9 +10,10 @@ Read this before making any change.
 `dom` is the **source** of TinyWasm's construction harness: the typed, explicit API is what keeps an
 agent that doesn't know the library from building wrong code. Every API you add here must uphold it:
 
-- **Typed over `any`** — no generic slots (`func(...any)`); each method takes the type that makes
-  sense. Dynamic content has ONE path, typed to require a signal (`BindText(*SignalString)`), so the
-  silent-failure bug (plain field) does not compile.
+- **Typed over `any`** — no generic slots. The builder is typed methods (`Text`/`Child`/`Attr`/
+  `Class`/`Set(...fmt.KeyValue)`), like `tinywasm/json`'s writer, **reusing `fmt` types** (no new
+  types); `Add(...any)` is removed. Reactive content goes ONLY through a signal binding
+  (`BindText`/`Bind*`), which requires a `*Signal*`.
 - **Explicit names** — `Text` (static) vs `BindText` (reactive); reading a call states intent.
 - **Illegal states unrepresentable; fail at compile time.** What the compiler can't catch becomes a
   `devMode` warning (nil signal, `*Element` embed, bad list keys, `Bind` on non-input) — **never** a
