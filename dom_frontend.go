@@ -195,6 +195,9 @@ func (d *domWasm) Render(parentID string, component Component) error {
 	// Update lifecycle maps
 	d.trackComponent(component)
 	d.trackChildren(component.GetID(), children)
+	// Register the root component as a direct child of the DOM parent so that
+	// a subsequent Render("app", ...) can find and unmount it via cleanupChildren.
+	d.trackChildren(parentID, []Component{component})
 
 	// Set current component ID for event wiring
 	prevID := d.currentComponentID
@@ -453,6 +456,7 @@ func (d *domWasm) renderToHTML(el *Element, comps *[]Component, ownerID string) 
 	attrs := el.attrs
 	textContent := ""
 	hasTextContent := false
+	var boundChildren []*Element
 
 	for _, b := range el.bindings {
 		switch b.kind {
@@ -518,6 +522,10 @@ func (d *domWasm) renderToHTML(el *Element, comps *[]Component, ownerID string) 
 				}
 			}
 			attrs = append(attrs, fmt.KeyValue{Key: "value", Value: val})
+		case "children":
+			if sig, ok := b.signal.(*SignalNodes); ok {
+				boundChildren = append(boundChildren, sig.Get()...)
+			}
 		}
 	}
 
@@ -542,6 +550,9 @@ func (d *domWasm) renderToHTML(el *Element, comps *[]Component, ownerID string) 
 	if hasTextContent {
 		s += textContent
 	} else {
+		for _, node := range boundChildren {
+			s += d.renderToHTML(node, comps, ownerID)
+		}
 		for _, child := range el.children {
 			switch v := child.(type) {
 			case *Element:

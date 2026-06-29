@@ -7,6 +7,15 @@ import (
 	"testing"
 )
 
+func TestMain(m *testing.M) {
+	// wasmbrowsertest provides a minimal HTML page with no #app div.
+	// Create one in <body> so every test can Render("app", ...).
+	app := js.Global().Get("document").Call("createElement", "div")
+	app.Set("id", "app")
+	js.Global().Get("document").Get("body").Call("appendChild", app)
+	m.Run()
+}
+
 type counterComp struct {
 	Element
 	count *SignalString
