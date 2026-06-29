@@ -166,7 +166,9 @@ counter.SetID("my-id")        // Set custom ID
 For more detailed information, please refer to the documentation in the `docs/` directory:
 
 1.  **[Architecture & Builder API Guide](docs/ARCHITECTURE.md)**: Comprehensive guide covering the isomorphic component model, the JSX-like builder, event handling, and optimization strategies for TinyGo.
-2.  **[Agent Guide](AGENTS.md)**: Constraints and rules for agents (and humans) adding or modifying functionality — build split, error handling, naming, testing, and DOM boundary decisions.
+2.  **[Binding Model](docs/BINDING_MODEL.md)**: Modelo mental de los signals y bindings — cómo el estado reactivo (`SignalString`/`SignalBool`/`SignalNodes`) actualiza el DOM de forma quirúrgica. Empieza por aquí para construir componentes.
+3.  **[Trade-offs](docs/TRADEOFFS.md)**: Pros y contras de la arquitectura de reactividad de grano fino — comparación con re-render completo y Virtual DOM, y los costos reales (disciplina, auto-tracking, claves de listas).
+4.  **[Agent Guide](AGENTS.md)**: Constraints and rules for agents (and humans) adding or modifying functionality — build split, error handling, naming, testing, and DOM boundary decisions.
 ## 🆕 What's New in v0.5.0
 
 - ✅ **Major API Redesign** - Builders moved to separate packages

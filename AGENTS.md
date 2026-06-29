@@ -5,6 +5,27 @@ Read this before making any change.
 
 ---
 
+## Construction Harness — typed & explicit (the TinyWasm approach)
+
+`dom` is the **source** of TinyWasm's construction harness: the typed, explicit API is what keeps an
+agent that doesn't know the library from building wrong code. Every API you add here must uphold it:
+
+- **Typed over `any`** — no generic slots (`func(...any)`); each method takes the type that makes
+  sense. Dynamic content has ONE path, typed to require a signal (`BindText(*SignalString)`), so the
+  silent-failure bug (plain field) does not compile.
+- **Explicit names** — `Text` (static) vs `BindText` (reactive); reading a call states intent.
+- **Illegal states unrepresentable; fail at compile time.** What the compiler can't catch becomes a
+  `devMode` warning (nil signal, `*Element` embed, bad list keys, `Bind` on non-input) — **never** a
+  silent failure.
+- **Minimal public surface** — export only what an author types; engine plumbing (`update`,
+  `subscribe`, internal interfaces) stays unexported.
+- **Docs are minimal "how" instructions, not long skills** — if a rule must be *remembered*, close
+  it with types, not prose.
+
+(Ecosystem rationale: `tinywasm/docs/ARNES_DE_CONSTRUCCION.md`.)
+
+---
+
 ## Fundamental Constraint
 
 **`tinywasm/dom` is the only package in the tinywasm ecosystem that may import `syscall/js`.**
@@ -151,16 +172,51 @@ gotest
 
 ---
 
-## Events and Lifecycle
+## Component Contract — ONE way (signals)
 
-- Attach event handlers inside `Render()`, not inside `OnMount()`.
-- `OnMount()` is reserved for third-party JS integration or DOM geometry measurement.
-- Embed `dom.Element` **as a value**, never as a pointer.
+A component implements **only** `Render() *Element` (+ optional `Init(ctx dom.Ctx)` that runs ONCE
+before first render). There is **no** `OnMount`/`OnUpdate`/`OnUnmount` and **no** manual `Update()`
+(it is unexported). Dynamic state lives in **typed signals**; changing a signal patches only the
+bound DOM node — never re-render a whole element (no Virtual DOM).
 
 ```go
-✅ type Counter struct { dom.Element; count int }
-❌ type Counter struct { *dom.Element; count int }
+✅ type Counter struct { dom.Element; n *dom.SignalString }   // value-embed Element; state in a signal
+❌ type Counter struct { *dom.Element; count int }             // pointer embed + plain field + Update()
 ```
+
+- **Events** are declared in `Render()` via `.On(event, handler)`; the handler only mutates signals.
+- **Init** is for one-time setup (load storage, fetch, subscribe). Set signals here — even from a
+  goroutine; the bound DOM patches directly. Register teardown with `ctx.OnCleanup(fn)`.
+- Embed `dom.Element` **as a value**, never as a pointer.
+
+## No Generics
+
+The ecosystem uses **zero** generic functions and follows the `tinywasm/fmt` codec rule
+(*"cero any, cero map"*) — typed methods per primitive. Signals are concrete typed cells, not
+`Signal[T]`. The DOM boundary is `string`/`bool`, so:
+
+- `SignalString` / `SignalBool` / `SignalNodes` (+ `NewString`/`NewBool`/`NewNodes`);
+  `Get`/`Set`, and `Toggle()` on `SignalBool`.
+- Bindings (raw signal): `BindText`, `BindAttr`, `BindClass`, `BindAttrBool`, `Bind` (two-way input),
+  `BindChildren` (keyed list of `*Element`), `Key`, `Autofocus`; `Show` for conditionals.
+- Bindings (computed): `BindTextFunc`/`BindAttrFunc`/`BindClassFunc`/`BindAttrBoolFunc` take a
+  function and **auto-track** the signals it reads — no dependency list. `DeriveString`/`DeriveBool`
+  for a named shared computed value.
+
+If a numeric display is needed, format to `string` at the component. Never introduce `[T any]`.
+
+## Public vs Internal Surface — keep the API clean
+
+**Public = exactly what a component author types.** Engine plumbing stays unexported. Unexport any
+symbol that only one package uses (constants included).
+
+- `subscribable` is **unexported** (its method `subscribe` is unexported → only `dom`'s signals
+  satisfy it; authors pass concrete signals as `...subscribable` without naming it).
+- `initable` is **unexported** but its method `Init` is exported (engine asserts
+  `component.(initable)`; the author only writes `func Init(ctx dom.Ctx)` and the public `Ctx`).
+- `update` (formerly `Update`) is **unexported** — used only by `Show`/`BindChildren`. Authors
+  cannot call it: "no manual update" is enforced at compile time.
+- Signal struct fields (`v`, `subs`) stay unexported; access via `Get`/`Set` only.
 
 ---
 
