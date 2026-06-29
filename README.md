@@ -27,11 +27,13 @@ go get github.com/tinywasm/dom
 ```go
 import (
     dom "github.com/tinywasm/dom"
+    "github.com/tinywasm/fmt"
     "github.com/tinywasm/html"
 )
 
 type Counter struct {
     dom.Element
+    n     int
     count *dom.SignalString
 }
 
@@ -43,10 +45,8 @@ func (c *Counter) Render() *dom.Element {
     return html.Div(
         html.Span().BindText(c.count).Class("count"),
         html.Button("Increment").On("click", func(e dom.Event) {
-            c.count.Update(func(v string) string {
-                i, _ := strconv.Atoi(v)
-                return strconv.Itoa(i + 1)
-            })
+            c.n++
+            c.count.Set(fmt.Sprint(c.n))
         }),
     )
 }
