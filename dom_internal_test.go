@@ -117,21 +117,17 @@ func TestInternalWasm(t *testing.T) {
 
 	t.Run("renderToHTML", func(t *testing.T) {
 		childComp := &comp{id: "child-comp"}
-		parent := (&Element{tag: "div"}).Add(childComp, "text")
+		parent := (&Element{tag: "div"}).Child(childComp).Text("text")
 		var comps []Component
 		_ = d.renderToHTML(parent, &comps, "parent-id")
 
-		// Verify child component root has ID injected
-		// The comp.RenderHTML returns "<div></div>", but we are using factory Div which returns *Element
-		// Wait, comp doesn't implement ViewRenderer or elementNode, it just has RenderHTML.
-		// Let's use a better mock.
 		if len(comps) != 1 {
 			t.Errorf("expected 1 child component, got %d", len(comps))
 		}
 
 		// Test with ViewRenderer
 		vr := &viewRendererComp{id: "vr-1"}
-		parent2 := (&Element{tag: "div"}).Add(vr)
+		parent2 := (&Element{tag: "div"}).Child(vr)
 		var comps2 []Component
 		html2 := d.renderToHTML(parent2, &comps2, "parent-id")
 
@@ -142,10 +138,10 @@ func TestInternalWasm(t *testing.T) {
 	})
 
 	t.Run("Factories", func(t *testing.T) {
-		_ = (&Element{tag: "div"}).Add("e1")
-		_ = (&Element{tag: "span"}).Add("e2", "p1")
-		_ = (&Element{tag: "button"}).Add("t1")
-		_ = (&Element{tag: "p"}).Add("t2", "p1")
+		_ = (&Element{tag: "div"}).Text("e1")
+		_ = (&Element{tag: "span"}).Text("e2").Text("p1")
+		_ = (&Element{tag: "button"}).Text("t1")
+		_ = (&Element{tag: "p"}).Text("t2").Text("p1")
 	})
 
 	t.Run("For Method", func(t *testing.T) {

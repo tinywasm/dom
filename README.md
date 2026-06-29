@@ -10,9 +10,10 @@ tinywasm/dom provides a minimalist, WASM-optimized way to interact with the brow
 *   **Lifecycle & DOM API**: `Render`, `Append`, `Update`, `Get`, `OnHashChange`
 *   **Void Element Fix**: Correctly renders `<br>`, `<img>`, `<hr>` without closing tags
 *   **TinyGo Optimized**: Avoids heavy standard library packages to keep WASM binaries <500KB
-*   **Direct DOM Manipulation**: No Virtual DOM overhead. You control the updates.
-*   **ID-Based Caching**: Efficient element lookup and caching strategy
-*   **Lifecycle Hooks**: `OnMount`, `OnUpdate`, `OnUnmount` for fine-grained control
+*   **Fine-Grained Reactivity**: Surgical DOM patches via Signals (`SignalString`, `SignalBool`).
+*   **No Virtual DOM**: Zero diffing overhead; O(1) updates that preserve focus and IME.
+*   **Auto-tracking**: No manual dependency lists; signals discover their own observers.
+*   **ID-Based Caching**: Efficient element lookup and caching strategy.
 
 ## 📦 Installation
 
@@ -36,30 +37,28 @@ That file uses `tinywasm/html` for element builders and `tinywasm/dom` for lifec
 - [tinywasm/svg](https://github.com/tinywasm/svg) — SVG builders + icon sprite system
 - [tinywasm/image](https://github.com/tinywasm/image) — Image element builders
 
-## 🔄 Lifecycle Hooks
+## 🔄 Component Lifecycle
 
-Components can implement optional lifecycle interfaces:
+Components can optionally implement the `Init(dom.Ctx)` hook:
 
 ```go
 type MyComponent struct {
 	dom.Element
-	data []string
+	name *dom.SignalString
 }
 
-// Called after component is mounted to DOM
-func (c *MyComponent) OnMount() {
-	c.data = fetchData()
-	c.Update()
+// Called once when component is first mounted
+func (c *MyComponent) Init(ctx dom.Ctx) {
+	c.name = dom.NewString("World")
+	ctx.OnCleanup(func() {
+		// Cleanup resources (timers, etc)
+	})
 }
 
-// Called after re-render (dom.Update)
-func (c *MyComponent) OnUpdate() {
-	fmt.Println("Component updated")
-}
-
-// Called before component is removed
-func (c *MyComponent) OnUnmount() {
-	// Cleanup resources
+func (c *MyComponent) Render() *dom.Element {
+	return html.Div(
+		html.Span("Hello, ").BindText(c.name),
+	)
 }
 ```
 
@@ -166,9 +165,11 @@ counter.SetID("my-id")        // Set custom ID
 For more detailed information, please refer to the documentation in the `docs/` directory:
 
 1.  **[Architecture & Builder API Guide](docs/ARCHITECTURE.md)**: Comprehensive guide covering the isomorphic component model, the JSX-like builder, event handling, and optimization strategies for TinyGo.
-2.  **[Binding Model](docs/BINDING_MODEL.md)**: Modelo mental de los signals y bindings — cómo el estado reactivo (`SignalString`/`SignalBool`/`SignalNodes`) actualiza el DOM de forma quirúrgica. Empieza por aquí para construir componentes.
-3.  **[Trade-offs](docs/TRADEOFFS.md)**: Pros y contras de la arquitectura de reactividad de grano fino — comparación con re-render completo y Virtual DOM, y los costos reales (disciplina, auto-tracking, claves de listas).
-4.  **[Agent Guide](AGENTS.md)**: Constraints and rules for agents (and humans) adding or modifying functionality — build split, error handling, naming, testing, and DOM boundary decisions.
+2.  **[Design Decisions](docs/DESIGN.md)**: Rationale for Signals, no generics, and the construction harness.
+3.  **[Lifecycle Diagram](docs/diagrams/lifecycle.md)**: Mermaid flowchart of the component lifecycle.
+4.  **[Binding Model](docs/BINDING_MODEL.md)**: Mental model of how reactive state updates the DOM.
+5.  **[Trade-offs](docs/TRADEOFFS.md)**: Pros/cons of fine-grained reactivity vs VDOM.
+6.  **[Agent Guide](AGENTS.md)**: Constraints and rules for agents and human contributors.
 ## 🆕 What's New in v0.5.0
 
 - ✅ **Major API Redesign** - Builders moved to separate packages
@@ -180,7 +181,7 @@ For more detailed information, please refer to the documentation in the `docs/` 
 - ✅ **Void Element Rendering** - Correct HTML for `<br>`, `<img>`, `<hr>`
 - ✅ **Fluent Builder API** - Chainable methods (`html.Div().ID("x").Class("y")`)
 - ✅ **Hybrid rendering** - Choose DSL or string HTML per component
-- ✅ **Lifecycle hooks** - `OnMount`, `OnUpdate`, `OnUnmount`
+- ✅ **Fine-Grained Reactivity** - Typed signals (`SignalString`, `SignalBool`, `SignalNodes`)
 - ✅ **Auto-ID generation** - All components get unique IDs automatically
 
 ## 📊 Performance
