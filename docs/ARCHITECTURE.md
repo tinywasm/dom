@@ -4,7 +4,7 @@
 
 ## 1. Core Principles & Philosophy
 - **Isomorphic Core**: Same structs compile for server (`!wasm`) and client (`wasm`).
-- **No Virtual DOM**: Uses direct `.Update()` calls instead of React-style VDOM diffing. Less memory, faster in WASM.
+- **No Virtual DOM**: Fine-grained reactivity via typed Signals (`SignalString`/`SignalBool`/`SignalNodes`). Signal changes patch only the bound DOM node — O(1), no diffing, no manual `Update()` calls.
 - **DOM-Only Layer**: Provides the `Element` struct, lifecycle interfaces, and direct DOM manipulation. HTML element builders live in `tinywasm/html`, SVGs in `tinywasm/svg`, and images in `tinywasm/image`.
 - **Zero StdLib**: Uses `github.com/tinywasm/fmt` instead of `fmt`, `strings`, `errors` to reduce WASM size.
 - **Slices over Maps**: Attributes and events use `[]fmt.KeyValue` instead of `map[string]string` because maps are extremely heavy in TinyGo.
@@ -12,7 +12,7 @@
 ## 2. API Overview
 
 There are three primary layers/interfaces:
-- **Global `dom` API**: `Render(parentID, comp)`, `Append(parentID, comp)`, `Update(comp)`.
+- **Global `dom` API**: `Render(parentID, comp)`, `Append(parentID, comp)`, `SetDevMode(bool)`. (`update` is unexported — authors never call it; signals patch the DOM directly.)
 - **`Component` Interface**: `GetID()`, `SetID(id)`, `String()`, `Children()`.
 - **`Reference` Interface**: Represents a live DOM node. Read: `GetAttr`, `Value`, `Checked`. Mutation: `SetValue`, `SetAttr`, `RemoveAttr`, `SetText`. Interaction: `On`, `Focus`.
 
@@ -68,78 +68,80 @@ A component is a Go struct that embeds `dom.Element` **as a value** (never as a 
 // ✅ CORRECT — value embed: 1 allocation, no nil-panic risk, better GC in TinyGo.
 type Counter struct {
 	dom.Element
-	count int
+	count *dom.SignalString
 }
 
-// ❌ WRONG — pointer embed: 2 allocations, nil-panic risk, heavier GC pressure.
-// type Counter struct { *dom.Element; count int }
+func (c *Counter) Init(ctx dom.Ctx) {
+	c.count = dom.NewString("0")
+}
 
 func (c *Counter) Render() *dom.Element {
 	return html.Div(
-		html.Span("Count: ", c.count).Class("count"),
+		html.Span().BindText(c.count).Class("count"),
 		html.Button("Increment").On("click", func(e dom.Event) {
-			c.count++
-			c.Update() // Triggers direct DOM replacement for this component only
+			c.count.Update(func(v string) string {
+				i, _ := strconv.Atoi(v)
+				return strconv.Itoa(i + 1)
+			})
 		}),
 	).Class("counter")
 }
 ```
 
+Reactivity is achieved through **Signals**. When a signal changes, only the bound DOM nodes are updated. No `Update()` calls are needed.
+
 ### Component Patterns: Declarative Wiring (The Canonical Way)
 
 The canonical way to build components is to describe the entire UI and its behavior inside `Render()`.
 
-1.  **Events in Render**: Attach event listeners directly to elements using `.On(eventType, handler)`. The framework handles re-wiring automatically during `Update()`.
-2.  **Type-safe Pairing**: Use `.For(other *Element)` for `<label for>` pairing instead of hardcoded strings. It auto-generates IDs lazily.
-3.  **Closures for Lists**: Use Go closures to capture state (like loop variables) for dynamic lists.
+1.  **Events in Render**: Attach event listeners directly to elements using `.On(eventType, handler)`.
+2.  **Bindings in Render**: Use `.BindText()`, `.BindClass()`, etc., to link signals to DOM attributes or content.
+3.  **Type-safe Pairing**: Use `.For(other *Element)` for `<label for>` pairing.
+4.  **Autofocus**: Use `.Autofocus()` to focus an element when it first appears.
 
 ```go
 func (c *MyComponent) Render() *dom.Element {
     toggle := html.Input("checkbox").Class("toggle")
 
-    // Declarative wiring:
-    header := html.Label().
-        For(toggle).                      // Type-safe pairing
-        Text("Click me").
-        On("click", c.onHeaderClick)       // Method reference
-
-    list := html.Div()
-    for _, item := range c.Items {
-        item := item // Capture for closure
-        list.Add(html.Div(item.Name).On("click", func(e dom.Event) {
-            c.SelectItem(item) // Closure capture
-        }))
-    }
-
-    return html.Div(toggle, header, list)
+    return html.Div(
+        html.Label().For(toggle).Text("Click me"),
+        toggle,
+    )
 }
 ```
 
-Avoid using `OnMount()` for internal event wiring. `OnMount()` should be reserved for third-party JS integration or measuring DOM geometry.
-```
-
-**Why value embed?** TinyGo has a simple GC — fewer heap objects means fewer pauses. Value embedding keeps the struct and its `Element` identity in a single allocation with better cache locality.
+**Why value embed?** TinyGo has a simple GC — value embedding keeps the struct and its `Element` identity in a single allocation.
 
 ### Component Lifecycle (WASM only)
-If a component implements `Mountable`, `OnMount()` is called after injection.
-```go
-//go:build wasm
-func (c *Counter) OnMount() { dom.Log("Mounted ID:", c.GetID()) }
-```
-**Recursive Lifecycle**: If a component has child components, it MUST implement `Children() []dom.Component` so the framework knows to trigger the child's `OnMount`.
+1. **`Init(ctx dom.Ctx)` (Optional)**: Called once when the component is first mounted. Use it to initialize signals or register cleanups via `ctx.OnCleanup(fn)`.
+2. **`Render() *dom.Element`**: Called once to build the initial DOM tree.
+3. **Signal Patches**: When a signal changes, the engine surgically updates the bound DOM node.
+4. **Cleanup**: When a component is unmounted, all its signal subscriptions and `OnCleanup` functions are automatically executed.
 
 ### Component Assets (Backend only)
 To bundle styles/icons, implement these interfaces:
 - `CSSProvider`: `RenderCSS() any` (Expected to return `*css.Stylesheet` for SSR)
 
-## 4. Events
+## 4. Events & Bindings
+
+### Events
 The `dom.Event` interface provides safe access to the JS Event without `syscall/js`:
 - `PreventDefault()`, `StopPropagation()`
-- `TargetValue() string` (Extremely useful for `dom.Input("text")` and `<select>`)
+- `TargetValue() string`
 - `TargetID() string`
 
-> [!IMPORTANT]
-> `dom.Input` should be used only for basic layout elements (like a toggle checkbox or a simple search box). For any input that requires validation, labels, or form state management, you MUST use `github.com/tinywasm/form/input`.
+### Bindings (Reactivity)
+Bindings link a `Signal` to a DOM property. When the signal's value changes, the DOM is patched automatically.
+
+- `.BindText(s *SignalString)`: `textContent` tracks the signal.
+- `.BindAttr(name string, s *SignalString)`: Attribute tracks the signal.
+- `.BindClass(class string, on *SignalBool)`: Class is toggled based on the signal.
+- `.BindAttrBool(name string, on *SignalBool)`: Boolean attribute (e.g., `disabled`, `checked`) tracks the signal.
+- `.Bind(s *SignalString)`: Two-way binding for `<input>` and `<textarea>`.
+
+### Reactive Structure
+- `Show(cond *SignalBool, render func() *Element)`: Mounts/unmounts a subtree based on a condition.
+- `BindChildren(s *SignalNodes)`: A container whose children track a list of nodes. Use `.Key(string)` on child elements for stable identity during reconciliation.
 
 ## 5. Void Elements
 The library handles self-closing tags correctly for:

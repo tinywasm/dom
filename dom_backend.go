@@ -31,8 +31,8 @@ func (d *domBackend) Append(parentID string, component Component) error {
 	return fmt.Errf("Append not supported in backend/stub")
 }
 
-// Update is not implemented for backend.
-func (d *domBackend) Update(component Component) {
+// update is not implemented for backend.
+func (d *domBackend) update(id string) {
 }
 
 // unmount is not implemented for backend.
@@ -40,6 +40,15 @@ func (d *domBackend) unmount(component Component) {
 }
 
 func (d *domBackend) OnHashChange(handler func(hash string)) {}
+
+// Show is implemented for SSR.
+func Show(cond *SignalBool, render func() *Element) *Element {
+	container := NewElement("div")
+	if cond.Get() {
+		container.children = append(container.children, render())
+	}
+	return container
+}
 func (d *domBackend) GetHash() string                        { return "" }
 func (d *domBackend) SetHash(hash string)                    {}
 

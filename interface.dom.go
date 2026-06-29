@@ -4,9 +4,9 @@ package dom
 // It is designed to be injected into your components.
 type DOM interface {
 	// Render injecta un componente en un elemento padre.
-	// 1. Llama a componente.Render() (si es ViewRenderer) o componente.RenderHTML()
-	// 2. Establece el contenido del elemento padre (buscado por parentID)
-	// 3. Llama a componente.OnMount() para enlazar eventos
+	// 1. Llama a componente.Init(ctx) si existe (una sola vez)
+	// 2. Llama a componente.Render() para obtener el árbol de elementos
+	// 3. Inyecta el HTML resultante y enlaza bindings y eventos
 	Render(parentID string, component Component) error
 
 	// Append injecta un componente DESPUÉS del último hijo del elemento padre.
@@ -21,9 +21,6 @@ type DOM interface {
 
 	// SetHash actualiza el hash de la URL.
 	SetHash(hash string)
-
-	// Update re-renderiza el componente en su posición actual en el DOM.
-	Update(component Component)
 
 	// Get retrieves an element by ID.
 	Get(id string) (Reference, bool)
@@ -61,19 +58,16 @@ type elementNode interface {
 	AsElement() *Element
 }
 
-// Mountable is an optional interface for components that need initialization logic.
-type Mountable interface {
-	OnMount()
+// Ctx is handed to the Init hook. Register teardown for async resources (timers, websockets).
+type Ctx interface {
+	OnCleanup(fn func())
 }
 
-// Updatable is an optional interface for components that need update logic.
-type Updatable interface {
-	OnUpdate()
-}
-
-// Unmountable is an optional interface for components that need cleanup logic.
-type Unmountable interface {
-	OnUnmount()
+// initable is unexported but its method Init is exported.
+// The engine asserts component.(initable) while the author only writes
+// func Init(ctx dom.Ctx) and never sees the interface.
+type initable interface {
+	Init(Ctx)
 }
 
 // eventHandler represents a DOM event handler in the declarative builder.

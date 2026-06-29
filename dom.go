@@ -12,7 +12,8 @@ var (
 
 // tinyDOM contains shared functionality between backend and WASM implementations.
 type tinyDOM struct {
-	log func(v ...any)
+	log     func(v ...any)
+	devMode bool
 }
 
 // generateID creates a unique ID for a component.
@@ -31,10 +32,6 @@ func Append(parentID string, component Component) error {
 	return instance.Append(parentID, component)
 }
 
-// Update re-renders a component.
-func Update(component Component) {
-	instance.Update(component)
-}
 
 // Log provides logging functionality.
 func Log(v ...any) {
@@ -64,6 +61,11 @@ func SetHash(hash string) {
 // SetLog sets the logging function.
 func SetLog(log func(v ...any)) {
 	shared.log = log
+}
+
+// SetDevMode enables or disables development mode features.
+func SetDevMode(on bool) {
+	shared.devMode = on
 }
 
 // injectComponentID sets the component ID on the root element if not already set.

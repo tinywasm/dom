@@ -1,196 +1,162 @@
 # tinywasm/dom
 <img src="docs/img/badges.svg">
 
-> **Ultra-minimal DOM & event toolkit for Go (TinyGo WASM-optimized).**
+> **Ultra-minimal DOM & reactivity toolkit for Go (TinyGo WASM-optimized).**
 
-tinywasm/dom provides a minimalist, WASM-optimized way to interact with the browser DOM in Go, avoiding the overhead of the standard library and `syscall/js` exposure. It is designed specifically for **TinyGo** applications where binary size and performance are critical.
+`tinywasm/dom` provides a type-safe, fine-grained reactive engine over the browser DOM for TinyGo/WASM. State lives in typed Signals; changing a signal patches only the bound DOM node — no Virtual DOM, no manual `Update()` calls, no re-renders.
 
-## 🚀 Features
+## Features
 
-*   **Lifecycle & DOM API**: `Render`, `Append`, `Update`, `Get`, `OnHashChange`
-*   **Void Element Fix**: Correctly renders `<br>`, `<img>`, `<hr>` without closing tags
-*   **TinyGo Optimized**: Avoids heavy standard library packages to keep WASM binaries <500KB
-*   **Direct DOM Manipulation**: No Virtual DOM overhead. You control the updates.
-*   **ID-Based Caching**: Efficient element lookup and caching strategy
-*   **Lifecycle Hooks**: `OnMount`, `OnUpdate`, `OnUnmount` for fine-grained control
+- **Fine-Grained Reactivity**: `SignalString` / `SignalBool` / `SignalNodes` — O(1) surgical patches that preserve focus and IME composition.
+- **Auto-tracking**: `BindTextFunc` / `DeriveString` discover dependencies automatically — no explicit dep lists.
+- **Typed builder**: `Text`, `Child`, `Attr`, `Class`, `Set(kv ...fmt.KeyValue)` — no `Add(...any)`.
+- **Two-method contract**: `Render() *Element` (pure, once per mount) + optional `Init(ctx dom.Ctx)` (side effects, once ever).
+- **Keyed lists & conditional subtrees**: `BindChildren(SignalNodes)` + `Show(cond, renderFn)`.
+- **No Virtual DOM**: Zero diffing; nodes are never replaced unless structure truly changes.
+- **TinyGo Optimized**: Zero stdlib; `tinywasm/fmt` for logs; slices over maps; `<500KB` WASM binaries.
+- **Isomorphic**: same `Render()` produces correct SSR HTML on backend and live WASM on frontend.
 
-## 📦 Installation
+## Installation
 
 ```bash
 go get github.com/tinywasm/dom
 ```
 
-## ⚡ Quick Start
+## Quick Start
 
-For a complete example including Elm architecture (Dynamic Components) and Static Components, see:
+```go
+import (
+    dom "github.com/tinywasm/dom"
+    "github.com/tinywasm/html"
+)
 
-👉 **[tinywasm/html — web/client.go](https://github.com/tinywasm/html/blob/main/web/client.go)**
+type Counter struct {
+    dom.Element
+    count *dom.SignalString
+}
 
-That file uses `tinywasm/html` for element builders and `tinywasm/dom` for lifecycle (Render, Update, Append).
+func (c *Counter) Init(ctx dom.Ctx) {
+    c.count = dom.NewString("0")
+}
 
-## 📦 Related Packages
+func (c *Counter) Render() *dom.Element {
+    return html.Div(
+        html.Span().BindText(c.count).Class("count"),
+        html.Button("Increment").On("click", func(e dom.Event) {
+            c.count.Update(func(v string) string {
+                i, _ := strconv.Atoi(v)
+                return strconv.Itoa(i + 1)
+            })
+        }),
+    )
+}
 
-`tinywasm/dom` focuses on DOM manipulation and component lifecycles. HTML element builders have been moved to their own packages:
+func main() {
+    d := dom.New(...)
+    d.Render("app", &Counter{})
+}
+```
 
-- [tinywasm/html](https://github.com/tinywasm/html) — HTML element builders (Div, Span, Nav...)
-- [tinywasm/svg](https://github.com/tinywasm/svg) — SVG builders + icon sprite system
+## Component Contract
+
+| Method | Role | Cardinality |
+|---|---|---|
+| `Render() *Element` | Pure: state → structure, no side effects | Once per mount |
+| `Init(ctx dom.Ctx)` | Imperative: create signals, load storage, start timers | Exactly once |
+
+`Init` is optional — only add it when there is setup to do.
+
+## Signals
+
+```go
+// String cell — UI text, attr, input state
+name := dom.NewString("World")
+name.Get()           // "World"
+name.Set("Alice")    // notifies all bindings
+name.Update(func(v string) string { return v + "!" })
+
+// Bool cell — class/attr toggles, Show conditions
+active := dom.NewBool(false)
+active.Toggle()
+
+// List of rendered rows — keyed reconcile
+rows := dom.NewNodes(elem1, elem2)
+rows.Set(newRows)
+
+// Derived (auto-tracking — no deps list)
+full := dom.DeriveString(func() string { return first.Get() + " " + last.Get() })
+```
+
+## Element Builder
+
+```go
+html.Div().
+    Class("card").
+    Attr("role", "region").
+    Child(
+        html.Span().BindText(name),
+        html.Input("text").Bind(name),           // two-way
+        html.Button("Save").BindAttrBool("disabled", saving),
+    )
+```
+
+Binding methods:
+
+| Method | DOM target |
+|---|---|
+| `.BindText(s *SignalString)` | `textContent` |
+| `.BindAttr(name, s)` | attribute value |
+| `.BindClass(class, on)` | class toggle |
+| `.BindAttrBool(name, on)` | boolean attribute (`disabled`, `checked`…) |
+| `.Bind(s)` | two-way `<input>`/`<textarea>` |
+| `.BindChildren(s *SignalNodes)` | keyed child list |
+| `.BindTextFunc(fn)` | computed text (auto-tracking) |
+| `.Autofocus()` | focus on first appearance |
+
+Structural:
+
+```go
+dom.Show(visible, func() *dom.Element { return html.Div(...) })  // mount/unmount subtree
+html.Ul().BindChildren(c.rows)                                    // keyed list
+```
+
+## Lifecycle
+
+```
+Init (once) → Render → wire bindings & events
+signal.Set  → patch bound node (O(1))
+unmount     → run OnCleanup + unsubscribe signals
+```
+
+## Mount Point
+
+Always `"app"`, never `"body"` — `Render("body", ...)` overwrites `innerHTML` and destroys the SVG sprite injected by `tinywasm/assetmin`.
+
+## Dev Mode
+
+```go
+dom.SetDevMode(true) // enabled at runtime; default false (production no-op)
+```
+
+When on:
+- Reactive trace: logs `signal.Set → patch #node-id`
+- `BindChildren` warns on duplicate/empty keys
+- Nil signal / non-input `.Bind` / pointer-embedded `Element` emit warnings instead of panicking
+
+## Related Packages
+
+- [tinywasm/html](https://github.com/tinywasm/html) — HTML element builders (no-arg: `Div()`, `Span()`, `Button()`…)
+- [tinywasm/svg](https://github.com/tinywasm/svg) — SVG builders + icon sprite
 - [tinywasm/image](https://github.com/tinywasm/image) — Image element builders
 
-## 🔄 Lifecycle Hooks
+## Documentation
 
-Components can implement optional lifecycle interfaces:
-
-```go
-type MyComponent struct {
-	dom.Element
-	data []string
-}
-
-// Called after component is mounted to DOM
-func (c *MyComponent) OnMount() {
-	c.data = fetchData()
-	c.Update()
-}
-
-// Called after re-render (dom.Update)
-func (c *MyComponent) OnUpdate() {
-	fmt.Println("Component updated")
-}
-
-// Called before component is removed
-func (c *MyComponent) OnUnmount() {
-	// Cleanup resources
-}
-```
-
-## 📝 Component Interface
-
-All components must implement:
-
-```go
-type Component interface {
-	GetID() string
-	SetID(string)
-	String() string  // OR Render() *Element
-	Children() []Component
-}
-```
-
-**Two rendering options**:
-1. **`String() string`** - For static components (smaller binary)
-2. **`Render() *dom.Element`** - For dynamic components (type-safe, composable)
-
-Components can implement **either or both**. DOM checks `Render()` first, falls back to `String()`.
-
-## 🎯 Hybrid Rendering Strategy
-
-Choose the right rendering method for each component:
-
-| Component Type | Method | Benefit |
-|---------------|--------|---------|
-| **Static** (no interactivity) | `String() string` | Smaller binary, less overhead |
-| **Dynamic** (interactive, state) | `Render() *dom.Element` | Type-safe, composable, fluent API |
-
-See the implementation examples in **[web/client.go](web/client.go)** to see both approaches in action.
-
-## 🧩 Nested Components
-
-Components can contain child components:
-
-```go
-type MyList struct {
-	dom.Element
-	items []dom.Component
-}
-
-func (c *MyList) Children() []dom.Component {
-	return c.items
-}
-
-func (c *MyList) Render() *dom.Element {
-	list := html.Div()
-	for _, item := range c.items {
-		list.Add(item) // Components can be children
-	}
-	return list
-}
-```
-
-When you call `dom.Render("app", myList)`, the library will:
-1. Render the HTML
-2. Call `OnMount()` for `MyList`
-3. Recursively call `OnMount()` for all `items`
-
-The same recursion applies to cleanup, ensuring all event listeners are cleaned up when a parent is replaced.
-
-## 🎯 Event Handling
-
-Event handling is integrated directly into the Builder API via `On(eventType, handler)`.
-
-
-## 🔧 Core API
-
-### Package Functions
-
-```go
-// Rendering
-dom.Render(parentID, component)  // Replace parent's content
-dom.Append(parentID, component)  // Append after last child
-dom.Update(component)            // Re-render in place
-dom.Get(id)                      // Get a DOM Reference (value, focus, events)
-
-// Routing (hash-based)
-dom.OnHashChange(handler)        // Listen to hash changes
-dom.GetHash()                    // Get current hash
-dom.SetHash(hash)                // Set hash
-```
-
-### Element Helpers
-
-Embedding `dom.Element` provides these methods automatically:
-
-```go
-type Counter struct {
-	dom.Element
-	count int
-}
-
-// Chainable helpers
-counter.Update()              // Trigger re-render
-counter.GetID()               // Get unique ID
-counter.SetID("my-id")        // Set custom ID
-```
-
-## 📚 Documentation
-
-For more detailed information, please refer to the documentation in the `docs/` directory:
-
-1.  **[Architecture & Builder API Guide](docs/ARCHITECTURE.md)**: Comprehensive guide covering the isomorphic component model, the JSX-like builder, event handling, and optimization strategies for TinyGo.
-2.  **[Binding Model](docs/BINDING_MODEL.md)**: Modelo mental de los signals y bindings — cómo el estado reactivo (`SignalString`/`SignalBool`/`SignalNodes`) actualiza el DOM de forma quirúrgica. Empieza por aquí para construir componentes.
-3.  **[Trade-offs](docs/TRADEOFFS.md)**: Pros y contras de la arquitectura de reactividad de grano fino — comparación con re-render completo y Virtual DOM, y los costos reales (disciplina, auto-tracking, claves de listas).
-4.  **[Agent Guide](AGENTS.md)**: Constraints and rules for agents (and humans) adding or modifying functionality — build split, error handling, naming, testing, and DOM boundary decisions.
-## 🆕 What's New in v0.5.0
-
-- ✅ **Major API Redesign** - Builders moved to separate packages
-- ✅ **Interface Standardized** - `RenderHTML() string` → `String() string` (`fmt.Stringer`)
-- ✅ **Internal Privatization** - Cleaned up public API (privatized `EventHandler`, etc.)
-- ✅ **Void Element Rendering** - Correct HTML for `<br>`, `<img>`, `<hr>`
-- ✅ **Auto-ID Generation** - Simplified IDs without `auto-` prefix
-
-- ✅ **Void Element Rendering** - Correct HTML for `<br>`, `<img>`, `<hr>`
-- ✅ **Fluent Builder API** - Chainable methods (`html.Div().ID("x").Class("y")`)
-- ✅ **Hybrid rendering** - Choose DSL or string HTML per component
-- ✅ **Lifecycle hooks** - `OnMount`, `OnUpdate`, `OnUnmount`
-- ✅ **Auto-ID generation** - All components get unique IDs automatically
-
-## 📊 Performance
-
-**Binary Size** (TinyGo WASM):
-- Simple counter app: ~35KB (compressed)
-- Todo list with 10 components: ~120KB (compressed)
-- Full application: <500KB (compressed)
-
-**Compared to standard library approach**: 60-80% smaller binaries.
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — component model, builder API, lifecycle
+- [docs/DESIGN.md](docs/DESIGN.md) — decision record: why signals, no generics, auto-tracking
+- [docs/BINDING_MODEL.md](docs/BINDING_MODEL.md) — mental model with worked examples
+- [docs/diagrams/lifecycle.md](docs/diagrams/lifecycle.md) — Mermaid lifecycle flowchart
+- [docs/TRADEOFFS.md](docs/TRADEOFFS.md) — fine-grained reactivity vs VDOM trade-offs
+- [AGENTS.md](AGENTS.md) — constraints for agents and contributors
 
 ## License
 
