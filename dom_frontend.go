@@ -908,6 +908,30 @@ func (d *domWasm) wireBindings(id string) {
 	}
 }
 
+// boolPropName maps a boolean content attribute to its live IDL property name.
+// These properties drift from the content attribute after user interaction, so a
+// signal-driven attrbool binding must set the property, not just the attribute.
+func boolPropName(attr string) (string, bool) {
+	switch attr {
+	case "checked":
+		return "checked", true
+	case "disabled":
+		return "disabled", true
+	case "selected":
+		return "selected", true
+	case "multiple":
+		return "multiple", true
+	case "open":
+		return "open", true
+	case "hidden":
+		return "hidden", true
+	case "readonly":
+		return "readOnly", true
+	default:
+		return "", false
+	}
+}
+
 func (d *domWasm) wireElementBindings(el *Element, ownerID string) {
 	if el == nil {
 		return
@@ -994,6 +1018,16 @@ func (d *domWasm) wireElementBindings(el *Element, ownerID string) {
 					ref.SetAttr(b.name, "")
 				} else {
 					ref.RemoveAttr(b.name)
+				}
+				// Boolean form attributes (checked, disabled, selected, ...) have a live
+				// IDL property that does NOT follow the content attribute once the user has
+				// interacted with the control. Setting only the attribute leaves the property
+				// stale: e.g. a checkbox bound to a signal stays .checked==true after the
+				// attribute is removed, so the next user click toggles property→false and the
+				// "change" event reports the wrong state (requiring a second click). Keep the
+				// property in sync explicitly.
+				if prop, ok := boolPropName(b.name); ok {
+					ref.(*elementWasm).val.Set(prop, on)
 				}
 				if d.devMode {
 					d.Log("[dom] patch #"+el.id+" attrbool "+b.name+":", on)

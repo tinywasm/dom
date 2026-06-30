@@ -63,6 +63,43 @@ func TestBindText_UpdatesDOM(t *testing.T) {
 	}
 }
 
+// CheckboxComp — regression: BindAttrBool("checked", sig) only set the content
+// attribute. After a user toggles the checkbox, the live `.checked` IDL property
+// no longer follows the attribute, so sig.Set(false) left the property stale at
+// true. The next user click then toggled property→false and the "change" event
+// reported the wrong state, so a CSS/JS toggle driven by the checkbox needed a
+// second click to react ("works on the second time").
+type CheckboxComp struct {
+	Element
+	open *SignalBool
+}
+
+func (c *CheckboxComp) Init(_ Ctx) { c.open = NewBool(true) }
+func (c *CheckboxComp) Render() *Element {
+	return NewElement("input").ID("cbx").Attr("type", "checkbox").
+		BindAttrBool("checked", c.open)
+}
+
+func TestBindAttrBool_SyncsCheckedProperty(t *testing.T) {
+	setupBindRoot()
+	comp := &CheckboxComp{}
+	comp.SetID("cbx-root")
+	if err := Render("bind-root", comp); err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+
+	cbx := js.Global().Get("document").Call("getElementById", "cbx")
+	if !cbx.Get("checked").Bool() {
+		t.Fatalf("initial: .checked property want true, got false")
+	}
+
+	comp.open.Set(false)
+
+	if cbx.Get("checked").Bool() {
+		t.Errorf("after Set(false): .checked property still true — attrbool binding did not sync the live property (would require a second user click to toggle)")
+	}
+}
+
 // ChildBindComp / ParentWithChild — regression: child components embedded
 // inside a parent's Render() never had wireBindings called for them, so their
 // BindText/BindAttr bindings were never wired and signals had no DOM effect.

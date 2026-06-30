@@ -4,6 +4,30 @@ import (
 	"testing"
 )
 
+// TestSignal_NotifyNotSkippedByResubscribe is a regression test: a DeriveString
+// updater unsubscribes+re-subscribes itself while a Set is notifying. That mutates
+// the subs slice mid-iteration, so a sibling subscriber registered right after the
+// derived one used to be skipped (range advanced past the index that shifted down).
+// Symptom in the wild: a BindTextFunc icon lagged one click behind a BindAttr title
+// that shared the same signal. notify() iterates a snapshot to prevent the skip.
+func TestSignal_NotifyNotSkippedByResubscribe(t *testing.T) {
+	source := NewString("a")
+	// Subscribes to source first AND re-subscribes itself on every change.
+	_ = DeriveString(func() string { return source.Get() })
+
+	fired := 0
+	source.subscribe(func() { fired++ })
+
+	source.Set("b")
+	if fired != 1 {
+		t.Fatalf("sibling subscriber skipped on 1st set: fired=%d, want 1", fired)
+	}
+	source.Set("c")
+	if fired != 2 {
+		t.Fatalf("sibling subscriber skipped on 2nd set: fired=%d, want 2", fired)
+	}
+}
+
 func TestSignalString(t *testing.T) {
 	s := NewString("hello")
 	if s.Get() != "hello" {
