@@ -54,7 +54,11 @@ type domWasm struct {
 		id    string
 		unsub func()
 	}
-	updating []string
+	updating     []string
+	rootElements []struct {
+		id   string
+		root *Element
+	}
 }
 
 // newDom returns a new instance of the domWasm.
@@ -170,14 +174,18 @@ func (d *domWasm) Render(parentID string, component Component) error {
 	var children []Component
 	var html string
 
+	var renderedRoot *Element
 	if vr, ok := component.(ViewRenderer); ok {
 		root := vr.Render()
 		injectComponentID(root, component.GetID())
 		html = d.renderToHTML(root, &children, component.GetID())
+		renderedRoot = root
 	} else if en, ok := component.(elementNode); ok {
-		html = d.renderToHTML(en.AsElement(), &children, component.GetID())
+		renderedRoot = en.AsElement()
+		html = d.renderToHTML(renderedRoot, &children, component.GetID())
 	} else if el, ok := component.(*Element); ok {
-		html = d.renderToHTML(el, &children, component.GetID())
+		renderedRoot = el
+		html = d.renderToHTML(renderedRoot, &children, component.GetID())
 	} else {
 		html = component.String()
 	}
@@ -194,6 +202,9 @@ func (d *domWasm) Render(parentID string, component Component) error {
 
 	// Update lifecycle maps
 	d.trackComponent(component)
+	if renderedRoot != nil {
+		d.storeRoot(component.GetID(), renderedRoot)
+	}
 	d.trackChildren(component.GetID(), children)
 	// Register the root component as a direct child of the DOM parent so that
 	// a subsequent Render("app", ...) can find and unmount it via cleanupChildren.
@@ -377,14 +388,18 @@ func (d *domWasm) Append(parentID string, component Component) error {
 
 	var children []Component
 	var html string
+	var appendRoot *Element
 	if vr, ok := component.(ViewRenderer); ok {
 		root := vr.Render()
 		injectComponentID(root, component.GetID())
 		html = d.renderToHTML(root, &children, component.GetID())
+		appendRoot = root
 	} else if en, ok := component.(elementNode); ok {
-		html = d.renderToHTML(en.AsElement(), &children, component.GetID())
+		appendRoot = en.AsElement()
+		html = d.renderToHTML(appendRoot, &children, component.GetID())
 	} else if el, ok := component.(*Element); ok {
-		html = d.renderToHTML(el, &children, component.GetID())
+		appendRoot = el
+		html = d.renderToHTML(appendRoot, &children, component.GetID())
 	} else {
 		html = component.String()
 	}
@@ -396,6 +411,9 @@ func (d *domWasm) Append(parentID string, component Component) error {
 	parent.Call("insertAdjacentHTML", "beforeend", html)
 
 	d.trackComponent(component)
+	if appendRoot != nil {
+		d.storeRoot(component.GetID(), appendRoot)
+	}
 	d.trackChildren(component.GetID(), children)
 
 	prevID := d.currentComponentID
@@ -577,13 +595,16 @@ func (d *domWasm) renderToHTML(el *Element, comps *[]Component, ownerID string) 
 					root := vr.Render()
 					injectComponentID(root, childID)
 					s += d.renderToHTML(root, comps, childID)
+					d.storeRoot(childID, root)
 				} else if en, ok := v.(elementNode); ok {
 					root := en.AsElement()
 					injectComponentID(root, childID)
 					s += d.renderToHTML(root, comps, childID)
+					d.storeRoot(childID, root)
 				} else if el, ok := v.(*Element); ok {
 					injectComponentID(el, childID)
 					s += d.renderToHTML(el, comps, childID)
+					d.storeRoot(childID, el)
 				} else {
 					s += v.String()
 				}
@@ -604,14 +625,14 @@ func (d *domWasm) mountRecursive(c Component) {
 	d.currentComponentID = c.GetID()
 	defer func() { d.currentComponentID = prevID }()
 
-	// Mount children (for HTMLRenderer primarily)
+	// Wire bindings for this child component using the stored root from renderToHTML.
+	d.wireBindings(c.GetID())
+
 	for _, child := range c.Children() {
 		if child != nil {
 			d.mountRecursive(child)
 		}
 	}
-
-	// Children tracked in maps are mounted in Render/Update loop
 }
 
 func (d *domWasm) unmountRecursive(c Component) {
@@ -667,6 +688,7 @@ func (d *domWasm) unmountRecursive(c Component) {
 	d.cleanupSignalSubscriptions(c.GetID())
 	d.runCleanups(c.GetID())
 	d.untrackComponent(c.GetID())
+	d.clearRoot(c.GetID())
 
 	// Remove from initedIDs so it can be re-inited if re-mounted
 	for i, initedID := range d.initedIDs {
@@ -722,6 +744,39 @@ func (d *domWasm) trackComponent(c Component) {
 		id   string
 		comp Component
 	}{id, c})
+}
+
+func (d *domWasm) storeRoot(id string, root *Element) {
+	for i, item := range d.rootElements {
+		if item.id == id {
+			d.rootElements[i].root = root
+			return
+		}
+	}
+	d.rootElements = append(d.rootElements, struct {
+		id   string
+		root *Element
+	}{id, root})
+}
+
+func (d *domWasm) loadRoot(id string) (*Element, bool) {
+	for _, item := range d.rootElements {
+		if item.id == id {
+			return item.root, true
+		}
+	}
+	return nil, false
+}
+
+func (d *domWasm) clearRoot(id string) {
+	for i, item := range d.rootElements {
+		if item.id == id {
+			last := len(d.rootElements) - 1
+			d.rootElements[i] = d.rootElements[last]
+			d.rootElements = d.rootElements[:last]
+			return
+		}
+	}
 }
 
 func (d *domWasm) untrackComponent(id string) {
@@ -827,7 +882,15 @@ func (d *domWasm) cleanupListeners(id string) {
 }
 
 func (d *domWasm) wireBindings(id string) {
-	// Find component and all its elements with bindings
+	// Use the root stored during the first Render() call so IDs match the DOM.
+	// Calling Render() again would generate new auto-IDs that don't exist in the DOM,
+	// making all BindText/BindAttr/BindChildren subscriptions target phantom elements.
+	if root, ok := d.loadRoot(id); ok {
+		d.wireElementBindings(root, id)
+		return
+	}
+
+	// Fallback for elementNode / *Element components (no ViewRenderer).
 	var component Component
 	for _, item := range d.mountedComponents {
 		if item.id == id {
@@ -838,10 +901,7 @@ func (d *domWasm) wireBindings(id string) {
 	if component == nil {
 		return
 	}
-
-	if vr, ok := component.(ViewRenderer); ok {
-		d.wireElementBindings(vr.Render(), id)
-	} else if en, ok := component.(elementNode); ok {
+	if en, ok := component.(elementNode); ok {
 		d.wireElementBindings(en.AsElement(), id)
 	} else if el, ok := component.(*Element); ok {
 		d.wireElementBindings(el, id)
