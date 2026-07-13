@@ -42,9 +42,9 @@ func (c *Counter) Init(ctx dom.Ctx) {
 }
 
 func (c *Counter) Render() *dom.Element {
-    return html.Div(
+    return html.Div().Child(
         html.Span().BindText(c.count).Class("count"),
-        html.Button("Increment").On("click", func(e dom.Event) {
+        html.Button().Text("Increment").On("click", func(e dom.Event) {
             c.n++
             c.count.Set(fmt.Sprint(c.n))
         }),
@@ -96,9 +96,12 @@ html.Div().
     Child(
         html.Span().BindText(name),
         html.Input("text").Bind(name),           // two-way
-        html.Button("Save").BindAttrBool("disabled", saving),
+        html.Button().Text("Save").BindAttrBool("disabled", saving),
     )
 ```
+
+Builders take no arguments — children go in `Child(...)` (variadic) and text in `.Text(...)`.
+The only exceptions are `A(href)`, `Input(type)`, `Option(value, text)` and `SelectedOption(value, text)`.
 
 Binding methods:
 
@@ -116,8 +119,8 @@ Binding methods:
 Structural:
 
 ```go
-dom.Show(visible, func() *dom.Element { return html.Div(...) })  // mount/unmount subtree
-html.Ul().BindChildren(c.rows)                                    // keyed list
+dom.Show(visible, func() *dom.Element { return html.Div().Child(...) })  // mount/unmount subtree
+html.Ul().BindChildren(c.rows)                                          // keyed list
 ```
 
 ## Lifecycle

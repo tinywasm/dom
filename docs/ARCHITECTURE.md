@@ -76,9 +76,9 @@ func (c *Counter) Init(ctx dom.Ctx) {
 }
 
 func (c *Counter) Render() *dom.Element {
-	return html.Div(
+	return html.Div().Child(
 		html.Span().BindText(c.count).Class("count"),
-		html.Button("Increment").On("click", func(e dom.Event) {
+		html.Button().Text("Increment").On("click", func(e dom.Event) {
 			c.count.Update(func(v string) string {
 				i, _ := strconv.Atoi(v)
 				return strconv.Itoa(i + 1)
