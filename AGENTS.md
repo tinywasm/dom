@@ -23,7 +23,7 @@ agent that doesn't know the library from building wrong code. Every API you add 
 - **Docs are minimal "how" instructions, not long skills** — if a rule must be *remembered*, close
   it with types, not prose.
 
-(Ecosystem rationale: `tinywasm/docs/ARNES_DE_CONSTRUCCION.md`.)
+(Ecosystem rationale: `tinywasm/app/docs/CONSTRUCTION_HARNESS.md`.)
 
 ---
 
