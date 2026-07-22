@@ -1072,6 +1072,15 @@ func (d *domWasm) wireElementBindings(el *Element, ownerID string) {
 			if !ok {
 				continue
 			}
+			// Rows already present in the signal at first render are serialized
+			// straight into the parent's HTML (see the "children" case in
+			// renderToHTML) and never pass through reconcileChildren, so their own
+			// nested bindings (BindClass/BindText/…) would be left unwired — the
+			// row appears but never reacts. Wire them now, using el.id as the owner
+			// exactly like reconcileChildren does for rows it inserts later.
+			for _, n := range sig.Get() {
+				d.wireElementBindings(n, el.id)
+			}
 			updater = func() {
 				d.reconcileChildren(el.id, sig.Get())
 			}

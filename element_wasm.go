@@ -89,3 +89,12 @@ func (e *elementWasm) On(eventType string, handler func(event Event)) {
 func (e *elementWasm) Focus() {
 	e.val.Call("focus")
 }
+
+// ScrollIntoView smooth-scrolls the element into view.
+func (e *elementWasm) ScrollIntoView() {
+	opts := js.Global().Get("Object").New()
+	opts.Set("behavior", "smooth")
+	opts.Set("inline", "start")
+	opts.Set("block", "nearest")
+	e.val.Call("scrollIntoView", opts)
+}

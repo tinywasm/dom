@@ -38,4 +38,10 @@ type Reference interface {
 
 	// Focus sets focus to the element.
 	Focus()
+
+	// ScrollIntoView smooth-scrolls the element into view (e.g. to jump a
+	// horizontal scroll-snap container to a different panel programmatically —
+	// the browser resolves the final resting position against any
+	// scroll-snap-align on this element and its container).
+	ScrollIntoView()
 }

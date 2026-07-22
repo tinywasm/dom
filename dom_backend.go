@@ -49,8 +49,8 @@ func Show(cond *SignalBool, render func() *Element) *Element {
 	}
 	return container
 }
-func (d *domBackend) GetHash() string                        { return "" }
-func (d *domBackend) SetHash(hash string)                    {}
+func (d *domBackend) GetHash() string     { return "" }
+func (d *domBackend) SetHash(hash string) {}
 
 // elementStub is a no-op implementation of Reference for backend.
 type elementStub struct{}
@@ -64,3 +64,4 @@ func (e *elementStub) SetText(text string)                            {}
 func (e *elementStub) Checked() bool                                  { return false }
 func (e *elementStub) On(eventType string, handler func(event Event)) {}
 func (e *elementStub) Focus()                                         {}
+func (e *elementStub) ScrollIntoView()                                {}

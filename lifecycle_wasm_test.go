@@ -173,3 +173,36 @@ func TestBindChildren(t *testing.T) {
 		t.Errorf("Expected n2 as first child, got %s", first.Get("id").String())
 	}
 }
+
+// TestBindChildrenInitialRowBindings guards the fix for rows present in a
+// BindChildren signal at FIRST render: they are serialized straight into the
+// parent's HTML and never pass through reconcileChildren, so their own nested
+// bindings must be wired at mount. Before the fix such a row appeared but never
+// reacted — a later signal change did not patch it.
+func TestBindChildrenInitialRowBindings(t *testing.T) {
+	on := NewBool(false)
+	rows := NewNodes(
+		NewElement("li").ID("wrow1").BindClass("active", on).Text("row"),
+	)
+	list := NewElement("ul").ID("wrows").BindChildren(rows)
+	Render("app", list)
+
+	ref, ok := Get("wrow1")
+	if !ok {
+		t.Fatal("wrow1 missing at first render")
+	}
+	classList := ref.(*elementWasm).val.Get("classList")
+	if classList.Call("contains", "active").Bool() {
+		t.Fatal("wrow1 must not carry 'active' before the signal is set")
+	}
+
+	on.Set(true)
+	if !classList.Call("contains", "active").Bool() {
+		t.Error("BindClass on a first-render BindChildren row did not react to the signal")
+	}
+
+	on.Set(false)
+	if classList.Call("contains", "active").Bool() {
+		t.Error("BindClass on a first-render BindChildren row did not clear on the signal")
+	}
+}
