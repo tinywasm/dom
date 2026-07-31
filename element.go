@@ -16,6 +16,14 @@ type Element struct {
 	children  []any
 	void      bool
 	autofocus bool
+
+	// attached reports that this element is already somebody's child. An
+	// element has exactly one parent: ids are minted per element, so the same
+	// pointer under two parents renders twice with ONE id, and every handler
+	// and binding wires to whichever copy the runtime resolved — the other is
+	// inert. A consumer that needs the same thing in two places has to build
+	// two, usually through a factory.
+	attached bool
 }
 
 type binding struct {
@@ -91,9 +99,18 @@ func (b *Element) On(t string, h func(Event)) *Element {
 // Child adds one or more elements or components as children.
 func (b *Element) Child(c ...Component) *Element {
 	for _, child := range c {
-		if child != nil {
-			b.children = append(b.children, child)
+		if child == nil {
+			continue
 		}
+		if el, ok := child.(*Element); ok {
+			if el.attached {
+				panic(fmt.Err("dom: element", el.tag, el.id,
+					"is already a child of another element; one element has one parent —",
+					"build a second instance instead of sharing this one"))
+			}
+			el.attached = true
+		}
+		b.children = append(b.children, child)
 	}
 	return b
 }
