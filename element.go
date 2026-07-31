@@ -27,11 +27,22 @@ type Element struct {
 }
 
 type binding struct {
-	kind     string // "text", "attr", "class", "attrbool", "value", "children"
+	kind     string // "text", "attr", "class", "attrbool", "state", "value", "children"
 	name     string // attr name or class name
+	state    StateAttr
 	signal   subscribable
 	fnString func() string
 	fnBool   func() bool
+}
+
+// StateAttr is anything that names a data-state attribute and the value the
+// stylesheet selects on. widget.State satisfies it; nothing else needs to.
+//
+// Declared here rather than imported so that dom keeps no dependency on the widget
+// vocabulary — the same seam Class.AsAttr already uses in the other direction.
+type StateAttr interface {
+	Key() string
+	Value() string
 }
 
 // NewElement creates an Element with the given HTML tag.
@@ -196,6 +207,29 @@ func (b *Element) BindAttrBoolFunc(name string, fn func() bool) *Element {
 	return b
 }
 
+// BindState writes the state's attribute while on is true and removes it when
+// false. This is the ONLY supported way to write a widget state: the value the
+// stylesheet selects on comes from the state itself, so markup and CSS cannot
+// disagree.
+//
+// Not BindAttrBool: that writes the HTML boolean form (`data-x=""`), which no
+// data-state selector matches. That mistake shipped once and was invisible.
+func (b *Element) BindState(s StateAttr, on *SignalBool) *Element {
+	b.bindings = append(b.bindings, binding{kind: "state", state: s, signal: on})
+	return b
+}
+
+// BindStateFunc is the computed form, for a state derived from more than one signal.
+func (b *Element) BindStateFunc(s StateAttr, fn func() bool) *Element {
+	b.bindings = append(b.bindings, binding{kind: "state", state: s, fnBool: fn})
+	return b
+}
+
+// SetState writes the state unconditionally, for markup that is born in it.
+func (b *Element) SetState(s StateAttr) *Element {
+	return b.Attr(s.Key(), s.Value())
+}
+
 // Render renders the element to the parent.
 // This is a terminal operation.
 func (b *Element) Render(parentID string) error {
@@ -306,6 +340,18 @@ func elementToHTML(el *Element) string {
 			}
 			if on {
 				attrs = append(attrs, fmt.KeyValue{Key: b.name, Value: ""})
+			}
+		case "state":
+			on := false
+			if b.signal != nil {
+				if sig, ok := b.signal.(*SignalBool); ok {
+					on = sig.Get()
+				}
+			} else if b.fnBool != nil {
+				on = b.fnBool()
+			}
+			if on {
+				attrs = append(attrs, fmt.KeyValue{Key: b.state.Key(), Value: b.state.Value()})
 			}
 		case "value":
 			val := ""

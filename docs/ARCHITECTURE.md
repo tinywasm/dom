@@ -148,6 +148,7 @@ Bindings link a `Signal` to a DOM property. When the signal's value changes, the
 - `.BindAttr(name string, s *SignalString)`: Attribute tracks the signal.
 - `.BindClass(class string, on *SignalBool)`: Class is toggled based on the signal.
 - `.BindAttrBool(name string, on *SignalBool)`: Boolean attribute (e.g., `disabled`, `checked`) tracks the signal.
+- `.BindState(s StateAttr, on *SignalBool)` / `.BindStateFunc(s StateAttr, fn func() bool)` / `.SetState(s StateAttr)`: write a widget state (`data-x="true"`). **The only way to write one** — `widget.State` satisfies `StateAttr`; the value the stylesheet selects on comes from the state itself. Not `BindAttrBool`: that writes `data-x=""`, which no data-state selector matches.
 - `.Bind(s *SignalString)`: Two-way binding for `<input>` and `<textarea>`.
 
 ### Reactive Structure

@@ -549,6 +549,18 @@ func (d *domWasm) renderToHTML(el *Element, comps *[]Component, ownerID string) 
 			if on {
 				attrs = append(attrs, fmt.KeyValue{Key: b.name, Value: ""})
 			}
+		case "state":
+			on := false
+			if b.signal != nil {
+				if sig, ok := b.signal.(*SignalBool); ok {
+					on = sig.Get()
+				}
+			} else if b.fnBool != nil {
+				on = b.fnBool()
+			}
+			if on {
+				attrs = append(attrs, fmt.KeyValue{Key: b.state.Key(), Value: b.state.Value()})
+			}
 		case "value":
 			val := ""
 			if b.signal != nil {
@@ -1052,6 +1064,25 @@ func (d *domWasm) wireElementBindings(el *Element, ownerID string) {
 				}
 				if d.devMode {
 					d.Log("[dom] patch #"+el.id+" attrbool "+b.name+":", on)
+				}
+			}
+		case "state":
+			updater = func() {
+				on := false
+				if b.signal != nil {
+					if sig, ok := b.signal.(*SignalBool); ok {
+						on = sig.Get()
+					}
+				} else if b.fnBool != nil {
+					on = b.fnBool()
+				}
+				if on {
+					ref.SetAttr(b.state.Key(), b.state.Value())
+				} else {
+					ref.RemoveAttr(b.state.Key())
+				}
+				if d.devMode {
+					d.Log("[dom] patch #"+el.id+" state "+b.state.Key()+":", on)
 				}
 			}
 		case "value":

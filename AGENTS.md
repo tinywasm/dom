@@ -198,9 +198,9 @@ The ecosystem uses **zero** generic functions and follows the `tinywasm/fmt` cod
 
 - `SignalString` / `SignalBool` / `SignalNodes` (+ `NewString`/`NewBool`/`NewNodes`);
   `Get`/`Set`, and `Toggle()` on `SignalBool`.
-- Bindings (raw signal): `BindText`, `BindAttr`, `BindClass`, `BindAttrBool`, `Bind` (two-way input),
+- Bindings (raw signal): `BindText`, `BindAttr`, `BindClass`, `BindAttrBool`, `BindState` (widget states — the ONLY sanctioned writer; `BindAttrBool` on `data-*` is the targetlist defect), `Bind` (two-way input),
   `BindChildren` (keyed list of `*Element`), `Key`, `Autofocus`; `Show` for conditionals.
-- Bindings (computed): `BindTextFunc`/`BindAttrFunc`/`BindClassFunc`/`BindAttrBoolFunc` take a
+- Bindings (computed): `BindTextFunc`/`BindAttrFunc`/`BindClassFunc`/`BindAttrBoolFunc`/`BindStateFunc` take a
   function and **auto-track** the signals it reads — no dependency list. `DeriveString`/`DeriveBool`
   for a named shared computed value.
 
