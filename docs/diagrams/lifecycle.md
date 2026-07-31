@@ -10,7 +10,8 @@ flowchart TD
     Render --> HTML[Generate HTML with<br/>current signal values]
     HTML --> Insert[Insert into DOM]
     Insert --> Wire[Wire events and<br/>live signal bindings]
-    Wire --> Active((Active))
+    Wire --> Mounted[Call Mounted on components<br/>depth-first recursively]
+    Mounted --> Active((Active))
 
     Active -- Signal Set --> Patch[Surgically patch<br/>bound DOM node]
     Patch --> Active

@@ -221,6 +221,10 @@ func (d *domWasm) Render(parentID string, component Component) error {
 		d.mountRecursive(child)
 	}
 
+	if m, ok := component.(mountable); ok {
+		m.Mounted()
+	}
+
 	return nil
 }
 
@@ -349,6 +353,10 @@ func (d *domWasm) update(id string) {
 		d.mountRecursive(child)
 	}
 
+	if m, ok := component.(mountable); ok {
+		m.Mounted()
+	}
+
 	// Restore focus and cursor to the element that was active before outerHTML replacement.
 	if activeID != "" {
 		restored := d.document.Call("getElementById", activeID)
@@ -425,6 +433,11 @@ func (d *domWasm) Append(parentID string, component Component) error {
 	for _, child := range children {
 		d.mountRecursive(child)
 	}
+
+	if m, ok := component.(mountable); ok {
+		m.Mounted()
+	}
+
 	return nil
 }
 
@@ -636,6 +649,10 @@ func (d *domWasm) mountRecursive(c Component) {
 		if child != nil {
 			d.mountRecursive(child)
 		}
+	}
+
+	if m, ok := c.(mountable); ok {
+		m.Mounted()
 	}
 }
 

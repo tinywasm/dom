@@ -104,6 +104,14 @@ Un componente tiene a lo sumo dos métodos, con **roles distintos** (no es repet
 
 En una frase: `Init` prepara el estado (una vez); `Render` lo dibuja (cada vez que se monta).
 
+> [!WARNING]
+> **No llames a `Get(id)` dentro de `Init(ctx)`**.
+> En `Init`, el componente se está inicializando y su marcado HTML **aún no existe** en el documento.
+> Por construcción, cualquier llamada a `Get(id)` dentro de `Init` retornará `(nil, false)`.
+> Si necesitas realizar operaciones imperativas sobre el DOM (como medir, enfocar o hacer scroll),
+> utiliza el método de ciclo de vida **`Mounted()`** (p. ej., `func (c *MiComponente) Mounted()`), el cual
+> se ejecuta inmediatamente después de que el elemento ha sido insertado y enlazado en el DOM.
+
 ### El ciclo de vida
 
 ```mermaid
