@@ -90,6 +90,13 @@ func (e *elementWasm) Focus() {
 	e.val.Call("focus")
 }
 
+// ScrollsX reports whether the element's content overflows its box along the
+// inline axis. The 1px slack absorbs sub-pixel layout rounding, which otherwise
+// reports a strip as scrollable when it is exactly full.
+func (e *elementWasm) ScrollsX() bool {
+	return e.val.Get("scrollWidth").Float() > e.val.Get("clientWidth").Float()+1
+}
+
 // ScrollIntoView smooth-scrolls the element into view.
 func (e *elementWasm) ScrollIntoView() {
 	opts := js.Global().Get("Object").New()

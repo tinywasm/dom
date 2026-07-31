@@ -5,7 +5,7 @@ package dom
 import . "github.com/tinywasm/fmt"
 
 const lsMaxBytes = 4 * 1024 * 1024 // presupuesto total (bytes UTF-16 estimados; cuota típica 5MB)
-const lsMaxValue = 64 * 1024        // límite por valor individual — O(1) sin llamada JS
+const lsMaxValue = 64 * 1024       // límite por valor individual — O(1) sin llamada JS
 
 // LocalStorageAvailable reports whether localStorage is accessible in the current browser context.
 // Returns false when blocked by iframe sandbox, privacy settings, or private mode.

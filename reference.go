@@ -44,4 +44,14 @@ type Reference interface {
 	// the browser resolves the final resting position against any
 	// scroll-snap-align on this element and its container).
 	ScrollIntoView()
+
+	// ScrollsX reports whether the element can actually scroll along the inline
+	// axis — its content is wider than its box.
+	//
+	// It exists because ScrollIntoView walks EVERY scrollable ancestor, not just
+	// the one the caller had in mind. A component that drives a horizontal strip
+	// on narrow screens and lays the same panels out side by side on wide ones
+	// has to know which it is looking at: on the wide layout the nearest
+	// scroller is somebody else's, and scrolling it moves the whole application.
+	ScrollsX() bool
 }

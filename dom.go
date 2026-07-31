@@ -32,7 +32,6 @@ func Append(parentID string, component Component) error {
 	return instance.Append(parentID, component)
 }
 
-
 // Log provides logging functionality.
 func Log(v ...any) {
 	instance.Log(v...)
@@ -81,4 +80,3 @@ func (t *tinyDOM) Log(v ...any) {
 		t.log(v...)
 	}
 }
-

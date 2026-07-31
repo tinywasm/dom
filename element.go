@@ -19,9 +19,9 @@ type Element struct {
 }
 
 type binding struct {
-	kind   string // "text", "attr", "class", "attrbool", "value", "children"
-	name   string // attr name or class name
-	signal subscribable
+	kind     string // "text", "attr", "class", "attrbool", "value", "children"
+	name     string // attr name or class name
+	signal   subscribable
 	fnString func() string
 	fnBool   func() bool
 }
@@ -185,7 +185,6 @@ func (b *Element) Render(parentID string) error {
 	return Render(parentID, b)
 }
 
-
 // --- Component Interface Implementation ---
 
 // GetID returns the element's ID.
@@ -335,4 +334,3 @@ func elementToHTML(el *Element) string {
 	s += "</" + el.tag + ">"
 	return s
 }
-

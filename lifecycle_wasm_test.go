@@ -151,8 +151,12 @@ func TestBindChildren(t *testing.T) {
 	list := NewElement("div").ID("list").BindChildren(nodes)
 	Render("app", list)
 
-	if _, ok := Get("n1"); !ok { t.Error("n1 missing") }
-	if _, ok := Get("n2"); !ok { t.Error("n2 missing") }
+	if _, ok := Get("n1"); !ok {
+		t.Error("n1 missing")
+	}
+	if _, ok := Get("n2"); !ok {
+		t.Error("n2 missing")
+	}
 
 	n1ref, _ := Get("n1")
 	n1val := n1ref.(*elementWasm).val
