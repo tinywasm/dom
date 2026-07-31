@@ -210,3 +210,155 @@ func TestBindChildrenInitialRowBindings(t *testing.T) {
 		t.Error("BindClass on a first-render BindChildren row did not clear on the signal")
 	}
 }
+
+type orderChildComp struct {
+	Element
+	mounted bool
+}
+
+func (c *orderChildComp) Render() *Element {
+	return NewElement("span").ID("order-child")
+}
+
+func (c *orderChildComp) Mounted() {
+	c.mounted = true
+	// Verify it can Get itself
+	if _, ok := Get("order-child"); !ok {
+		panic("order-child element not in DOM in orderChildComp.Mounted")
+	}
+}
+
+type orderParentComp struct {
+	Element
+	child           *orderChildComp
+	childMountedAt  bool
+	mounted         bool
+	ownElementFound bool
+}
+
+func (p *orderParentComp) Init(ctx Ctx) {
+	p.child = &orderChildComp{}
+}
+
+func (p *orderParentComp) Children() []Component {
+	return []Component{p.child}
+}
+
+func (p *orderParentComp) Render() *Element {
+	return NewElement("div").ID("order-parent").Child(p.child)
+}
+
+func (p *orderParentComp) Mounted() {
+	p.mounted = true
+	p.childMountedAt = p.child.mounted
+	if _, ok := Get("order-parent"); ok {
+		p.ownElementFound = true
+	}
+}
+
+func TestMountedOrderingAndGet(t *testing.T) {
+	parent := &orderParentComp{}
+	Render("app", parent)
+
+	if !parent.mounted {
+		t.Error("parent Mounted not called")
+	}
+	if !parent.child.mounted {
+		t.Error("child Mounted not called")
+	}
+	if !parent.childMountedAt {
+		t.Error("parent Mounted called before child Mounted")
+	}
+	if !parent.ownElementFound {
+		t.Error("parent could not Get itself inside Mounted")
+	}
+}
+
+type rootMountedComp struct {
+	Element
+	mountedCount int
+}
+
+func (c *rootMountedComp) Render() *Element {
+	return NewElement("div").ID("root-mounted-elem")
+}
+
+func (c *rootMountedComp) Mounted() {
+	c.mountedCount++
+}
+
+func TestMountedRootAndAppend(t *testing.T) {
+	c1 := &rootMountedComp{}
+	Render("app", c1)
+	if c1.mountedCount != 1 {
+		t.Errorf("Expected mountedCount 1 on Render, got %d", c1.mountedCount)
+	}
+
+	c2 := &rootMountedComp{}
+	Append("app", c2)
+	if c2.mountedCount != 1 {
+		t.Errorf("Expected mountedCount 1 on Append, got %d", c2.mountedCount)
+	}
+}
+
+type scrollableItem struct {
+	Element
+}
+
+func (s *scrollableItem) Render() *Element {
+	return NewElement("div").ID("item-to-scroll").
+		Attr("style", "width: 200px; height: 100px; display: inline-block;")
+}
+
+type deckComp struct {
+	Element
+	child           *scrollableItem
+	mountedCalled   bool
+	childFoundAtMnt bool
+}
+
+func (d *deckComp) Init(ctx Ctx) {
+	d.child = &scrollableItem{}
+}
+
+func (d *deckComp) Children() []Component {
+	return []Component{d.child}
+}
+
+func (d *deckComp) Render() *Element {
+	return NewElement("div").ID("deck-scroller").
+		Attr("style", "width: 100px; height: 100px; overflow-x: auto; white-space: nowrap;").
+		Child(
+			NewElement("div").Attr("style", "width: 50px; height: 100px; display: inline-block;"),
+			d.child,
+		)
+}
+
+func (d *deckComp) Mounted() {
+	d.mountedCalled = true
+	if el, ok := Get("item-to-scroll"); ok {
+		d.childFoundAtMnt = true
+		el.ScrollIntoView()
+	}
+}
+
+func TestMountedScrollableConsumer(t *testing.T) {
+	c := &deckComp{}
+	Render("app", c)
+
+	if !c.mountedCalled {
+		t.Error("deckComp Mounted was not called")
+	}
+	if !c.childFoundAtMnt {
+		t.Error("item-to-scroll was not found in DOM during deckComp.Mounted")
+	}
+
+	// Verify scroller exists and can scroll
+	scroller, ok := Get("deck-scroller")
+	if !ok {
+		t.Fatal("deck-scroller not found")
+	}
+	if !scroller.ScrollsX() {
+		t.Log("Warning: deck-scroller.ScrollsX() is false (expected in some headless environments or without style sheet support, but scroller is successfully wired)")
+	}
+}

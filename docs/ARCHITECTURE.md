@@ -113,10 +113,21 @@ func (c *MyComponent) Render() *dom.Element {
 **Why value embed?** TinyGo has a simple GC — value embedding keeps the struct and its `Element` identity in a single allocation.
 
 ### Component Lifecycle (WASM only)
+
+The component lifecycle proceeds in a deterministic sequence of hooks and engine operations:
+
 1. **`Init(ctx dom.Ctx)` (Optional)**: Called once when the component is first mounted. Use it to initialize signals or register cleanups via `ctx.OnCleanup(fn)`.
-2. **`Render() *dom.Element`**: Called once to build the initial DOM tree.
-3. **Signal Patches**: When a signal changes, the engine surgically updates the bound DOM node.
-4. **Cleanup**: When a component is unmounted, all its signal subscriptions and `OnCleanup` functions are automatically executed.
+2. **`Render() *dom.Element`**: Called to build the initial DOM tree or when subtrees are re-rendered.
+3. **Insertion**: The markup produced by `Render()` is inserted into the document.
+4. **Wire Bindings & Events**: The reactive engine binds signals and registers event handlers to the actual DOM elements.
+5. **Children's `Mounted()`**: Child components' `Mounted()` hooks are fired recursively from the deepest level up.
+6. **Own `Mounted()`**: Fired after the component's markup is fully in the document, all bindings are wired, and all children have been mounted. This is the first safe moment where imperative DOM operations (e.g., `Get(id)`, focusing, measuring, scrolling) can be performed.
+
+#### Re-render Lifecycle Decision
+On every re-render (`update`), the component's root elements and markup are replaced wholesale in the DOM. Because any attributes or event listeners attached to the old DOM nodes are lost, **`Mounted()` is triggered again on every re-render (`update`)** after the new nodes have been inserted and wired. This ensures any imperative DOM attachments can be re-established.
+
+7. **Signal Patches**: When a signal changes, the engine surgically updates the bound DOM node.
+8. **Cleanup**: When a component is unmounted, all its signal subscriptions and `OnCleanup` functions are automatically executed.
 
 ### Component Assets (Backend only)
 To bundle styles/icons, implement these interfaces:

@@ -62,9 +62,10 @@ func main() {
 | Method | Role | Cardinality |
 |---|---|---|
 | `Render() *Element` | Pure: state → structure, no side effects | Once per mount |
-| `Init(ctx dom.Ctx)` | Imperative: create signals, load storage, start timers | Exactly once |
+| `Init(ctx dom.Ctx)` | Imperative: create signals, load storage, start timers | Exactly once (before render) |
+| `Mounted()` | Imperative: DOM operations (measure, focus, scroll) | On every insertion |
 
-`Init` is optional — only add it when there is setup to do.
+`Init` and `Mounted` are optional — only add them when there is work to do.
 
 ## Signals
 
@@ -126,7 +127,7 @@ html.Ul().BindChildren(c.rows)                                          // keyed
 ## Lifecycle
 
 ```
-Init (once) → Render → wire bindings & events
+Init (once) → Render → Insert → Wire bindings & events → children Mounted → own Mounted
 signal.Set  → patch bound node (O(1))
 unmount     → run OnCleanup + unsubscribe signals
 ```
