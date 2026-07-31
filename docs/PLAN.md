@@ -1,6 +1,8 @@
 ---
 PLAN: "post-mount hook — let a component touch the DOM it just produced"
 TAG: v0.12.0
+STATUS: running
+SESSION: 17029564306673465193
 ---
 
 # Plan — `dom`: a lifecycle hook that runs *after* the markup is in the document
