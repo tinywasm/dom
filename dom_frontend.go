@@ -450,6 +450,9 @@ func (d *domWasm) renderToHTML(el *Element, comps *[]Component, ownerID string) 
 		}
 		return ""
 	}
+	beginPass()
+	defer endPass()
+
 	// If the element has events or bindings but no ID, generate one
 	if (len(el.events) > 0 || len(el.bindings) > 0 || el.autofocus) && el.id == "" {
 		el.id = generateID()
@@ -466,6 +469,7 @@ func (d *domWasm) renderToHTML(el *Element, comps *[]Component, ownerID string) 
 
 	s := "<" + el.tag
 	if el.id != "" {
+		claimID(el.id, el.tag)
 		s += " id='" + el.id + "'"
 	}
 

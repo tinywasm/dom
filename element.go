@@ -238,8 +238,12 @@ func elementToHTML(el *Element) string {
 	if el == nil {
 		return ""
 	}
+	beginPass()
+	defer endPass()
+
 	s := "<" + el.tag
 	if el.id != "" {
+		claimID(el.id, el.tag)
 		s += " id='" + el.id + "'"
 	}
 
