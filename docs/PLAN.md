@@ -80,7 +80,9 @@ cannot be written. New semantics:
   signatures.
 - **Testing:** `go install github.com/tinywasm/devflow/cmd/gotest@latest` first, then run
   `gotest` (never `go test`). It runs vet, race, stdlib tests and the WASM suite in a real
-  browser.
+  browser. **Tests for the public API must live in `tests/` subdirectory** for better library
+  organization — all moveable tests should be relocated there; the goal is to keep the
+  majority of tests in that dedicated directory rather than scattered at the root.
 
 ---
 
@@ -303,6 +305,7 @@ func TestShowBackend(t *testing.T) {
 ### Acceptance
 
 - `gotest` green (vet, race, stdlib, WASM browser suite).
+- Public API tests moved to `tests/` subdirectory for consistent library organization.
 
 ---
 
@@ -351,6 +354,7 @@ Stages 1–2 land together (dual build). Stage 3 depends on 1–2. Stage 4 indep
 3. `grep -rn "lastSubtreeID" .` → empty.
 4. `grep -rn "func() \*Element" dom_frontend.go dom_backend.go` → only `DeriveString`/`DeriveBool`-style computes if any; no builder callbacks in `Show`.
 5. `GOOS=js GOARCH=wasm go build ./...` compiles.
+6. Public API tests organized in `tests/` subdirectory; root-level test files only for internal/integration testing.
 
 ## Out of scope
 
