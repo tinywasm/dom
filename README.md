@@ -11,7 +11,7 @@
 - **Auto-tracking**: `BindTextFunc` / `DeriveString` discover dependencies automatically — no explicit dep lists.
 - **Typed builder**: `Text`, `Child`, `Attr`, `Class`, `Set(kv ...fmt.KeyValue)` — no `Add(...any)`.
 - **Two-method contract**: `Render() *Element` (pure, once per mount) + optional `Init(ctx dom.Ctx)` (side effects, once ever).
-- **Keyed lists & conditional subtrees**: `BindChildren(SignalNodes)` + `Show(cond, renderFn)`.
+- **Keyed lists & conditional subtrees**: `BindChildren(SignalNodes)` + `Show(cond, content)`.
 - **No Virtual DOM**: Zero diffing; nodes are never replaced unless structure truly changes.
 - **TinyGo Optimized**: Zero stdlib; `tinywasm/fmt` for logs; slices over maps; `<500KB` WASM binaries.
 - **Isomorphic**: same `Render()` produces correct SSR HTML on backend and live WASM on frontend.
@@ -120,7 +120,7 @@ Binding methods:
 Structural:
 
 ```go
-dom.Show(visible, func() *dom.Element { return html.Div().Child(...) })  // mount/unmount subtree
+dom.Show(visible, html.Div().Child(...))  // toggle subtree visibility via display:none
 html.Ul().BindChildren(c.rows)                                          // keyed list
 ```
 

@@ -100,23 +100,30 @@ func TestLifecycle(t *testing.T) {
 
 func TestShow(t *testing.T) {
 	cond := NewBool(false)
-	s := Show(cond, func() *Element {
-		return NewElement("span").ID("shown").Text("visible")
-	})
+	s := Show(cond, NewElement("span").ID("shown").Text("visible"))
 	Render("app", s)
 
-	if _, ok := Get("shown"); ok {
-		t.Error("Element should not be visible")
-	}
-
-	cond.Set(true)
+	// Mounted while hidden — hidden is display:none, not unmounted.
 	if _, ok := Get("shown"); !ok {
-		t.Error("Element should be visible")
+		t.Fatal("content must stay mounted while hidden")
 	}
-
+	container, ok := Get(s.GetID())
+	if !ok {
+		t.Fatal("Show container not mounted")
+	}
+	display := func() string {
+		return container.(*elementWasm).val.Get("style").Get("display").String()
+	}
+	if display() != "none" {
+		t.Errorf("expected display:none at start, got %q", display())
+	}
+	cond.Set(true)
+	if display() == "none" {
+		t.Error("expected visible after Set(true)")
+	}
 	cond.Set(false)
-	if _, ok := Get("shown"); ok {
-		t.Error("Element should be hidden")
+	if display() != "none" {
+		t.Error("expected display:none after Set(false)")
 	}
 }
 
