@@ -6,53 +6,67 @@ import (
 	"testing"
 )
 
-// TestShowSecondToggleSharedContent reproduces the panic reported in
-// tinywasm/layout docs/BUG_DOM.md: every consumer of Show closes over
-// *Elements built outside the render callback (modaldialog's modalContent,
-// selectsearch's searchInput/optList). Show re-invokes the callback on every
-// false→true transition, so the SECOND open re-attaches an element whose
-// `attached` flag is already set and Child panics:
-//
-//	"dom: element div  is already a child of another element"
-//
-// The panic kills the whole Go/WASM program in production (event handlers run
-// on the js event goroutine). Here the toggle runs on the test goroutine, so
-// the panic is recovered and reported as a plain test failure — the failure
-// IS the bug: with a harness-closed API this scenario must not be reachable.
+// TestShowSecondToggleSharedContent guards the fix for the panic reported in
+// tinywasm/layout docs/BUG_DOM.md ("element ... is already a child of another
+// element"), which killed the app on the SECOND open of a Show whose render
+// callback closed over elements built outside it. Show no longer takes a
+// callback: the subtree is built and attached once, so re-attachment is
+// unrepresentable. This test pins the consumer scenario — shared content,
+// repeated toggles — plus the semantics that come with build-once: node
+// identity and live bindings across toggles.
 func TestShowSecondToggleSharedContent(t *testing.T) {
 	cond := NewBool(false)
-
-	// The consumer pattern, verbatim from modaldialog.Render: the body is
-	// built ONCE and captured by the Show callback, because nothing in the
-	// signature func() *Element says every call must return a fresh tree.
+	msg := NewString("Delete «laptop»?")
 	body := NewElement("div").ID("shared-body").
-		Child(NewElement("span").ID("shared-msg").Text("Delete «laptop»?"))
+		Child(NewElement("span").ID("shared-msg").BindText(msg))
 
-	s := Show(cond, func() *Element {
-		return NewElement("div").ID("modal-root").Child(body)
-	})
+	s := Show(cond, body)
 	Render("app", s)
-
-	// First open: works — body.attached flips false→true here.
-	cond.Set(true)
-	if _, ok := Get("shared-msg"); !ok {
-		t.Fatal("first open: content should be in the DOM")
+	container, ok := Get(s.GetID())
+	if !ok {
+		t.Fatal("Show container not mounted")
+	}
+	display := func() string {
+		return container.(*elementWasm).val.Get("style").Get("display").String()
 	}
 
-	// Close: Show clears the DOM nodes but the Go-side tree still records
-	// body as attached.
-	cond.Set(false)
-
-	// Second open: the callback re-runs Child(body) on the attached element.
-	// Recover so the failure is isolated to this test instead of aborting the
-	// whole WASM test binary the way it aborts the app in production.
-	defer func() {
-		if r := recover(); r != nil {
-			t.Fatalf("second open panicked (the reported bug): %v", r)
-		}
-	}()
-	cond.Set(true)
+	// Hidden at start: mounted, display:none.
 	if _, ok := Get("shared-msg"); !ok {
-		t.Fatal("second open: content should be in the DOM")
+		t.Fatal("content must be mounted while hidden")
+	}
+	if display() != "none" {
+		t.Fatalf("expected display:none while hidden, got %q", display())
+	}
+
+	msgRef, _ := Get("shared-msg")
+	msgNode := msgRef.(*elementWasm).val
+
+	// Two full open/close cycles — the second open is what panicked before.
+	for i := 0; i < 2; i++ {
+		cond.Set(true)
+		if display() == "none" {
+			t.Fatalf("cycle %d: expected visible after Set(true)", i)
+		}
+		cond.Set(false)
+		if display() != "none" {
+			t.Fatalf("cycle %d: expected display:none after Set(false)", i)
+		}
+	}
+	cond.Set(true)
+
+	// Node identity survives toggles (no innerHTML re-render).
+	if again, _ := Get("shared-msg"); !again.(*elementWasm).val.Equal(msgNode) {
+		t.Error("node identity lost across toggles")
+	}
+
+	// Bindings keep patching while hidden; the subtree is current on re-show.
+	msg.Set("Delete «desktop»?")
+	cond.Set(false)
+	if got := msgRef.(*elementWasm).val.Get("textContent").String(); got != "Delete «desktop»?" {
+		t.Errorf("binding stale while hidden: %q", got)
+	}
+	cond.Set(true)
+	if got := msgRef.(*elementWasm).val.Get("textContent").String(); got != "Delete «desktop»?" {
+		t.Errorf("binding stale after re-show: %q", got)
 	}
 }

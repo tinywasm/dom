@@ -1294,55 +1294,30 @@ func (d *domWasm) reconcileChildren(parentID string, newNodes []*Element) {
 	}
 }
 
-// Show mounts/unmounts a subtree when cond flips. Runs the rendered subtree's Init/cleanup.
-func Show(cond *SignalBool, render func() *Element) *Element {
+// Show keeps content mounted and toggles its visibility with cond.
+// The subtree is built and attached ONCE — a builder re-run that re-attaches
+// captured elements (the v0.12 panic) is unrepresentable: there is no builder.
+// Hidden means inline display:none on the container, so node identity,
+// listeners and signal bindings survive every toggle, and bindings keep
+// patching while hidden — the subtree is current the moment it reappears.
+func Show(cond *SignalBool, content Component) *Element {
 	containerID := generateID()
 	container := NewElement("div").ID(containerID)
-
-	var lastSubtreeID string
+	if !cond.Get() {
+		container.Attr("style", "display:none")
+	}
+	container.Child(content)
 
 	updater := func() {
 		if ref, ok := instance.Get(containerID); ok {
-			// Cleanup previous subtree
-			if lastSubtreeID != "" {
-				instance.(*domWasm).cleanupListeners(lastSubtreeID)
-				instance.(*domWasm).cleanupSignalSubscriptions(lastSubtreeID)
-				instance.(*domWasm).runCleanups(lastSubtreeID)
-				lastSubtreeID = ""
+			display := ""
+			if !cond.Get() {
+				display = "none"
 			}
-			instance.(*domWasm).cleanupChildren(containerID)
-
-			ref.(*elementWasm).val.Set("innerHTML", "")
-			if cond.Get() {
-				root := render()
-				if root.id == "" {
-					root.id = generateID()
-				}
-				lastSubtreeID = root.id
-
-				var comps []Component
-				html := instance.(*domWasm).renderToHTML(root, &comps, containerID)
-				ref.(*elementWasm).val.Set("innerHTML", html)
-				instance.(*domWasm).wirePendingEvents()
-				instance.(*domWasm).wireElementBindings(root, containerID)
-				for _, c := range comps {
-					instance.(*domWasm).mountRecursive(c)
-				}
-			}
+			ref.(*elementWasm).val.Get("style").Set("display", display)
 		}
 	}
-
 	unsub := cond.subscribe(updater)
-
-	// Initial state
-	if cond.Get() {
-		root := render()
-		container.children = append(container.children, root)
-		if root.id == "" {
-			root.id = generateID()
-		}
-		lastSubtreeID = root.id
-	}
 
 	// Register unsub to be called when container is unmounted
 	instance.(*domWasm).unsubs = append(instance.(*domWasm).unsubs, struct {

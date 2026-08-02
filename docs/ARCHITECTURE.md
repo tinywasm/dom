@@ -152,7 +152,9 @@ Bindings link a `Signal` to a DOM property. When the signal's value changes, the
 - `.Bind(s *SignalString)`: Two-way binding for `<input>` and `<textarea>`.
 
 ### Reactive Structure
-- `Show(cond *SignalBool, render func() *Element)`: Mounts/unmounts a subtree based on a condition.
+- `Show(cond *SignalBool, content Component)`: A subtree that is always mounted and shown/hidden with
+  `display:none` as cond flips. Built and attached ONCE — node identity, listeners and bindings survive
+  toggles, and bindings keep patching while hidden.
 - `BindChildren(s *SignalNodes)`: A container whose children track a list of nodes. Use `.Key(string)` on child elements for stable identity during reconciliation.
 
 ## 5. Void Elements

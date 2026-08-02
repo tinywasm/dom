@@ -41,12 +41,14 @@ func (d *domBackend) unmount(component Component) {
 
 func (d *domBackend) OnHashChange(handler func(hash string)) {}
 
-// Show is implemented for SSR.
-func Show(cond *SignalBool, render func() *Element) *Element {
+// Show is implemented for SSR: the child is always serialized; the container
+// carries display:none when cond is false, matching the WASM initial markup.
+func Show(cond *SignalBool, content Component) *Element {
 	container := NewElement("div")
-	if cond.Get() {
-		container.children = append(container.children, render())
+	if !cond.Get() {
+		container.Attr("style", "display:none")
 	}
+	container.Child(content)
 	return container
 }
 func (d *domBackend) GetHash() string     { return "" }
