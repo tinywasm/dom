@@ -3,6 +3,8 @@ PLAN: "feat!: Show builds once and toggles display — the re-attach panic becom
 TAG: v0.13.0
 EXECUTOR: jules
 REVIEWER: none
+STATUS: running
+SESSION: 7054643587315192779
 ---
 
 > This plan is dispatched via the CodeJob workflow. See skill: agents-workflow.
