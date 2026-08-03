@@ -106,6 +106,26 @@ func OnHashChange(handler func(hash string)) {
 	instance.OnHashChange(handler)
 }
 
+// OnScrollCapture registra un listener de scroll en FASE DE CAPTURA sobre el
+// documento, de modo que se dispara para CUALQUIER scroller de la página, no solo
+// para la ventana.
+//
+// Existe porque el evento scroll no burbujea: se dispara únicamente en el elemento
+// que se desplazó. Un shell que quiere reaccionar al scroll de su contenido no
+// puede saber qué descendiente de qué componente es el que realmente desborda, y
+// registrar el listener elemento por elemento lo obligaría a conocer el interior
+// de otros paquetes.
+//
+// scrollTop es la posición vertical del elemento que disparó el evento. Con varios
+// scrollers en pantalla los valores se intercalan: quien compare posiciones debe
+// tolerarlo con un umbral, no asumir una serie continua.
+//
+// No hay forma de darlo de baja: es un listener del documento que vive lo que vive
+// la página.
+func OnScrollCapture(handler func(scrollTop float64)) {
+	instance.OnScrollCapture(handler)
+}
+
 // GetHash gets the current hash.
 func GetHash() string {
 	return instance.GetHash()

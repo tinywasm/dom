@@ -33,3 +33,16 @@ func TestBackendStubs(t *testing.T) {
 	}
 	d.SetHash("test")
 }
+
+// TestOnScrollCaptureBackendIsANoop guarantees that a component registering a
+// scroll listener in Init(ctx) still renders under SSR: the backend stub never
+// invokes the handler.
+func TestOnScrollCaptureBackendIsANoop(t *testing.T) {
+	called := false
+	OnScrollCapture(func(scrollTop float64) {
+		called = true
+	})
+	if called {
+		t.Error("OnScrollCapture backend stub should never invoke the handler")
+	}
+}

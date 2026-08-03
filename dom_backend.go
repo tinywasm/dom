@@ -41,6 +41,8 @@ func (d *domBackend) unmount(component Component) {
 
 func (d *domBackend) OnHashChange(handler func(hash string)) {}
 
+func (d *domBackend) OnScrollCapture(handler func(scrollTop float64)) {}
+
 // Show is implemented for SSR: the child is always serialized; the container
 // carries display:none when cond is false, matching the WASM initial markup.
 func Show(cond *SignalBool, content Component) *Element {

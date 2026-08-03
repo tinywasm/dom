@@ -16,6 +16,11 @@ type DOM interface {
 	// OnHashChange registra un listener para cambios en el hash de la URL.
 	OnHashChange(handler func(hash string))
 
+	// OnScrollCapture registra un listener de scroll en fase de captura sobre el
+	// documento: se dispara para cualquier scroller de la página. Ver la función
+	// de paquete del mismo nombre.
+	OnScrollCapture(handler func(scrollTop float64))
+
 	// GetHash devuelve el hash actual de la URL (ej. "#help").
 	GetHash() string
 

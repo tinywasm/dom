@@ -141,6 +141,11 @@ The `dom.Event` interface provides safe access to the JS Event without `syscall/
 - `TargetValue() string`
 - `TargetID() string`
 
+### Page-level listeners
+- `OnScrollCapture(handler func(scrollTop float64))`: Registers a `scroll` listener on `document` in **capture phase**, so it fires for **any** scroller in the page.
+  This exists because the `scroll` event does **not bubble** — it fires only on the element that actually scrolled. A shell that wants to react to the scroll of its content cannot know which descendant of which component overflows, and `Reference.On()` (bubble phase, per-element) would force it to know other packages' internals. Capture phase sees the event descend to any descendant.
+  `scrollTop` is the vertical position of the element that fired the event. With several scrollers on screen, values interleave — compare with a threshold, never assume a continuous series. There is no way to unregister it: it is a document listener that lives as long as the page. (Backend: no-op — SSR has no scroll.)
+
 ### Bindings (Reactivity)
 Bindings link a `Signal` to a DOM property. When the signal's value changes, the DOM is patched automatically.
 

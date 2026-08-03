@@ -1347,6 +1347,24 @@ func (d *domWasm) OnHashChange(handler func(hash string)) {
 	js.Global().Get("window").Call("addEventListener", "hashchange", fn)
 }
 
+// OnScrollCapture registra el listener en el documento con capture=true, que es lo
+// que permite ver el scroll de descendientes: el evento scroll no burbujea, pero
+// sí baja por la fase de captura.
+func (d *domWasm) OnScrollCapture(handler func(scrollTop float64)) {
+	fn := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		target := args[0].Get("target")
+		// document.scrollingElement cuando el que se desplaza es el documento
+		// mismo: ahí el target es el Document, que no tiene scrollTop.
+		top := target.Get("scrollTop")
+		if top.IsUndefined() || top.IsNull() {
+			top = js.Global().Get("document").Get("scrollingElement").Get("scrollTop")
+		}
+		handler(top.Float())
+		return nil
+	})
+	js.Global().Get("document").Call("addEventListener", "scroll", fn, true)
+}
+
 // GetHash returns current window.location.hash.
 func (d *domWasm) GetHash() string {
 	return js.Global().Get("location").Get("hash").String()
