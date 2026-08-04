@@ -1277,15 +1277,17 @@ func (d *domWasm) reconcileChildren(parentID string, newNodes []*Element) {
 		}
 	}
 
-	// Remove extra nodes
-	for existingLen > len(newNodes) {
+	// Remove extra nodes. Uses the live child count, not the frozen snapshot
+	// taken before insertions: when an existing node's key does not match any
+	// new node's key, insertBefore creates a sibling without removing the old
+	// one, so the live collection is longer than both existingLen and newNodes.
+	for parentVal.Get("children").Get("length").Int() > len(newNodes) {
 		last := parentVal.Get("lastElementChild")
 		lastID := last.Get("id").String()
 		last.Call("remove")
 		d.cleanupListeners(lastID)
 		d.cleanupSignalSubscriptions(lastID)
 		d.runCleanups(lastID)
-		existingLen--
 	}
 
 	d.wirePendingEvents()
