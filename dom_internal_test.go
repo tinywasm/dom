@@ -5,6 +5,8 @@ package dom
 import (
 	"syscall/js"
 	"testing"
+
+	"github.com/tinywasm/fmt"
 )
 
 func TestInternalWasm(t *testing.T) {
@@ -134,6 +136,17 @@ func TestInternalWasm(t *testing.T) {
 		expected := "<div><div id='vr-1'></div></div>"
 		if html2 != expected {
 			t.Errorf("expected %q, got %q", expected, html2)
+		}
+
+		// Regression: a raw single quote inside an attribute value must not
+		// truncate the attribute — see docs — the value must come out
+		// HTML-entity-escaped.
+		elEsc := (&Element{tag: "img"}).Set(fmt.KeyValue{Key: "src", Value: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3C/svg%3E"})
+		var compsEsc []Component
+		htmlEsc := d.renderToHTML(elEsc, &compsEsc, "parent-id")
+		expectedEsc := "<img src='data:image/svg+xml,%3Csvg xmlns=&#39;http://www.w3.org/2000/svg&#39;%3E%3C/svg%3E'></img>"
+		if htmlEsc != expectedEsc {
+			t.Errorf("expected %q, got %q", expectedEsc, htmlEsc)
 		}
 	})
 
