@@ -1,8 +1,9 @@
 ---
 PLAN: "fix: escape HTML attribute and class values in elementToHTML/renderToHTML"
 REVIEWER: none
-STATUS: running
+STATUS: review
 SESSION: 17815455470289849777
+PR: https://github.com/tinywasm/dom/pull/21
 ---
 
 > This plan is dispatched via the CodeJob workflow. See skill: agents-workflow.
