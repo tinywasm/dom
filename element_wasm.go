@@ -86,8 +86,25 @@ func (e *elementWasm) On(eventType string, handler func(event Event)) {
 }
 
 // Focus sets focus to the element.
+//
+// preventScroll is part of the contract, not a tweak: focus() otherwise makes
+// the browser scroll EVERY scrollable ancestor to reveal the element, and here
+// the layout owns scroll position, not the browser — ScrollIntoView below is
+// the explicit way to move it. The two fight. On iOS Safari the browser's
+// version wins and jumps a scroll-snap strip instantly, which both kills the
+// smooth scroll the layout asked for and, once the keyboard is up, can leave
+// the strip parked where it was with the caret on an off-screen field.
+//
+// Nothing depends on the suppressed behavior: every Focus() caller either
+// targets an element that is already on screen (autofocus at mount, a search
+// input inside a dropdown that just opened) or scrolls its own container
+// itself. Keyboard opening is unaffected — that follows from focus() being
+// synchronous with the user gesture, not from the scroll. Browsers without
+// preventScroll ignore the options object and behave exactly as before.
 func (e *elementWasm) Focus() {
-	e.val.Call("focus")
+	opts := js.Global().Get("Object").New()
+	opts.Set("preventScroll", true)
+	e.val.Call("focus", opts)
 }
 
 // ScrollsX reports whether the element's content overflows its box along the
