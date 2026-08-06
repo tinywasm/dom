@@ -370,12 +370,12 @@ func elementToHTML(el *Element) string {
 			if i > 0 {
 				s += " "
 			}
-			s += c
+			s += fmt.Convert(c).EscapeAttr()
 		}
 		s += "'"
 	}
 	for _, attr := range attrs {
-		s += " " + attr.Key + "='" + attr.Value + "'"
+		s += " " + attr.Key + "='" + fmt.Convert(attr.Value).EscapeAttr() + "'"
 	}
 	s += ">"
 	if el.void {
