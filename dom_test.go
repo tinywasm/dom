@@ -3,13 +3,11 @@ package dom
 import (
 	"testing"
 
-	"github.com/tinywasm/css"
 	"github.com/tinywasm/fmt"
 )
 
 func TestElementSetAttr(t *testing.T) {
-	cls := css.Class("my-class")
-	el := (&Element{tag: "div"}).Set(cls.AsAttr(), fmt.KeyValue{Key: "data-test", Value: "val"})
+	el := (&Element{tag: "div"}).Set(fmt.KeyValue{Key: "class", Value: "my-class"}, fmt.KeyValue{Key: "data-test", Value: "val"})
 	html := elementToHTML(el)
 	expected := "<div class='my-class' data-test='val'></div>"
 	if html != expected {
