@@ -20,9 +20,9 @@ There are three primary layers/interfaces:
 
 `Render(parentID, comp)` sets `parent.innerHTML = html`, replacing ALL existing children of the
 target element. Using `"body"` as the mount point **destroys the SVG sprite** injected inline by
-`tinywasm/assetmin`, breaking all `<use href="#icon-id">` references.
+`tinywasm/sitec`, breaking all `<use href="#icon-id">` references.
 
-The `tinywasm/assetmin` HTML template already injects `<div id="app"></div>` before the `<script>`
+The `tinywasm/sitec` HTML template already injects `<div id="app"></div>` before the `<script>`
 tag. Always mount the root component there:
 
 ```go
@@ -218,9 +218,9 @@ func RootCSS() *css.Stylesheet { return css.New(css.Raw(rootCSS)) }
 
 ### Override
 
-`dom` does not import `assetmin`. The contract is the `RootCSSProvider` interface and the free function `RootCSS`. `tinywasm/assetmin` discovers it via AST extraction during `LoadSSRModules()` and routes the result to the `open` slot of `<head>`.
+`dom` does not import `sitec`. The contract is the `RootCSSProvider` interface and the free function `RootCSS`. `tinywasm/sitec` discovers it via AST extraction during `LoadSSRModules()` and routes the result to the `open` slot of `<head>`.
 
-Apps override the default by exposing their own `RootCSS()` from the project root's `ssr.go`. The single-override rule lives in `assetmin` (root project wins, dom is fallback, third-party modules are ignored with a warning). See [`assetmin/docs/SSR.md`](../../assetmin/docs/SSR.md).
+Apps override the default by exposing their own `RootCSS()` from the project root's `ssr.go`. The single-override rule lives in `sitec` (root project wins, dom is fallback, third-party modules are ignored with a warning). See [`sitec/docs/ASSETMIN_SSR.md`](https://github.com/tinywasm/sitec/blob/main/docs/ASSETMIN_SSR.md).
 
 ### Distinction from `CSSProvider`
 

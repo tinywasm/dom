@@ -168,7 +168,7 @@ gotest
 
 ```go
 ✅ Render("app", &App{})    // correct — sprite SVG stays intact
-❌ Render("body", &App{})   // destroys the SVG sprite injected by assetmin
+❌ Render("body", &App{})   // destroys the SVG sprite injected by sitec
 ```
 
 ---

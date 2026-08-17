@@ -134,7 +134,7 @@ unmount     → run OnCleanup + unsubscribe signals
 
 ## Mount Point
 
-Always `"app"`, never `"body"` — `Render("body", ...)` overwrites `innerHTML` and destroys the SVG sprite injected by `tinywasm/assetmin`.
+Always `"app"`, never `"body"` — `Render("body", ...)` overwrites `innerHTML` and destroys the SVG sprite injected by `tinywasm/sitec`.
 
 ## Dev Mode
 
