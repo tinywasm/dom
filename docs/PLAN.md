@@ -2,8 +2,9 @@
 PLAN: "fix(security): escape text nodes by default; raw markup requires the typed dom.TrustedHTML"
 EXECUTOR: jules
 REVIEWER: none
-STATUS: running
+STATUS: review
 SESSION: 8470234292955560261
+PR: https://github.com/tinywasm/dom/pull/22
 ---
 
 > Este plan se despacha con el flujo CodeJob. Ver skill: `agents-workflow`.
