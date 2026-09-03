@@ -2,6 +2,8 @@
 PLAN: "fix(security): escape text nodes by default; raw markup requires the typed dom.TrustedHTML"
 EXECUTOR: jules
 REVIEWER: none
+STATUS: running
+SESSION: 8470234292955560261
 ---
 
 > Este plan se despacha con el flujo CodeJob. Ver skill: `agents-workflow`.
