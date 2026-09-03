@@ -164,3 +164,53 @@ func TestAdminTable_RendersHostileUserDataInert(t *testing.T) {
 		}
 	}
 }
+
+// TestSSRIdIsStableAcrossRenders proves an element that only has a binding
+// (no id, no events) — the pattern any BindText/BindAttr/BindChildren user
+// hits — renders the SAME id-less markup every time on SSR. Before the fix,
+// the auto-id-generation meant for the WASM live-DOM path (so an event
+// handler or a signal patch can find the node again) leaked into
+// elementToHTML/(*Element).String() once the two serializers were unified:
+// every call minted a fresh id via the package's global counter, so the
+// exact same tree rendered twice produced two different strings — breaking
+// idempotency for any component (e.g. a datatable's tbody) that binds
+// something but is otherwise rendered statically on SSR.
+func TestSSRIdIsStableAcrossRenders(t *testing.T) {
+	sig := NewString("x")
+	build := func() *Element {
+		return NewElement("div").BindText(sig)
+	}
+
+	first := build().String()
+	second := build().String()
+
+	if containsSub(first, "id=") || containsSub(second, "id=") {
+		t.Fatalf("SSR must never auto-generate an id for a bound element (no live DOM to look it up in): first=%q second=%q", first, second)
+	}
+	if first != second {
+		t.Fatalf("SSR output for the same tree must be idempotent: first=%q second=%q", first, second)
+	}
+}
+
+// TestSSRIgnoresBindChildren proves BindChildren — reactive, client-only —
+// never contributes to SSR output: only the static Child(...) content does.
+// Before the fix, unifying the serializers made SSR also walk the signal's
+// current nodes IN ADDITION to the static children, double-emitting any
+// component that seeds static rows for SSR and wires BindChildren purely for
+// later client-side reactivity (exactly the shape tinywasm/components'
+// datatable uses) — and panicking claimID when the duplicated rows carried
+// duplicate ids.
+func TestSSRIgnoresBindChildren(t *testing.T) {
+	staticRow := NewElement("li").Text("static")
+	reactiveRow := NewElement("li").ID("reactive-only").Text("reactive")
+
+	el := NewElement("ul").
+		BindChildren(NewNodes(reactiveRow)).
+		Child(staticRow)
+
+	got := el.String()
+	want := "<ul><li>static</li></ul>"
+	if got != want {
+		t.Fatalf("want %q, got %q — SSR must render only the static Child(...) content, never the SignalNodes value", want, got)
+	}
+}

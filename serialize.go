@@ -18,12 +18,21 @@ func serializeElement(el *Element, renderChild childRenderer, observer ...elemen
 	beginPass()
 	defer endPass()
 
-	if (len(el.events) > 0 || len(el.bindings) > 0 || el.autofocus) && el.id == "" {
-		el.id = generateID()
-	}
-
 	var obs elementObserver
-	if len(observer) > 0 && observer[0] != nil {
+	hasObserver := len(observer) > 0 && observer[0] != nil
+
+	// Auto-generating an id for a bound/eventful element only matters where
+	// something will later look that id up in a live DOM to patch or wire it
+	// — the WASM path, signaled by the presence of an observer (it collects
+	// pending events for exactly that purpose). SSR has no live DOM: gating
+	// this on hasObserver keeps it out of that path, where it used to leak
+	// into elementToHTML/(*Element).String() after unifying the two
+	// serializers, minting a fresh id on every render of the same tree and
+	// making SSR output for any bound element non-deterministic.
+	if hasObserver {
+		if (len(el.events) > 0 || len(el.bindings) > 0 || el.autofocus) && el.id == "" {
+			el.id = generateID()
+		}
 		obs = observer[0]
 		obs(el)
 	}
@@ -116,8 +125,20 @@ func serializeElement(el *Element, renderChild childRenderer, observer ...elemen
 			}
 			attrs = append(attrs, fmt.KeyValue{Key: "value", Value: val})
 		case "children":
-			if sig, ok := b.signal.(*SignalNodes); ok {
-				boundChildren = append(boundChildren, sig.Get()...)
+			// WASM-only, same reasoning as the id auto-generation above: a
+			// SignalNodes drives reactive updates after the client hydrates,
+			// it has no bearing on SSR. Before unifying the two serializers,
+			// elementToHTML (SSR) never had a "children" case at all — an
+			// element seeding static rows via Child(...) AND wiring
+			// BindChildren for later reactivity (the pattern datatable uses)
+			// rendered only the static rows on SSR. Processing this
+			// unconditionally made SSR render the signal's current nodes on
+			// top of the static ones, double-emitting every row and
+			// panicking claimID on the resulting duplicate ids.
+			if hasObserver {
+				if sig, ok := b.signal.(*SignalNodes); ok {
+					boundChildren = append(boundChildren, sig.Get()...)
+				}
 			}
 		}
 	}
