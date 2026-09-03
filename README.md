@@ -94,6 +94,8 @@ full := dom.DeriveString(func() string { return first.Get() + " " + last.Get() }
 html.Div().
     Class("card").
     Attr("role", "region").
+    Text(userInput).                      // Escaped automatically (< → &lt;)
+    Raw(dom.Trust("<b>trusted HTML</b>")). // Explicit raw markup (requires dom.Trust)
     Child(
         html.Span().BindText(name),
         html.Input("text").Bind(name),           // two-way

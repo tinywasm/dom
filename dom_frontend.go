@@ -463,187 +463,55 @@ func (d *domWasm) renderToHTML(el *Element, comps *[]Component, ownerID string) 
 		}
 		return ""
 	}
-	beginPass()
-	defer endPass()
 
-	// If the element has events or bindings but no ID, generate one
-	if (len(el.events) > 0 || len(el.bindings) > 0 || el.autofocus) && el.id == "" {
-		el.id = generateID()
-	}
+	renderChild := func(v Component) string {
+		if v == nil {
+			if d.devMode {
+				d.Log("tinywasm/dom: nil Component encountered (pointer-embedded Element mistake?)")
+			}
+			return ""
+		}
+		*comps = append(*comps, v)
+		if v.GetID() == "" {
+			v.SetID(generateID())
+		}
+		childID := v.GetID()
+		d.initComponent(v)
 
-	for _, ev := range el.events {
-		d.pendingEvents = append(d.pendingEvents, struct {
-			id      string
-			ownerID string
-			name    string
-			handler func(Event)
-		}{el.id, ownerID, ev.Name, ev.Handler})
-	}
-
-	s := "<" + el.tag
-	if el.id != "" {
-		claimID(el.id, el.tag)
-		s += " id='" + el.id + "'"
-	}
-
-	// Apply bindings initial state
-	classes := el.classes
-	attrs := el.attrs
-	textContent := ""
-	hasTextContent := false
-	var boundChildren []*Element
-
-	for _, b := range el.bindings {
-		switch b.kind {
-		case "text":
-			if b.signal != nil {
-				if sig, ok := b.signal.(*SignalString); ok {
-					textContent = sig.Get()
-				}
-			} else if b.fnString != nil {
-				textContent = b.fnString()
-			}
-			hasTextContent = true
-		case "attr":
-			val := ""
-			if b.signal != nil {
-				if sig, ok := b.signal.(*SignalString); ok {
-					val = sig.Get()
-				}
-			} else if b.fnString != nil {
-				val = b.fnString()
-			}
-			// Replace existing attr if found
-			found := false
-			for i, attr := range attrs {
-				if attr.Key == b.name {
-					attrs[i].Value = val
-					found = true
-					break
-				}
-			}
-			if !found {
-				attrs = append(attrs, fmt.KeyValue{Key: b.name, Value: val})
-			}
-		case "class":
-			on := false
-			if b.signal != nil {
-				if sig, ok := b.signal.(*SignalBool); ok {
-					on = sig.Get()
-				}
-			} else if b.fnBool != nil {
-				on = b.fnBool()
-			}
-			if on {
-				classes = append(classes, b.name)
-			}
-		case "attrbool":
-			on := false
-			if b.signal != nil {
-				if sig, ok := b.signal.(*SignalBool); ok {
-					on = sig.Get()
-				}
-			} else if b.fnBool != nil {
-				on = b.fnBool()
-			}
-			if on {
-				attrs = append(attrs, fmt.KeyValue{Key: b.name, Value: ""})
-			}
-		case "state":
-			on := false
-			if b.signal != nil {
-				if sig, ok := b.signal.(*SignalBool); ok {
-					on = sig.Get()
-				}
-			} else if b.fnBool != nil {
-				on = b.fnBool()
-			}
-			if on {
-				attrs = append(attrs, fmt.KeyValue{Key: b.state.Key(), Value: b.state.Value()})
-			}
-		case "value":
-			val := ""
-			if b.signal != nil {
-				if sig, ok := b.signal.(*SignalString); ok {
-					val = sig.Get()
-				}
-			}
-			attrs = append(attrs, fmt.KeyValue{Key: "value", Value: val})
-		case "children":
-			if sig, ok := b.signal.(*SignalNodes); ok {
-				boundChildren = append(boundChildren, sig.Get()...)
-			}
+		if vr, ok := v.(ViewRenderer); ok {
+			root := vr.Render()
+			injectComponentID(root, childID)
+			s := d.renderToHTML(root, comps, childID)
+			d.storeRoot(childID, root)
+			return s
+		} else if en, ok := v.(elementNode); ok {
+			root := en.AsElement()
+			injectComponentID(root, childID)
+			s := d.renderToHTML(root, comps, childID)
+			d.storeRoot(childID, root)
+			return s
+		} else if el, ok := v.(*Element); ok {
+			injectComponentID(el, childID)
+			s := d.renderToHTML(el, comps, childID)
+			d.storeRoot(childID, el)
+			return s
+		} else {
+			return v.String()
 		}
 	}
 
-	if len(classes) > 0 {
-		s += " class='"
-		for i, c := range classes {
-			if i > 0 {
-				s += " "
-			}
-			s += fmt.Convert(c).EscapeAttr()
+	observer := func(elem *Element) {
+		for _, ev := range elem.events {
+			d.pendingEvents = append(d.pendingEvents, struct {
+				id      string
+				ownerID string
+				name    string
+				handler func(Event)
+			}{elem.id, ownerID, ev.Name, ev.Handler})
 		}
-		s += "'"
-	}
-	for _, attr := range attrs {
-		s += " " + attr.Key + "='" + fmt.Convert(attr.Value).EscapeAttr() + "'"
-	}
-	s += ">"
-	if el.void {
-		return s // No children, no closing tag
 	}
 
-	if hasTextContent {
-		s += textContent
-	} else {
-		for _, node := range boundChildren {
-			s += d.renderToHTML(node, comps, ownerID)
-		}
-		for _, child := range el.children {
-			switch v := child.(type) {
-			case *Element:
-				s += d.renderToHTML(v, comps, ownerID)
-			case string:
-				s += v
-			case Component:
-				if v == nil {
-					if d.devMode {
-						d.Log("tinywasm/dom: nil Component encountered (pointer-embedded Element mistake?)")
-					}
-					continue
-				}
-				*comps = append(*comps, v)
-				if v.GetID() == "" {
-					v.SetID(generateID())
-				}
-				childID := v.GetID()
-				d.initComponent(v)
-
-				if vr, ok := v.(ViewRenderer); ok {
-					root := vr.Render()
-					injectComponentID(root, childID)
-					s += d.renderToHTML(root, comps, childID)
-					d.storeRoot(childID, root)
-				} else if en, ok := v.(elementNode); ok {
-					root := en.AsElement()
-					injectComponentID(root, childID)
-					s += d.renderToHTML(root, comps, childID)
-					d.storeRoot(childID, root)
-				} else if el, ok := v.(*Element); ok {
-					injectComponentID(el, childID)
-					s += d.renderToHTML(el, comps, childID)
-					d.storeRoot(childID, el)
-				} else {
-					s += v.String()
-				}
-			default:
-				s += fmt.Sprint(v)
-			}
-		}
-	}
-	s += "</" + el.tag + ">"
-	return s
+	return serializeElement(el, renderChild, observer)
 }
 
 func (d *domWasm) mountRecursive(c Component) {

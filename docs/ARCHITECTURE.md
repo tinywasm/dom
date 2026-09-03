@@ -229,7 +229,18 @@ Apps override the default by exposing their own `RootCSS()` from the project roo
 
 These are intentionally separate: theme tokens are global and must not stack, while component styles are local and naturally compose.
 
-## 10. Reference Mutation API
+## 10. Escapado y confianza
+
+El serializador de HTML de `dom` aplica escapado por defecto a todos los nodos de texto y valores de atributos para prevenir vulnerabilidades de XSS almacenado y reflejado.
+
+- **`Text(string)`**: escapa siempre los caracteres especiales HTML (`&`, `<`, `>`, `"`, `'`).
+- **`Raw(TrustedHTML)`**: agrega marcado crudo sin escapar. Exige explícitamente una instancia de `TrustedHTML`.
+- **`Trust(html string) TrustedHTML`**: es la ÚNICA forma de producir un `TrustedHTML`. Su presencia en el código fuente hace que cualquier exención al escapado sea inmediatamente auditable mediante `grep -rn "dom.Trust(" .`.
+- **Bindings (`BindText`, `BindTextFunc`, etc.)**: el valor de las señales se escapa automáticamente al serializar.
+
+Regla de uso: `Trust` se debe utilizar ÚNICAMENTE con literales del propio código o con el resultado de builders confiables del ecosistema, NUNCA con datos provenientes de peticiones, bases de datos o servicios externos.
+
+## 11. Reference Mutation API
 
 `dom.Get(id)` returns a `Reference` — a live handle to a DOM node. Use its mutation methods to update the element **in-place** without re-rendering.
 
