@@ -102,7 +102,7 @@ func (e *elementWasm) On(eventType string, handler func(event Event)) {
 // synchronous with the user gesture, not from the scroll. Browsers without
 // preventScroll ignore the options object and behave exactly as before.
 func (e *elementWasm) Focus() {
-	opts := js.Global().Get("Object").New()
+	opts := e.dom.objectCtor.New()
 	opts.Set("preventScroll", true)
 	e.val.Call("focus", opts)
 }
@@ -114,11 +114,33 @@ func (e *elementWasm) ScrollsX() bool {
 	return e.val.Get("scrollWidth").Float() > e.val.Get("clientWidth").Float()+1
 }
 
-// ScrollIntoView smooth-scrolls the element into view.
-func (e *elementWasm) ScrollIntoView() {
-	opts := js.Global().Get("Object").New()
-	opts.Set("behavior", "smooth")
+// scrollOptions builds the options object scrollIntoView takes, off the
+// singleton's cached Object constructor (domWasm.objectCtor) rather than a
+// fresh js.Global() lookup — same reason document/localStorage are cached
+// there. behavior is the only axis that ever varies between callers
+// ("smooth" vs "instant"); inline/block stay fixed. No map — dom/AGENTS.md,
+// "Slices Over Maps": three explicit Set calls instead.
+func (e *elementWasm) scrollOptions(behavior string) js.Value {
+	opts := e.dom.objectCtor.New()
+	opts.Set("behavior", behavior)
 	opts.Set("inline", "start")
 	opts.Set("block", "nearest")
-	e.val.Call("scrollIntoView", opts)
+	return opts
+}
+
+// ScrollIntoView smooth-scrolls the element into view.
+func (e *elementWasm) ScrollIntoView() {
+	e.val.Call("scrollIntoView", e.scrollOptions("smooth"))
+}
+
+// ScrollIntoViewInstant jumps the element into view with no animation — an
+// explicit "instant", not "auto": "auto" defers to the container's own
+// scroll-behavior CSS, and callers use this method specifically to bypass
+// that, unconditionally. e.g. a circular scroll-snap strip wrapping from its
+// last panel back to its first, where a smooth scroll would visibly travel
+// across every panel in between in the wrong apparent direction. Every
+// other navigation should keep using ScrollIntoView; reach for this one
+// only at the wrap boundary.
+func (e *elementWasm) ScrollIntoViewInstant() {
+	e.val.Call("scrollIntoView", e.scrollOptions("instant"))
 }

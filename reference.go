@@ -45,6 +45,14 @@ type Reference interface {
 	// scroll-snap-align on this element and its container).
 	ScrollIntoView()
 
+	// ScrollIntoViewInstant jumps the element into view with no animation —
+	// e.g. a circular scroll-snap strip wrapping from its last panel back to
+	// its first, where a smooth scroll would visibly travel across every
+	// panel in between in the wrong apparent direction. Every other
+	// navigation should keep using ScrollIntoView; reach for this one only
+	// at the wrap boundary.
+	ScrollIntoViewInstant()
+
 	// ScrollsX reports whether the element can actually scroll along the inline
 	// axis — its content is wider than its box.
 	//

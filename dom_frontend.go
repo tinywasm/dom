@@ -13,6 +13,7 @@ type domWasm struct {
 	*tinyDOM
 	document     js.Value // Cached document object
 	localStorage js.Value // Cached localStorage object
+	objectCtor   js.Value // Cached global Object constructor, for options objects browser APIs take (scrollIntoView, focus)
 	lsUsedBytes  int      // Current localStorage budget usage in bytes (UTF-16)
 
 	elementCache []struct {
@@ -79,6 +80,7 @@ func newDom(td *tinyDOM) DOM {
 		tinyDOM:      td,
 		document:     js.Global().Get("document"),
 		localStorage: ls,
+		objectCtor:   js.Global().Get("Object"),
 		lsUsedBytes:  used,
 	}
 }

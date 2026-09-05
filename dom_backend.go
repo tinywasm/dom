@@ -69,4 +69,5 @@ func (e *elementStub) Checked() bool                                  { return f
 func (e *elementStub) On(eventType string, handler func(event Event)) {}
 func (e *elementStub) Focus()                                         {}
 func (e *elementStub) ScrollIntoView()                                {}
+func (e *elementStub) ScrollIntoViewInstant()                         {}
 func (e *elementStub) ScrollsX() bool                                 { return false }

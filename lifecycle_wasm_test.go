@@ -369,3 +369,86 @@ func TestMountedScrollableConsumer(t *testing.T) {
 		t.Log("Warning: deck-scroller.ScrollsX() is false (expected in some headless environments or without style sheet support, but scroller is successfully wired)")
 	}
 }
+
+// TestScrollOptionsBehaviorDiffers is the precise, low-level proof
+// ScrollIntoViewInstant exists for: scrollOptions("smooth") and
+// scrollOptions("instant") actually differ, and neither silently produces
+// the wrong one. scrollOptions is unexported, so this lives in the package
+// root (package dom), not dom/tests — see dom/AGENTS.md's Testing section.
+func TestScrollOptionsBehaviorDiffers(t *testing.T) {
+	Render("app", &scrollableItem{})
+	ref, ok := Get("item-to-scroll")
+	if !ok {
+		t.Fatal("item-to-scroll not found")
+	}
+	e, ok := ref.(*elementWasm)
+	if !ok {
+		t.Fatal("Get did not return *elementWasm")
+	}
+
+	smooth := e.scrollOptions("smooth")
+	if got := smooth.Get("behavior").String(); got != "smooth" {
+		t.Errorf("scrollOptions(smooth).behavior = %q, want smooth", got)
+	}
+	instant := e.scrollOptions("instant")
+	if got := instant.Get("behavior").String(); got != "instant" {
+		t.Errorf("scrollOptions(instant).behavior = %q, want instant", got)
+	}
+	for _, opts := range []js.Value{smooth, instant} {
+		if got := opts.Get("inline").String(); got != "start" {
+			t.Errorf("inline = %q, want start", got)
+		}
+		if got := opts.Get("block").String(); got != "nearest" {
+			t.Errorf("block = %q, want nearest", got)
+		}
+	}
+}
+
+// deckCompInstant mirrors deckComp exactly, calling ScrollIntoViewInstant
+// instead of ScrollIntoView — compile+call-shape coverage through the
+// public method, same spirit as TestMountedScrollableConsumer.
+// TestScrollOptionsBehaviorDiffers above is what proves the actual
+// behavior difference.
+type deckCompInstant struct {
+	Element
+	child           *scrollableItem
+	mountedCalled   bool
+	childFoundAtMnt bool
+}
+
+func (d *deckCompInstant) Init(ctx Ctx) {
+	d.child = &scrollableItem{}
+}
+
+func (d *deckCompInstant) Children() []Component {
+	return []Component{d.child}
+}
+
+func (d *deckCompInstant) Render() *Element {
+	return NewElement("div").ID("deck-scroller-instant").
+		Attr("style", "width: 100px; height: 100px; overflow-x: auto; white-space: nowrap;").
+		Child(
+			NewElement("div").Attr("style", "width: 50px; height: 100px; display: inline-block;"),
+			d.child,
+		)
+}
+
+func (d *deckCompInstant) Mounted() {
+	d.mountedCalled = true
+	if el, ok := Get("item-to-scroll"); ok {
+		d.childFoundAtMnt = true
+		el.ScrollIntoViewInstant()
+	}
+}
+
+func TestMountedScrollableConsumerInstant(t *testing.T) {
+	c := &deckCompInstant{}
+	Render("app", c)
+
+	if !c.mountedCalled {
+		t.Error("deckCompInstant Mounted was not called")
+	}
+	if !c.childFoundAtMnt {
+		t.Error("item-to-scroll was not found in DOM during deckCompInstant.Mounted")
+	}
+}
